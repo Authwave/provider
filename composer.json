@@ -1,0 +1,22 @@
+{
+	"name": "authwave/provider",
+	"description": "Hosted or self-hosted Authwave provider.",
+
+	"require": {
+		"phpgt/webengine": "dev-master"
+	},
+	"require-dev": {
+		"phpunit/phpunit": "8.*"
+	},
+
+	"autoload": {
+		"psr-4": {
+			"Authwave\\": "./class"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"Authwave\\Test": "./test/unit"
+		}
+	}
+}
