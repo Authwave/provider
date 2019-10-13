@@ -1,0 +1,59 @@
+.c-main-login {
+	padding-top: $size-spacing-small;
+	transition: margin-top 1s ease-in-out;
+
+	@media(min-width: $break-medium) {
+		padding-top: $size-spacing-medium;
+	}
+	@media(min-width: $break-large) {
+		padding-top: $size-spacing-large;
+	}
+
+	header {
+		img {
+			margin: 0 auto;
+			width: $size-card-medium;
+		}
+	}
+
+	main {
+		@extend %l-form-labels;
+		display: flex;
+		flex-direction: column;
+		max-width: $size-card-large;
+		margin: 2rem auto;
+		padding: 2rem;
+		border-radius: 8px;
+
+		@media(min-width: $break-medium) {
+			border: 1px solid $palette-textarea;
+		}
+
+		h1, h2 {
+			text-align: center;
+		}
+
+		h2 {
+			font-weight: normal;
+		}
+
+		.forgot {
+			margin-top: 0.5rem;
+		}
+
+		h1, label, .actions {
+			margin-top: $size-spacing-small;
+		}
+
+		.actions {
+			order: 2;
+
+			display: flex;
+			justify-content: space-between;
+
+			.primary {
+				order: 2;
+			}
+		}
+	}
+}
