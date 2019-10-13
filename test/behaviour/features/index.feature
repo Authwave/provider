@@ -9,3 +9,4 @@ Feature: Index page
 		And I should see a button labelled "Next"
 		And I should see a button labelled "Create account"
 		And I should see an input labelled "Your email address"
+		And I should see a link labelled "Forgot email?"

@@ -41,4 +41,15 @@ class FeatureContext extends MinkContext {
 
 		Assert::assertNotNull($found);
 	}
+
+	/**
+	 * @Given /^I should see a link labelled "([^"]*)"$/
+	 */
+	public function iShouldSeeALinkLabelled(string $linkLabelText) {
+		$this->assertSession()->elementContains(
+			"css",
+			"a",
+			$linkLabelText
+		);
+	}
 }
