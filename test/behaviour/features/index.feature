@@ -3,6 +3,9 @@ Feature: Index page
 	As an unauthorised user
 	I should be able to interact with the index page.
 
-	Scenario: Page is visible
+	Scenario: Main elements exist
 		Given I am on the homepage
 		Then I should see "Sign in to Authwave"
+		And I should see a button labelled "Next"
+		And I should see a button labelled "Create account"
+		And I should see an input labelled "Your email address"
