@@ -1,0 +1,43 @@
+<form method="post" class="c-main-login authenticate">
+	<div>
+		<header>
+			<img src="/asset/default-logo.svg"
+				alt="{applicationName} logo"
+				data-bind:src="applicationLogoSrc"
+				data-bind-parameters />
+		</header>
+
+		<main>
+			<p>
+				Please choose how you would like to log in.
+			</p>
+
+			<div class="auth-option password">
+				<label>
+					<span>Your password</span>
+					<input name="password" type="password" placeholder="e.g. ••••••••••••" autofocus />
+				</label>
+
+				<button name="do" value="password" title="Log in with password">
+					<span>Log in with password</span>
+				</button>
+			</div>
+
+			<div class="auth-option social">
+				<ul>
+					<li data-template>
+						<button name="do" value="social{}" data-bind-attributes>Log in with&nbsp;<span data-bind:text>Provider</span></button>
+					</li>
+				</ul>
+			</div>
+
+			<div class="auth-option email">
+				<button title="Log in with email link" name="do" value="email">Email login link</button>
+			</div>
+
+			<div class="actions">
+				<a href="/help">Need help?</a>
+			</div>
+		</main>
+	</div>
+</form>

@@ -1,53 +1,34 @@
-/**
- * This box-sizing method doesn't prevent elements from being made content-box
- * within application stylesheets.
- * @see https://css-tricks.com/box-sizing/
- */
-html {
-	box-sizing: border-box;
-}
-*, *::before, *::after {
-	box-sizing: inherit;
-}
-
-/**
- * The prefers-reduced-motion CSS media feature is used to detect if the user
- * has requested that the system minimize the amount of animation or motion it
- * uses. Why 0.01ms? So it is still invisible, but doesn't break JavaScript
- * animationEnd events.
- * @see https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion
- */
-@media (prefers-reduced-motion: reduce) {
-	* {
-		animation-duration: 0.01ms !important;
-		animation-iteration-count: 1 !important;
-		transition-duration: 0.01ms !important;
-		scroll-behavior: auto !important;
-	}
-}
-
-@import "variable/size";
-@import "variable/palette";
-@import "variable/font";
 @import "variable/break";
+@import "variable/container";
+@import "variable/font";
+@import "variable/palette";
+@import "variable/size";
+@import "variable/z-index";
 
-@import "pattern/user-input";
-@import "pattern/flex";
+@import "decoration/typography";
+@import "decoration/user-input";
+@import "decoration/container";
 
-@import "decoration/focus-hover";
-@import "decoration/text-input";
-@import "decoration/button";
-@import "decoration/select";
+@import "object/button";
 
-@import "reset/body";
-@import "reset/h";
-@import "reset/ul-ol-menu";
-@import "reset/input";
-@import "reset/button";
-@import "reset/textarea";
-@import "reset/select";
-@import "reset/main";
-@import "reset/img";
-@import "reset/a";
+@import "element/a";
+@import "element/body";
+@import "element/button";
+@import "element/code";
+@import "element/h";
+@import "element/html";
+@import "element/i";
+@import "element/img";
+@import "element/input";
+@import "element/main";
+@import "element/p";
+@import "element/pre";
+@import "element/select";
+@import "element/textarea";
+@import "element/ul-ol-menu-dd";
 
-@import "layout/form-labels";
+@import "layout/gutter";
+
+@import "pattern/corner-logo";
+@import "pattern/nav";
+@import "pattern/form-fields";

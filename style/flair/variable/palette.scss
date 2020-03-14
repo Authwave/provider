@@ -1,20 +1,40 @@
 $palette-1: #444 !default;
 $palette-2: #888 !default;
+$palette-3: #aaa !default;
+$palette-4: #ccc !default;
+$palette-5: #eee !default;
+$palette-1-contrast: #fff !default;
+$palette-2-contrast: #fff !default;
+$palette-3-contrast: #fff !default;
+$palette-4-contrast: #444 !default;
+$palette-5-contrast: #444 !default;
 
-$palette-hover-outline: rgba(#aaa, 0.3) !default;
-$palette-focus-outline: rgba(#1a73e8, 0.3) !default;
-$palette-hover-outline-primary: rgba(#1a73e8, 0.3) !default;
-$palette-focus-outline-primary: rgba(#1a73e8, 0.75) !default;
+$palette-user-input: white !default;
+$palette-user-input-hover: #fefefe !default;
+$palette-user-input-focus: #fefefe !default;
+$palette-user-input-active: #eee !default;
+$palette-user-input-border: #ccc !default;
+$palette-user-input-border-hover: mix($palette-user-input-border, $palette-1, 50%) !default;
+$palette-user-input-border-focus: $palette-1 !default;
+$palette-user-input-outline-focus: lighten($palette-user-input-border-focus, 25%) !default;
+$palette-user-input-outline-hover: rgba($palette-user-input-outline-focus, 0.5) !default;
 
-$palette-textarea: #efefef !default;
-$palette-textarea-focus: #fefefe !default;
+$palette-link: $palette-1 !default;
+$palette-link-visited: $palette-2 !default;
 
-$palette-button: #efefef !default;
-$palette-button-text: #1a73e8 !default;
-$palette-button-primary: #1a73e8 !default;
-$palette-button-primary-text: white !default;
+$palette-button: $palette-1 !default;
+$palette-button-hover: lighten($palette-button, 10%) !default;
+$palette-button-focus: darken($palette-button, 10%) !default;
+$palette-button-contrast: $palette-1-contrast !default;
+$palette-button-contrast-hover: darken($palette-button-contrast, 5%) !default;
+$palette-button-contrast-focus: darken($palette-button-contrast, 15%) !default;
 
-$palette-text-body: black !default;
+$palette-text-body: #333 !default;
+$palette-text-header: #333 !default;
 $palette-text-minor: #888 !default;
 
-$palette-invalid: red !default;
+$palette-invalid: red !default; // TODO: Pick nicer default.
+$palette-ok: green !default; // TODO: Pick nicer default.
+
+$palette-container: #fff;
+$palette-panel: #eee;
