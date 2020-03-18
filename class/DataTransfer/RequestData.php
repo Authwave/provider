@@ -22,4 +22,8 @@ class RequestData {
 		$this->iv = $iv;
 		$this->path = $path;
 	}
+
+	public function getId():string {
+		return $this->id;
+	}
 }

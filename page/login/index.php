@@ -7,9 +7,6 @@ use Gt\WebEngine\Logic\Page;
 
 class IndexPage extends Page {
 	public function go():void {
-		$data = $this->database->fetchAll("test/getAll");
-		var_dump($data);die();
-
 		$this->storeRequestData(
 			$this->server->getQueryParams()
 		);
