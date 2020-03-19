@@ -10,7 +10,9 @@ A subdomain of your application should be used to access the provider, whether h
 User authentication flow
 ------------------------
 
-1) User arrives at your application. For example, www.example.com.
+1) The user agent arrives at your application. For example, www.example.com.
 2) Your application checks the Authwave API for authentication status. If they are not authenticated, your application can display a "login" button.
-3) When the login button is clicked, your application can redirect to the preconfigured provider URI, for example, login.example.com. Client cipher is passed to the provider for encryption purposes.
-4) The user is now on the provider server rather than your application. 
+3) When the login button is clicked, the user agent can be redirected to the preconfigured provider URI, for example, login.example.com. A client cipher is passed to the provider to create two-way encryption.
+4) The user agent is now on the provider server rather than your application.
+5) The user agent is redirected back to your application after successful authentication.
+6) Your application has access to the user's authenticated details, such as email, id, and any supplementary information requested by your application.
