@@ -1,1 +1,0 @@
-select name, dob from example_table
