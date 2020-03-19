@@ -3,6 +3,7 @@ namespace Authwave\Page\Login;
 
 use Authwave\Application\ApplicationDeployment;
 use Authwave\DataTransfer\LoginData;
+use Authwave\DataTransfer\RequestData;
 use Gt\DomTemplate\Element;
 use Gt\Input\InputData\InputData;
 use Gt\WebEngine\Logic\Page;
@@ -10,6 +11,7 @@ use TypeError;
 
 class AuthenticatePage extends Page {
 	public ApplicationDeployment $deployment;
+	private RequestData $requestData;
 	private LoginData $loginData;
 
 	public function go():void {
@@ -76,6 +78,8 @@ class AuthenticatePage extends Page {
 	}
 
 	private function login(string $type, string $data = null):void {
+		$this->storeLoginData();
+		var_dump($this->requestData);die();
 	}
 
 	private function outputProviders(Element $outputTo):void {
@@ -100,6 +104,12 @@ class AuthenticatePage extends Page {
 		catch(TypeError $error) {
 			$this->redirect("/login");
 			exit;
+		}
+
+		if($this->session->contains(RequestData::SESSION_REQUEST_DATA)) {
+			$this->requestData = $this->session->get(
+				RequestData::SESSION_REQUEST_DATA
+			);
 		}
 	}
 

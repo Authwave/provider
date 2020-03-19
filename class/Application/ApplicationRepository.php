@@ -2,6 +2,7 @@
 namespace Authwave\Application;
 
 use Gt\Database\Query\QueryCollection;
+use Psr\Http\Message\UriInterface;
 
 class ApplicationRepository {
 	private QueryCollection $db;
@@ -10,10 +11,12 @@ class ApplicationRepository {
 		$this->db = $db;
 	}
 
-	public function getApplicationByHost(string $host):ApplicationDeployment {
+	public function getApplicationByHost(
+		UriInterface $host
+	):ApplicationDeployment {
 		$row = $this->db->fetch(
 			"getApplicationByClientLoginHost",
-			$host
+			$host->getAuthority()
 		);
 
 		if(!$row) {

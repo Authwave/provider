@@ -21,4 +21,8 @@ class ApplicationDeployment {
 		$this->clientHost = $clientHost;
 		$this->clientLoginHost = $clientLoginHost;
 	}
+
+	public function getClientHost():string {
+		return $this->clientHost;
+	}
 }

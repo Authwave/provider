@@ -15,7 +15,9 @@ class _SetupPage extends PageSetup {
 	}
 
 	private function app():void {
-		if($this->server->getRequestUri()->getPath() === self::SETUP_PATH) {
+		$uri = $this->server->getRequestUri();
+
+		if($uri->getPath() === self::SETUP_PATH) {
 			return;
 		}
 
@@ -26,9 +28,7 @@ class _SetupPage extends PageSetup {
 		$this->logicProperty->set("appRepo", $appRepo);
 
 		try {
-			$deployment = $appRepo->getApplicationByHost(
-				$this->server->getRequestUri()->getHost()
-			);
+			$deployment = $appRepo->getApplicationByHost($uri);
 			$this->logicProperty->set("deployment", $deployment);
 		}
 		catch(ApplicationNotFoundForHostException $exception) {
