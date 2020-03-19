@@ -10,8 +10,7 @@ use Gt\WebEngine\Logic\Page;
 use TypeError;
 
 class AuthenticatePage extends Page {
-	public ApplicationDeployment $deployment;
-	private RequestData $requestData;
+	public RequestData $requestData;
 	private LoginData $loginData;
 
 	public function go():void {
@@ -104,12 +103,6 @@ class AuthenticatePage extends Page {
 		catch(TypeError $error) {
 			$this->redirect("/login");
 			exit;
-		}
-
-		if($this->session->contains(RequestData::SESSION_REQUEST_DATA)) {
-			$this->requestData = $this->session->get(
-				RequestData::SESSION_REQUEST_DATA
-			);
 		}
 	}
 

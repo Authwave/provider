@@ -1,6 +1,9 @@
 <?php
 namespace Authwave\Application;
 
+use Gt\Http\Uri;
+use Psr\Http\Message\UriInterface;
+
 class ApplicationDeployment {
 	private Application $application;
 	private int $id;
@@ -22,7 +25,12 @@ class ApplicationDeployment {
 		$this->clientLoginHost = $clientLoginHost;
 	}
 
-	public function getClientHost():string {
-		return $this->clientHost;
+	public function getClientHost():UriInterface {
+		$uri = new Uri($this->clientHost);
+		if($uri->getScheme() === "") {
+			$uri = $uri->withScheme("https");
+		}
+
+		return $uri;
 	}
 }
