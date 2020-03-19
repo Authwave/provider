@@ -1,15 +1,15 @@
 <?php
 namespace Authwave\Page\Login;
 
+use Authwave\Application\ApplicationDeployment;
 use Authwave\DataTransfer\LoginData;
-use Authwave\User\UserRepository;
 use Gt\DomTemplate\Element;
 use Gt\Input\InputData\InputData;
 use Gt\WebEngine\Logic\Page;
 use TypeError;
 
 class AuthenticatePage extends Page {
-	public UserRepository $userRepo;
+	public ApplicationDeployment $deployment;
 	private LoginData $loginData;
 
 	public function go():void {
