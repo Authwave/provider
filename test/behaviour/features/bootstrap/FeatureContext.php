@@ -8,6 +8,7 @@ use Behat\Testwork\Hook\Scope\BeforeSuiteScope;
 use Gt\Config\ConfigFactory;
 use Gt\Database\Connection\Settings;
 use Gt\Database\Database;
+use Gt\Http\Uri;
 use PHPUnit\Framework\Assert;
 
 class FeatureContext extends MinkContext {
@@ -92,7 +93,6 @@ class FeatureContext extends MinkContext {
 			$browserCommand,
 			$tmpDir,
 		]);
-		echo "Executing: $cmd" . PHP_EOL;
 		exec($cmd);
 	}
 
@@ -165,6 +165,15 @@ class FeatureContext extends MinkContext {
 	public function iMakeTheLoginAction() {
 		echo "Logging in ... " . PHP_EOL;
 		$this->visitPath("/?cipher=0123456789abcdef&iv=12345678&path=/");
+	}
+
+	/**
+	 * @Then /^I should be on the client application$/
+	 */
+	public function iShouldBeOnTheClientApplication() {
+		$uri = new Uri($this->getSession()->getCurrentUrl());
+		$baseUri = new Uri($this->getMinkParameter("base_url"));
+		Assert::assertNotSame($uri->getAuthority(), $baseUri->getAuthority());
 	}
 
 }

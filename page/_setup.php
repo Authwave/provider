@@ -8,7 +8,7 @@ use Authwave\User\UserRepository;
 use Gt\WebEngine\Logic\PageSetup;
 
 class _SetupPage extends PageSetup {
-	const SETUP_PATH = "/setup";
+	const CONFIG_PATH = "/config";
 
 	public function go():void {
 		$this->request();
@@ -44,7 +44,7 @@ class _SetupPage extends PageSetup {
 	private function app():void {
 		$uri = $this->server->getRequestUri();
 
-		if($uri->getPath() === self::SETUP_PATH) {
+		if($uri->getPath() === self::CONFIG_PATH) {
 			return;
 		}
 
@@ -59,7 +59,7 @@ class _SetupPage extends PageSetup {
 			$this->logicProperty->set("deployment", $deployment);
 		}
 		catch(ApplicationNotFoundForHostException $exception) {
-			$this->redirect(self::SETUP_PATH);
+			$this->redirect(self::CONFIG_PATH);
 			exit;
 		}
 	}
