@@ -47,6 +47,7 @@ class FeatureContext extends MinkContext {
 		if($pid) {
 			exec("kill $pid");
 			unlink($browserPidFile);
+// TODO: Kill isn't instant, but probably doesn't take 1 second. What is the proper way to wait?
 			sleep(1);
 		}
 	}
