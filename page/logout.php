@@ -8,10 +8,10 @@ use Psr\Http\Message\UriInterface;
 
 class LogoutPage extends Page {
 	public function go():void {
-		$appId = $this->findAppId(
-			$this->server->getQueryParams()["id"] ?? null,
-			$this->session->get(RequestData::SESSION_REQUEST_DATA)
-		);
+//		$appId = $this->findAppId(
+//			$this->server->getQueryParams()["id"] ?? null,
+//			$this->session->get(RequestData::SESSION_REQUEST_DATA)
+//		);
 		$this->session->kill();
 
 		$redirectUri = $this->getRedirectUri(
@@ -23,21 +23,6 @@ class LogoutPage extends Page {
 			$this->redirect($redirectUri);
 			exit;
 		}
-	}
-
-	private function findAppId(
-		?string $appId,
-		?RequestData $requestData
-	):?string {
-		if(!empty($appId)) {
-			return $appId;
-		}
-
-		if(!empty($requestData)) {
-			return $requestData->getId();
-		}
-
-		return null;
 	}
 
 	private function getRedirectUri(

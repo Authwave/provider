@@ -11,12 +11,17 @@ class ApplicationRepository {
 		$this->db = $db;
 	}
 
-	public function getApplicationByHost(
+	public function getApplicationByLoginHost(
 		UriInterface $host
 	):ApplicationDeployment {
+		$hostUriString = $host->getAuthority();
+		if($host->getHost() === "localhost") {
+			$hostUriString = $host->getScheme() . "://$hostUriString";
+		}
+
 		$row = $this->db->fetch(
 			"getApplicationByClientLoginHost",
-			$host->getAuthority()
+			$hostUriString
 		);
 
 		if(!$row) {

@@ -10,7 +10,8 @@ class _CommonPage extends Page {
 	public ApplicationDeployment $deployment;
 
 	public function go():void {
-		if(!isset($this->requestData)) {
+		if($this->server->getRequestUri()->getPath() !== "/setup"
+		&& !isset($this->requestData)) {
 			$this->redirect($this->deployment->getClientHost());
 			exit;
 		}

@@ -2,6 +2,7 @@
 namespace Authwave\Page\Login;
 
 use Authwave\DataTransfer\LoginData;
+use Authwave\DataTransfer\RequestData;
 use Gt\DomTemplate\Element;
 use Gt\Input\InputData\InputData;
 use Gt\WebEngine\Logic\Page;

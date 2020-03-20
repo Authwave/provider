@@ -55,7 +55,7 @@ class _SetupPage extends PageSetup {
 		$this->logicProperty->set("appRepo", $appRepo);
 
 		try {
-			$deployment = $appRepo->getApplicationByHost($uri);
+			$deployment = $appRepo->getApplicationByLoginHost($uri);
 			$this->logicProperty->set("deployment", $deployment);
 		}
 		catch(ApplicationNotFoundForHostException $exception) {
@@ -74,15 +74,13 @@ class _SetupPage extends PageSetup {
 	}
 
 	private function getRequestFromQuery(array $params):?RequestData {
-		if(!isset($params["id"])
-		|| !isset($params["cipher"])
+		if(!isset($params["cipher"])
 		|| !isset($params["iv"])
 		|| !isset($params["path"])) {
 			return null;
 		}
 
 		return new RequestData(
-			$params["id"],
 			$params["cipher"],
 			$params["iv"],
 			$params["path"]

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="32"
+   height="32"
+   viewBox="0 0 32 32"
+   version="1.1"
+   id="svg906"
+   sodipodi:docname="microsoft.svg"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)">
+  <metadata
+     id="metadata912">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title>MS-SymbolLockup</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs910" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="2560"
+     inkscape:window-height="1412"
+     id="namedview908"
+     showgrid="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:zoom="11.238095"
+     inkscape:cx="9.5"
+     inkscape:cy="9.499999"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg906" />
+  <title
+     id="title896">MS-SymbolLockup</title>
+  <g
+     id="g1461"
+     transform="matrix(1.6842105,0,0,1.6842105,-1.6842105,-1.6842105)">
+    <rect
+       id="rect898"
+       height="9"
+       width="9"
+       y="1"
+       x="1"
+       style="fill:#f25022" />
+    <rect
+       id="rect900"
+       height="9"
+       width="9"
+       y="11"
+       x="1"
+       style="fill:#00a4ef" />
+    <rect
+       id="rect902"
+       height="9"
+       width="9"
+       y="1"
+       x="11"
+       style="fill:#7fba00" />
+    <rect
+       id="rect904"
+       height="9"
+       width="9"
+       y="11"
+       x="11"
+       style="fill:#ffb900" />
+  </g>
+</svg>

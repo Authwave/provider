@@ -1,12 +1,23 @@
-Feature: Index page
-	In order to use the application
-	As an unauthorised user
-	I should be able to interact with the index page.
+Feature: Unconfigured provider
+	In order to understand how to set up my application's Authwave provider
+	As an application developer
+	I should be instructed how to set up my Authwave provider
 
-	Scenario: Main elements exist
+	@db:no-data
+	Scenario: Application is not set up, direct access
 		Given I am on the homepage
-		Then I should see "Sign in to Authwave"
-		And I should see a button labelled "Next"
-		And I should see a button labelled "Create account"
-		And I should see an input labelled "Your email address"
-		And I should see a link labelled "Forgot email?"
+		Then I should be on "/setup"
+
+	@db:no-data
+	Scenario: Application is not set up, login access
+		Given I make the login action
+		Then I should be on "/setup"
+
+	@db:no-data
+	Scenario: Application set up can not be skipped
+		Given I go to "/login"
+		Then I should be on "/setup"
+
+	Scenario: Application does not show setup when configured
+		Given I make the login action
+		Then I should be on "/login"
