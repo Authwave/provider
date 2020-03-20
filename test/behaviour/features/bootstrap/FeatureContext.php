@@ -42,9 +42,11 @@ class FeatureContext extends MinkContext {
 	public function afterScenario(AfterScenarioScope $scope):void {
 		$this->getSession()->stop();
 
-		$pid = trim(file_get_contents(__DIR__ . "/../../browser.pid"));
+		$browserPidFile = __DIR__ . "/../../browser.pid";
+		$pid = trim(file_get_contents($browserPidFile));
 		if($pid) {
 			exec("kill $pid");
+			unlink($browserPidFile);
 			sleep(1);
 		}
 	}
@@ -154,6 +156,7 @@ class FeatureContext extends MinkContext {
 			break;
 		}
 
+		unlink($file);
 		echo "DONE" . PHP_EOL;
 	}
 

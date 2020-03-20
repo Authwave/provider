@@ -4,3 +4,6 @@
 /style/flair
 /www/
 /data/
+/test/behaviour/browser.log
+/test/behaviour/browser.pid
+/test/behaviour/*.sql
