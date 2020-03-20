@@ -130,7 +130,7 @@ class FeatureContext extends MinkContext {
 
 		switch($settings->getDriver()) {
 		case Settings::DRIVER_MYSQL:
-			exec("mysqldump -h $host -P $port -u'$username' -p'$password' $schema > $file");
+			exec("mysqldump -h $host -P $port -u'$username' -p'$password' $schema > $file 2>/dev/null");
 			break;
 
 		default:
@@ -153,7 +153,7 @@ class FeatureContext extends MinkContext {
 
 		switch($settings->getDriver()) {
 		case Settings::DRIVER_MYSQL:
-			exec("mysql -h $host -P $port -u'$username' -p'$password' $schema < $file");
+			exec("mysql -h $host -P $port -u'$username' -p'$password' $schema < $file 2>/dev/null");
 			break;
 		}
 
