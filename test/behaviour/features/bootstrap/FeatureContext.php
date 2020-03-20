@@ -1,7 +1,10 @@
 <?php
 
+use Behat\Behat\Hook\Scope\AfterScenarioScope;
 use Behat\Behat\Hook\Scope\BeforeScenarioScope;
 use Behat\MinkExtension\Context\MinkContext;
+use Behat\Testwork\Hook\Scope\AfterSuiteScope;
+use Behat\Testwork\Hook\Scope\BeforeSuiteScope;
 use Gt\Database\Database;
 use PHPUnit\Framework\Assert;
 
@@ -10,10 +13,23 @@ class FeatureContext extends MinkContext {
 	private int $appId;
 	private int $deploymentId;
 
-	private int $chromePid;
+	/** @BeforeSuite */
+	public static function beforeSuite(BeforeSuiteScope $scope):void {
+		self::setupBrowser();
+	}
+
+	/** @AFterSuite */
+	public static function afterSuite(AfterSuiteScope $scope):void {
+		$pid = trim(file_get_contents(__DIR__ . "/../../browser.pid"));
+		echo "Browser PID: $pid" . PHP_EOL;
+
+		if($pid) {
+			exec("kill $pid");
+		}
+	}
 
 	/** @BeforeScenario */
-	public function setup(BeforeScenarioScope $scope):void {
+	public function beforeScenario(BeforeScenarioScope $scope):void {
 		$tags = $scope->getScenario()->getTags();
 		$dbTags = array_filter(
 			$tags,
@@ -21,11 +37,14 @@ class FeatureContext extends MinkContext {
 		);
 
 		$this->setupDatabase($dbTags);
-
-//		exec("which chromium-browser");
 	}
 
-	public function setupDatabase(array $dbTags):void {
+	/** @AfterScenario */
+	public function afterScenario(AfterScenarioScope $scope):void {
+
+	}
+
+	private function setupDatabase(array $dbTags):void {
 		echo "Migrating ... ";
 		exec(__DIR__ . "/../../../../vendor/bin/db-migrate -f", $output, $return);
 
@@ -68,6 +87,28 @@ class FeatureContext extends MinkContext {
 			"clientHost" => "http://localhost:8080",
 			"clientLoginHost" => "http://localhost:8081",
 		]);
+	}
+
+	private static function setupBrowser():void {
+		$browserCommand = "chrome";
+
+		foreach(["chromium-browser", "chrome", "google-chrome", "google-chrome-browser"]
+		as $browserName) {
+			exec("which $browserName", $output);
+			if(!empty($output)) {
+				$browserCommand = $output[0];
+			}
+		}
+
+		$profileName = uniqid("authwave-");
+		$tmpDir = sys_get_temp_dir() . "/authwave/test/profile/$profileName";
+		$cmd = implode(" ", [
+			__DIR__ . "/../../start-browser.bash",
+			$browserCommand,
+			$tmpDir,
+		]);
+		echo "Executing: $cmd" . PHP_EOL;
+		exec($cmd);
 	}
 
 	/** @Given I make the login action */
