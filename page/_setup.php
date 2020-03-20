@@ -4,6 +4,7 @@ namespace Authwave\Page;
 use Authwave\Application\ApplicationNotFoundForHostException;
 use Authwave\Application\ApplicationRepository;
 use Authwave\DataTransfer\RequestData;
+use Authwave\UI\Flash;
 use Authwave\User\UserRepository;
 use Gt\WebEngine\Logic\PageSetup;
 
@@ -14,6 +15,7 @@ class _SetupPage extends PageSetup {
 		$this->request();
 		$this->app();
 		$this->user();
+		$this->flash();
 	}
 
 	private function request():void {
@@ -71,6 +73,14 @@ class _SetupPage extends PageSetup {
 		);
 
 		$this->logicProperty->set("userRepo", $userRepo);
+	}
+
+	private function flash():void {
+		$flash = new Flash($this->session->getStore(
+			Flash::SESSION_NAMESPACE,
+			true
+		));
+		$this->logicProperty->set("flash", $flash);
 	}
 
 	private function getRequestFromQuery(array $params):?RequestData {

@@ -167,13 +167,48 @@ class FeatureContext extends MinkContext {
 		$this->visitPath("/?cipher=0123456789abcdef&iv=12345678&path=/");
 	}
 
-	/**
-	 * @Then /^I should be on the client application$/
-	 */
+	/** @Then /^I should be on the client application$/ */
 	public function iShouldBeOnTheClientApplication() {
 		$uri = new Uri($this->getSession()->getCurrentUrl());
 		$baseUri = new Uri($this->getMinkParameter("base_url"));
 		Assert::assertNotSame($uri->getAuthority(), $baseUri->getAuthority());
+	}
+
+	/** @Given /^I should see the confirmed email as (.*)$/ */
+	public function iShouldSeeTheConfirmedEmailAs(string $email) {
+		$emailLink = $this->getSession()->getPage()->find(
+			"css",
+			"a[href='/login?email']"
+		);
+		Assert::assertEquals($email, $emailLink->getText());
+	}
+
+	/** @When I follow the confirmed email link */
+	public function iFollowTheConfirmedEmailLink() {
+		$emailLink = $this->getSession()->getPage()->find(
+			"css",
+			"a[href='/login?email']"
+		);
+		$emailLink->click();
+	}
+
+	/** @Given /^I should see an "([^"]*)" flash message reading "([^"]*)"$/ */
+	public function iShouldSeeAnFlashMessageReading(
+		string $type,
+		string $message
+	) {
+		$flashElements = $this->getSession()->getPage()->findAll(
+			"css",
+			".flash .$type"
+		);
+
+		$matchingMessages = [];
+
+		foreach($flashElements as $flashElement) {
+			$matchingMessages []= $flashElement->getText();
+		}
+
+		Assert::assertContains($message, $matchingMessages);
 	}
 
 }

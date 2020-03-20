@@ -4,6 +4,9 @@ namespace Authwave\Page\Login;
 use Authwave\Application\ApplicationDeployment;
 use Authwave\DataTransfer\LoginData;
 use Authwave\DataTransfer\RequestData;
+use Authwave\Password\PasswordTooShortException;
+use Authwave\Password\Strengthometer;
+use Authwave\UI\Flash;
 use Gt\DomTemplate\Element;
 use Gt\Input\InputData\InputData;
 use Gt\WebEngine\Logic\Page;
@@ -11,6 +14,7 @@ use TypeError;
 
 class AuthenticatePage extends Page {
 	public RequestData $requestData;
+	public Flash $flash;
 	private LoginData $loginData;
 
 	public function go():void {
@@ -22,9 +26,20 @@ class AuthenticatePage extends Page {
 	}
 
 	public function doPassword(InputData $data):void {
+		$password = $data->getString("password");
+
+		$strengthometer = new Strengthometer($password);
+		try {
+			$strengthometer->validate();
+		}
+		catch(PasswordTooShortException $exception) {
+			$this->flash->error("Your password is too short, please pick a stronger one");
+			$this->reload();
+		}
+
 		$this->login(
 			LoginData::TYPE_PASSWORD,
-			$data->getString("password")
+			$password
 		);
 	}
 
@@ -78,7 +93,7 @@ class AuthenticatePage extends Page {
 
 	private function login(string $type, string $data = null):void {
 		$this->storeLoginData();
-		var_dump($this->requestData);die();
+		var_dump($this->requestData, $data);die();
 	}
 
 	private function outputProviders(Element $outputTo):void {
