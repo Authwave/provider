@@ -30,3 +30,7 @@ Feature: Missing data
 		Then I should be on the client application
 		Given I am on the homepage
 		Then I should be on the client application
+
+	Scenario: Provider is set up, config page should be hidden
+		Given I go to "/config"
+		Then I should be on the client application

@@ -44,10 +44,6 @@ class _SetupPage extends PageSetup {
 	private function app():void {
 		$uri = $this->server->getRequestUri();
 
-		if($uri->getPath() === self::CONFIG_PATH) {
-			return;
-		}
-
 		$appRepo = new ApplicationRepository(
 			$this->database->queryCollection("application")
 		);
@@ -59,6 +55,10 @@ class _SetupPage extends PageSetup {
 			$this->logicProperty->set("deployment", $deployment);
 		}
 		catch(ApplicationNotFoundForHostException $exception) {
+			if($uri->getPath() === self::CONFIG_PATH) {
+				return;
+			}
+
 			$this->redirect(self::CONFIG_PATH);
 			exit;
 		}
