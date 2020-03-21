@@ -18,7 +18,7 @@ class AuthenticatePage extends Page {
 	private LoginData $loginData;
 
 	public function go():void {
-		$this->storeLoginData();
+		$this->restoreLoginData();
 		$this->outputEmailAddress();
 		$this->outputProviders(
 			$this->document->querySelector(".auth-option.social")
@@ -33,7 +33,7 @@ class AuthenticatePage extends Page {
 			$strengthometer->validate();
 		}
 		catch(PasswordTooShortException $exception) {
-			$this->flash->error("Your password is too short, please pick a stronger one");
+			$this->flash->error("Your password is too short, please pick a stronger one with at least 12 characters");
 			$this->reload();
 		}
 
@@ -92,7 +92,7 @@ class AuthenticatePage extends Page {
 	}
 
 	private function login(string $type, string $data = null):void {
-		$this->storeLoginData();
+		$this->restoreLoginData();
 		var_dump($this->requestData, $data);die();
 	}
 
@@ -109,7 +109,7 @@ class AuthenticatePage extends Page {
 		$outputTo->bindList($providers);
 	}
 
-	private function storeLoginData():void {
+	private function restoreLoginData():void {
 		try {
 			$this->loginData = $this->session->get(
 				LoginData::SESSION_LOGIN_DATA

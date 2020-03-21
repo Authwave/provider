@@ -16,9 +16,9 @@ Feature: Log in flow
 		And the "email" field should contain "<email>"
 
 		Examples:
-			|email|password|
-			|example1@test.authwave.com|correcthorsebatterystaple|
-			|example2@test.authwave.com|hunter2 but a bit longer|
+			|email|
+			|example1@test.authwave.com|
+			|example2@test.authwave.com|
 
 	Scenario Outline: Short passwords can not be used
 		Given I make the login action
@@ -27,7 +27,7 @@ Feature: Log in flow
 		And I fill in "password" with "<password>"
 		And I press "Log in with password"
 		Then I should be on "/login/authenticate"
-		And I should see an "error" flash message reading "Your password is too short, please pick a stronger one"
+		And I should see an "error" flash message reading "Your password is too short, please pick a stronger one with at least 12 characters"
 
 		Examples:
 			|email|password|
