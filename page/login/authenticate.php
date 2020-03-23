@@ -7,6 +7,7 @@ use Authwave\DataTransfer\RequestData;
 use Authwave\Password\PasswordTooShortException;
 use Authwave\Password\Strengthometer;
 use Authwave\UI\Flash;
+use Authwave\User\UserRepository;
 use Gt\DomTemplate\Element;
 use Gt\Input\InputData\InputData;
 use Gt\WebEngine\Logic\Page;
@@ -15,6 +16,9 @@ use TypeError;
 class AuthenticatePage extends Page {
 	public RequestData $requestData;
 	public Flash $flash;
+	public UserRepository $userRepo;
+	public ApplicationDeployment $deployment;
+
 	private LoginData $loginData;
 
 	public function go():void {
@@ -93,6 +97,10 @@ class AuthenticatePage extends Page {
 
 	private function login(string $type, string $data = null):void {
 		$this->restoreLoginData();
+		$user = $this->userRepo->getUserInDeployment(
+			$this->deployment->getId(),
+			$this->loginData->getEmail()
+		);
 		var_dump($this->requestData, $data);die();
 	}
 

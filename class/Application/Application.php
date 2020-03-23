@@ -12,4 +12,8 @@ class Application {
 		$this->id = $id;
 		$this->displayName = $displayName;
 	}
+
+	public function getDisplayName():string {
+		return $this->displayName;
+	}
 }
