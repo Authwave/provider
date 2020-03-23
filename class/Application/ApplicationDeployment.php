@@ -25,6 +25,14 @@ class ApplicationDeployment {
 		$this->clientLoginHost = $clientLoginHost;
 	}
 
+	public function getApplication():Application {
+		return $this->application;
+	}
+
+	public function getId():int {
+		return $this->id;
+	}
+
 	public function getClientHost():UriInterface {
 		$uri = new Uri($this->clientHost);
 		if($uri->getScheme() === "") {
