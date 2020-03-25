@@ -1,9 +1,9 @@
 create table application_deployment (
 	id int auto_increment ,
 	applicationId int not null ,
-	clientKey varchar(64) not null unique ,
-	clientHost varchar(256) not null ,
-	clientLoginHost varchar(256) not null ,
+	clientKey varchar (64) not null unique ,
+	clientHost varchar (256) not null ,
+	clientLoginHost varchar (256) not null ,
 
 	primary key (id),
 
