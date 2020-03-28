@@ -27,10 +27,11 @@ Feature: Log in flow
 		And I fill in "password" with "<password>"
 		And I press "Log in with password"
 		Then I should be on "/login/authenticate"
-		And I should see an "error" flash message reading "Your password is too short, please pick a stronger one with at least 12 characters"
+		And I should see an "error" flash message reading "Your password is too short, please pick a stronger one with at least 8 characters"
 
 		Examples:
 			|email|password|
 			|example1@test.authwave.com||
-			|example2@test.authwave.com|hunter2|
-			|example3@test.authwave.com|i~L1k3+c@75|
+			|example2@test.authwave.com|123|
+			|example3@test.authwave.com|hunter2|
+			|example4@test.authwave.com|iLuvY0U|

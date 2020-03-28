@@ -37,7 +37,7 @@ class _CommonPage extends Page {
 			foreach($list as $message) {
 				try {
 					$t = $this->document->getTemplate(
-						"flash"
+						"ui-flash-message"
 					);
 				}
 				catch(TemplateComponentNotFoundException $exception) {

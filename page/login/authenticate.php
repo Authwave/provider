@@ -37,7 +37,7 @@ class AuthenticatePage extends Page {
 			$strengthometer->validate();
 		}
 		catch(PasswordTooShortException $exception) {
-			$this->flash->error("Your password is too short, please pick a stronger one with at least 12 characters");
+			$this->flash->error("Your password is too short, please pick a stronger one with at least " . Strengthometer::MIN_LENGTH . " characters");
 			$this->reload();
 		}
 
@@ -101,20 +101,23 @@ class AuthenticatePage extends Page {
 			$this->deployment->getId(),
 			$this->loginData->getEmail()
 		);
-		var_dump($this->requestData, $data);die();
 	}
 
 	private function outputProviders(Element $outputTo):void {
 		$providers = [
-			"Google",
-			"Facebook",
-			"Twitter",
-			"LinkedIn",
-			"Github",
-			"Microsoft",
+//			"Google",
+//			"Facebook",
+//			"Twitter",
+//			"LinkedIn",
+//			"Github",
+//			"Microsoft",
 		];
 
 		$outputTo->bindList($providers);
+
+		if(empty($providers)) {
+			$outputTo->closest(".auth-option")->remove();
+		}
 	}
 
 	private function restoreLoginData():void {

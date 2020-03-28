@@ -44,7 +44,8 @@ $fa-font-path: "/asset/font/fontawesome";
 		}
 
 		img {
-			margin: 1rem 2rem;
+			margin: 1rem auto;
+			max-width: 80%;
 			height: 3rem;
 			display: block;
 		}
@@ -230,4 +231,11 @@ $fa-font-path: "/asset/font/fontawesome";
 
 .c-site-footer {
 	display: none;
+}
+
+body.dir--login {
+	.flash-container {
+		height: 5rem;
+		background: red;
+	}
 }

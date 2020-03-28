@@ -1,0 +1,1 @@
+require("./flair/flair.es6").go();

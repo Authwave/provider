@@ -2,7 +2,7 @@
 namespace Authwave\Password;
 
 class Strengthometer {
-	const MIN_LENGTH = 12;
+	const MIN_LENGTH = 8;
 
 	private string $password;
 

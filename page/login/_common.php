@@ -15,10 +15,16 @@ class _CommonPage extends Page {
 	}
 
 	private function logo(Element $loginContainer):void {
+		$displayName = $this->deployment->getApplication()
+			->getDisplayName();
+
 		$loginContainer->bindKeyValue(
 			"applicationName",
-			$this->deployment->getApplication()->getDisplayName()
+			$displayName
 		);
-		$logo
+		$loginContainer->bindKeyValue(
+			"applicationLogoSrc",
+			"/asset/applicationLogo/$displayName.svg"
+		);
 	}
 }
