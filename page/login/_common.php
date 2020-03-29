@@ -17,6 +17,7 @@ class _CommonPage extends Page {
 	private function logo(Element $loginContainer):void {
 		$displayName = $this->deployment->getApplication()
 			->getDisplayName();
+		$lcDisplayName = strtolower($displayName);
 
 		$loginContainer->bindKeyValue(
 			"applicationName",
@@ -24,7 +25,7 @@ class _CommonPage extends Page {
 		);
 		$loginContainer->bindKeyValue(
 			"applicationLogoSrc",
-			"/asset/applicationLogo/$displayName.svg"
+			"/asset/applicationLogo/$lcDisplayName.svg"
 		);
 	}
 }

@@ -4,9 +4,12 @@ namespace Authwave\Page\Login;
 use Authwave\Application\ApplicationDeployment;
 use Authwave\DataTransfer\LoginData;
 use Authwave\DataTransfer\RequestData;
+use Authwave\Email\ConfirmationCode;
+use Authwave\Email\EmailQueue\ConfirmationEmailQueue;
 use Authwave\Password\PasswordTooShortException;
 use Authwave\Password\Strengthometer;
 use Authwave\UI\Flash;
+use Authwave\User\LoginNeedsEmailConfirmationException;
 use Authwave\User\UserRepository;
 use Gt\DomTemplate\Element;
 use Gt\Input\InputData\InputData;
@@ -97,10 +100,43 @@ class AuthenticatePage extends Page {
 
 	private function login(string $type, string $data = null):void {
 		$this->restoreLoginData();
-		$user = $this->userRepo->getUserInDeployment(
-			$this->deployment->getId(),
-			$this->loginData->getEmail()
+
+		$user = $this->userRepo->getOrCreate(
+			$this->loginData,
+			$this->deployment
 		);
+
+		try {
+			$this->userRepo->handleLogin(
+				$user,
+				$type,
+				$data
+			);
+		}
+		catch(LoginNeedsEmailConfirmationException $exception) {
+			$code = new ConfirmationCode();
+			$this->userRepo->storeConfirmationCode(
+				$code,
+				$exception->getId()
+			);
+
+			$emailQueue = new ConfirmationEmailQueue(
+				$this->database->queryCollection("email")
+			);
+			$emailQueue->setClientName(
+				$this->deployment->getApplication()->getDisplayName()
+			);
+			$emailQueue->setCode($code->getFormatted());
+			$emailQueue->setUser($user);
+			$emailQueue->addToQueue();
+
+			$this->redirect("/login/confirm");
+			exit;
+		}
+
+// TODO: Redirect with response cipher. This needs building up in a class
+// somewhere, so that it can be done on the confirm page too.
+		$this->redirect($this->requestData);
 	}
 
 	private function outputProviders(Element $outputTo):void {
