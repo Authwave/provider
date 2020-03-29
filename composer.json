@@ -3,7 +3,8 @@
 	"description": "Hosted or self-hosted Authwave provider.",
 
 	"require": {
-		"phpgt/webengine": "dev-master"
+		"phpgt/webengine": "dev-master",
+		"sendgrid/sendgrid": "~7"
 	},
 	"require-dev": {
 		"phpunit/phpunit": "8.*",
