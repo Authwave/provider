@@ -1,3 +1,3 @@
 export function go() {
-	alert("gogo!");
+	console.log("gogo!");
 }
