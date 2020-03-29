@@ -10,6 +10,7 @@ use Gt\Session\SessionStore;
 
 class UserRepository {
 	public const SESSION_KEY = "authwave.user";
+	public const SESSION_USER_OBJECT = "authwave_user_object";
 
 	private QueryCollection $db;
 	private SessionStore $session;
@@ -20,6 +21,14 @@ class UserRepository {
 	) {
 		$this->db = $db;
 		$this->session = $session;
+	}
+
+	public function load():?User {
+		return $this->session->get(self::SESSION_USER_OBJECT);
+	}
+
+	public function save(User $user):void {
+		$this->session->set(self::SESSION_USER_OBJECT, $user);
 	}
 
 	public function getOrCreate(
@@ -110,8 +119,10 @@ class UserRepository {
 	public function handleLogin(
 		User $user,
 		string $type,
-		string $data
+		?string $data
 	):void {
+		$exception = new LoginNeedsEmailConfirmationException();
+
 		switch($type) {
 		case LoginData::TYPE_PASSWORD:
 			$detail = $this->db->fetchString(
@@ -132,17 +143,24 @@ class UserRepository {
 				"detail" => password_hash($data, PASSWORD_DEFAULT),
 			]);
 
-			$exception = new LoginNeedsEmailConfirmationException();
 			$exception->setId($id);
-			throw $exception;
 			break;
 
 		case LoginData::TYPE_EMAIL:
 // There is no way to be "successful" when the user is requesting email login
 // as a confirmation email _is_ the identification mechanism.
-			throw new LoginNeedsEmailConfirmationException();
+			$id = $this->db->insert(
+				"setIdentificationDetail", [
+				"userId" => $user->getId(),
+				"type" => LoginData::TYPE_EMAIL,
+				"detail" => $user->getEmail(),
+			]);
+
+			$exception->setId($id);
 			break;
 		}
+
+		throw $exception;
 	}
 
 	public function storeConfirmationCode(
@@ -153,6 +171,24 @@ class UserRepository {
 			"setIdentificationCode",
 			$code,
 			$id
+		);
+	}
+
+	public function confirm(User $user, string $code):void {
+		$row = $this->db->fetch(
+			"getIdentification",
+			$user->getId(),
+			$code
+		);
+
+		if(!$row) {
+			throw new InvalidConfirmationCodeException($code);
+		}
+
+		$this->db->update(
+			"confirm",
+			$user->getId(),
+			$code
 		);
 	}
 }

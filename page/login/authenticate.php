@@ -105,6 +105,7 @@ class AuthenticatePage extends Page {
 			$this->loginData,
 			$this->deployment
 		);
+		$this->userRepo->save($user);
 
 		try {
 			$this->userRepo->handleLogin(

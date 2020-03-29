@@ -73,6 +73,11 @@ class _SetupPage extends PageSetup {
 		);
 
 		$this->logicProperty->set("userRepo", $userRepo);
+
+		$user = $userRepo->load();
+		if($user) {
+			$this->logicProperty->set("user", $user);
+		}
 	}
 
 	private function flash():void {

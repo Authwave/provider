@@ -87,14 +87,6 @@ $fa-font-path: "/asset/font/fontawesome";
 	}
 
 	input[name=code] {
-		background: repeating-linear-gradient(
-			to right,
-			transparent,
-			transparent 16.6%,
-			black calc(16.6% + 1px),
-			transparent calc(16.6% + 2px)
-		);
-		letter-spacing: 2rem;
 	}
 
 	.auth-option {
@@ -235,7 +227,7 @@ $fa-font-path: "/asset/font/fontawesome";
 
 body.dir--login {
 	.flash-container {
-		height: 5rem;
-		background: red;
+		//height: 5rem;
+		//background: red;
 	}
 }
