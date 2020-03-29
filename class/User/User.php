@@ -20,4 +20,20 @@ class User {
 		$this->deployment = $deployment;
 		$this->email = $email;
 	}
+
+	public function getId():int {
+		return $this->id;
+	}
+
+	public function getUuid():string {
+		return $this->uuid;
+	}
+
+	public function getDeployment():ApplicationDeployment {
+		return $this->deployment;
+	}
+
+	public function getEmail():string {
+		return $this->email;
+	}
 }

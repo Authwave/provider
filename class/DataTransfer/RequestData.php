@@ -20,7 +20,7 @@ class RequestData {
 		$this->path = $path;
 	}
 
-	public function getId():string {
-		return $this->id;
+	public function getPath():string {
+		return $this->path;
 	}
 }
