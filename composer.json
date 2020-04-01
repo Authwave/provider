@@ -3,6 +3,9 @@
 	"description": "Hosted or self-hosted Authwave provider.",
 
 	"require": {
+		"php": ">=7.4",
+		"ext-openssl": "*",
+
 		"phpgt/webengine": "dev-master",
 		"sendgrid/sendgrid": "~7"
 	},
