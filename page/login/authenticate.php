@@ -2,6 +2,7 @@
 namespace Authwave\Page\Login;
 
 use Authwave\Application\ApplicationDeployment;
+use Authwave\Crypto\AuthUriFactory;
 use Authwave\DataTransfer\LoginData;
 use Authwave\DataTransfer\RequestData;
 use Authwave\Email\ConfirmationCode;
@@ -14,6 +15,7 @@ use Authwave\User\UserRepository;
 use Gt\DomTemplate\Element;
 use Gt\Input\InputData\InputData;
 use Gt\WebEngine\Logic\Page;
+use SendGrid\Mail\Mail;
 use TypeError;
 
 class AuthenticatePage extends Page {
@@ -131,13 +133,33 @@ class AuthenticatePage extends Page {
 			$emailQueue->setUser($user);
 			$emailQueue->addToQueue();
 
+			$email = new Mail();
+			$email->setFrom("confirmation@authwave.com");
+			$email->setSubject($emailQueue->getSubject());
+			$email->addTo($user->getEmail());
+			$email->addContent("text/plain", $emailQueue->getBodyText());
+
+			try {
+				$sendgrid = new \SendGrid($this->config->get("sendgrid.api_key"));
+				$sendgrid->send($email);
+			}
+			catch(\Exception $exception) {
+				$this->flash->error("Error sending confirmation code");
+				$this->reload();
+				exit;
+			}
+
 			$this->redirect("/login/confirm");
 			exit;
 		}
 
-// TODO: Redirect with response cipher. This needs building up in a class
-// somewhere, so that it can be done on the confirm page too.
-		$this->redirect($this->requestData);
+		$authUri = AuthUriFactory::buildAuthUri(
+			$this->requestData,
+			$this->deployment,
+			$user
+		);
+		$this->redirect($authUri);
+		exit;
 	}
 
 	private function outputProviders(Element $outputTo):void {

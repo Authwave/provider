@@ -1,52 +1,28 @@
 <?php
 namespace Authwave\Page;
 
-use Authwave\DataTransfer\RequestData;
+use Authwave\Application\ApplicationDeployment;
 use Gt\Http\Uri;
 use Gt\WebEngine\Logic\Page;
 use Psr\Http\Message\UriInterface;
 
 class LogoutPage extends Page {
+	public ApplicationDeployment $deployment;
+
 	public function go():void {
-//		$appId = $this->findAppId(
-//			$this->server->getQueryParams()["id"] ?? null,
-//			$this->session->get(RequestData::SESSION_REQUEST_DATA)
-//		);
 		$this->session->kill();
 
-		$redirectUri = $this->getRedirectUri(
-			$appId,
-			$this->server->getQueryParams()["redirectTo"] ?? null
-		);
-
-		if($redirectUri) {
-			$this->redirect($redirectUri);
-			exit;
-		}
-	}
-
-	private function getRedirectUri(
-		string $appId,
-		string $redirectTo = null
-	):?UriInterface {
-		$appBaseUri = $this->database->fetchString(
-			"getBaseUriByAppId",
-			$appId
-		);
-		if(!$appBaseUri) {
-			return null;
+		$redirectUri = $this->deployment->getClientHost();
+		if($redirectUri->getHost() !== "localhost") {
+			$redirectUri = $redirectUri->withScheme("https");
 		}
 
-		$scheme = parse_url($appBaseUri, PHP_URL_SCHEME)
-			?? "https";
-		$host = parse_url($appBaseUri, PHP_URL_HOST);
-		$port = parse_url($appBaseUri, PHP_URL_PORT) ?? 80;
-		$path = $redirectTo ?? "/";
+		$returnTo = $this->input->getString("returnTo");
+		if($returnTo) {
+			$redirectUri = $redirectUri->withPath($returnTo);
+		}
 
-		return (new Uri())
-			->withScheme($scheme)
-			->withHost($host)
-			->withPort($port)
-			->withPath($path);
+		$this->redirect($redirectUri);
+		exit;
 	}
 }
