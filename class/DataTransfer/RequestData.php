@@ -23,4 +23,12 @@ class RequestData {
 	public function getPath():string {
 		return $this->path;
 	}
+
+	public function getCipher():string {
+		return $this->cipher;
+	}
+
+	public function getIv():string {
+		return $this->iv;
+	}
 }

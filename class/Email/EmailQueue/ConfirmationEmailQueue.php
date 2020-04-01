@@ -18,15 +18,15 @@ class ConfirmationEmailQueue extends AbstractEmailQueue {
 		$this->providerHost = $providerHost;
 	}
 
-	protected function getSubject():string {
+	public function getSubject():string {
 		return $this->name . " account confirmation";
 	}
 
-	protected function getBodyText():string {
+	public function getBodyText():string {
 		return "Your confirmation code is " . $this->code;
 	}
 
-	protected function getBodyHtml():string {
+	public function getBodyHtml():string {
 		return $this->getBodyText();
 	}
 }
