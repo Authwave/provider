@@ -18,8 +18,13 @@ class _CommonPage extends Page {
 	}
 
 	private function handleRedirect():void {
+		$uriPath = $this->server->getRequestUri()->getPath();
+
 		if(!isset($this->requestData)) {
-			if($this->server->getRequestUri()->getPath() === "/config") {
+			if($uriPath === "/admin") {
+				return;
+			}
+			elseif($uriPath === "/config") {
 				if(isset($this->deployment)) {
 					$this->redirect($this->deployment->getClientHost());
 					exit;

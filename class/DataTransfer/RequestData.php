@@ -1,8 +1,6 @@
 <?php
 namespace Authwave\DataTransfer;
 
-use Gt\Session\SessionStore;
-
 class RequestData {
 	public const SESSION_REQUEST_DATA = "authwave.requestData";
 
