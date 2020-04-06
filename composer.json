@@ -7,6 +7,7 @@
 		"ext-openssl": "*",
 
 		"phpgt/webengine": "dev-master",
+		"authwave/php-client": "dev-master",
 		"sendgrid/sendgrid": "~7"
 	},
 	"require-dev": {
