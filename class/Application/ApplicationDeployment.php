@@ -33,6 +33,10 @@ class ApplicationDeployment {
 		return $this->id;
 	}
 
+	public function getClientKey():string {
+		return $this->clientKey;
+	}
+
 	public function getClientHost():UriInterface {
 		$uri = new Uri($this->clientHost);
 		if($uri->getScheme() === "") {
