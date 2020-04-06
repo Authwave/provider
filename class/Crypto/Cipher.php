@@ -23,13 +23,17 @@ class Cipher {
 			"email" => $this->user->getEmail(),
 		];
 
-		$rawCipher = openssl_encrypt(
+		$rawCipher = @openssl_encrypt(
 			serialize($userData),
 			self::ENCRYPTION_METHOD,
 			$this->user->getDeployment()->getClientKey(),
 			0,
 			$this->secret->getBytes()
 		);
+
+		if($errorMessage = openssl_error_string()) {
+			throw new EncryptionException($errorMessage);
+		}
 
 		return base64_encode($rawCipher);
 	}
