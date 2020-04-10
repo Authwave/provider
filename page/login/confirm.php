@@ -50,7 +50,10 @@ class ConfirmPage extends Page {
 			$this->deployment,
 			$this->user
 		);
-		$this->redirect($authUri);
+		$this->redirect(
+			"/login/success?continue="
+			. base64_encode($authUri)
+		);
 		exit;
 	}
 }

@@ -158,7 +158,10 @@ class AuthenticatePage extends Page {
 			$this->deployment,
 			$user
 		);
-		$this->redirect($authUri);
+		$this->redirect(
+			"/login/success?continue="
+			. base64_encode($authUri)
+		);
 		exit;
 	}
 
