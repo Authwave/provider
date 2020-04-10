@@ -31,8 +31,8 @@ class Cipher {
 			$this->secret->getBytes()
 		);
 
-		if($errorMessage = openssl_error_string()) {
-			throw new EncryptionException($errorMessage);
+		if(!$rawCipher) {
+			throw new EncryptionException(openssl_error_string());
 		}
 
 		return base64_encode($rawCipher);
