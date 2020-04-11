@@ -219,6 +219,76 @@ $fa-font-path: "/asset/font/fontawesome";
 
 
 	}
+
+	&.success {
+		main {
+			position: relative;
+			padding-top: 12rem;
+
+			&::before {
+				content: "";
+				position: absolute;
+				top: 2rem;
+				left: calc(50% - 5rem);
+				width: 10rem;
+				height: 10rem;
+				border-radius: 10rem;
+				border: 2px solid $palette-ok;
+				animation-name: circle-wipe;
+				animation-duration: 0.5s;
+				animation-iteration-count: 1;
+				animation-fill-mode: both;
+			}
+
+			&::after {
+				position: absolute;
+				top: 3.5rem;
+				left: calc(50% - 2.25rem);
+				content: fa-content($fa-var-check);
+				display: block;
+				font-family: "Font Awesome 5 Pro", fantasy;
+				font-size: 5rem;
+				margin: 0 auto;
+				color: $palette-ok;
+				text-align: center;
+				animation-name: wipe-pop;
+				animation-duration: 2s;
+				animation-delay: 0.1s;
+				animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 2);
+				animation-iteration-count: 1;
+				animation-fill-mode: both;
+			}
+
+			text-align: center;
+		}
+	}
+}
+
+@keyframes circle-wipe {
+	from {
+		clip-path: circle(0 at 10% 10%);
+	}
+	to {
+		clip-path: circle(100% at 50% 50%);
+	}
+}
+
+@keyframes wipe-pop {
+	0% {
+		transform: scale(0.8);
+		opacity: 0;
+	}
+	10% {
+		opacity: 0;
+		clip-path: circle(0 at 30% 50%);
+	}
+	40% {
+		transform: scale(1);
+		opacity: 1;
+	}
+	100% {
+		clip-path: circle(100% at 30% 50%);
+	}
 }
 
 .c-site-footer {
