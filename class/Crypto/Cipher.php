@@ -18,7 +18,7 @@ class Cipher {
 	}
 
 	public function __toString():string {
-		$userData = [
+		$userData = (object)[
 			"uuid" => $this->user->getUuid(),
 			"email" => $this->user->getEmail(),
 		];
