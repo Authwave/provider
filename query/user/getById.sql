@@ -3,6 +3,7 @@ select
 	user.uuid,
 	user.deploymentId,
 	user.email,
+	user.lastLoggedIn,
 
 	application.id as applicationId,
 	application.displayName,

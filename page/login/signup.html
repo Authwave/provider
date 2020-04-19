@@ -1,0 +1,26 @@
+<form method="post" class="c-main-login signup">
+	<div>
+		<header>
+			<img src="/asset/default-logo.svg"
+				alt="{applicationName} logo"
+				data-bind:src="applicationLogoSrc"
+				data-bind-attributes />
+		</header>
+
+		<main>
+			<p>Please fill in the following.</p>
+
+			<div data-template="field">
+				<label>
+					<span data-bind:text="displayName">Field display name</span>
+					<input data-bind:name="name" data-bind:required="?required" data-bind:placeholder="hint" />
+				</label>
+			</div>
+
+			<div class="actions">
+				<button name="do" value="signup" class="primary">Sign up</button>
+				<a href="/help">Need help?</a>
+			</div>
+		</main>
+	</div>
+</form>

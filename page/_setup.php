@@ -55,6 +55,7 @@ class _SetupPage extends PageSetup {
 		try {
 			$deployment = $appRepo->getApplicationByLoginHost($uri);
 			$this->logicProperty->set("deployment", $deployment);
+			$this->logicProperty->set("application", $deployment->getApplication());
 		}
 		catch(ApplicationNotFoundForHostException $exception) {
 			if($uri->getPath() === self::CONFIG_PATH) {

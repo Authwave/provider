@@ -13,6 +13,10 @@ class Application {
 		$this->displayName = $displayName;
 	}
 
+	public function getId():int {
+		return $this->id;
+	}
+
 	public function getDisplayName():string {
 		return $this->displayName;
 	}

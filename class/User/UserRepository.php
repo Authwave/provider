@@ -3,8 +3,10 @@ namespace Authwave\User;
 
 use Authwave\Application\Application;
 use Authwave\Application\ApplicationDeployment;
+use Authwave\Application\ApplicationField;
 use Authwave\DataTransfer\LoginData;
 use Authwave\Email\ConfirmationCode;
+use DateTime;
 use Gt\Database\Query\QueryCollection;
 use Gt\Session\SessionStore;
 
@@ -71,7 +73,8 @@ class UserRepository {
 			$deployment,
 			$row->getInt("userId"),
 			$row->getString("uuid"),
-			$row->getString("email")
+			$row->getString("email"),
+			$row->getDateTime("lastLoggedIn")
 		);
 	}
 
@@ -109,7 +112,8 @@ class UserRepository {
 			$deployment,
 			$row->getInt("userId"),
 			$row->getString("uuid"),
-			$row->getString("email")
+			$row->getString("email"),
+			$row->getDateTime("lastLoggedIn")
 		);
 	}
 
@@ -190,5 +194,124 @@ class UserRepository {
 			$user->getId(),
 			$code
 		);
+	}
+
+	/** @return UserField[] Assoc. array, key is ApplicationField name */
+	public function getUserFields(User $user):array {
+		$fields = [];
+		$resultSet = $this->db->fetchAll(
+			"getUserFields",
+			$user->getId()
+		);
+
+		$application = null;
+
+		foreach($resultSet as $row) {
+			if(!$application) {
+				$application = new Application(
+					$row->getInt("applicationId"),
+					$row->getString("applicationDisplayName")
+				);
+			}
+
+			$name = $row->getString("name");
+
+			$applicationField = new ApplicationField(
+				$application,
+				$row->getInt("fieldId"),
+				$row->getString("type"),
+				$name,
+				$row->getString("displayName"),
+				$row->getString("hint"),
+				$row->getString("help"),
+				$row->getBool("required"),
+				$row->getBool("showOnSignUp")
+			);
+
+			$fields[$name] = new UserField(
+				$user,
+				$applicationField,
+				$row->getInt("userFieldId"),
+				$row->getString("value")
+			);
+		}
+
+		return $fields;
+	}
+
+	/**
+	 * @param ApplicationField[] $applicationFields
+	 */
+	public function doesUserNeedSignupFields(
+		User $user,
+		array $applicationFields
+	):bool {
+		$userFields = $this->getUserFields($user);
+
+		if(empty($applicationFields)) {
+			return false;
+		}
+
+		$fieldsToShow = array_filter(
+			$applicationFields,
+			fn(ApplicationField $f) => $f->doesShowOnSignUp()
+		);
+
+		/** @var ApplicationField[] $requiredFields */
+		$requiredFields = array_filter(
+			$fieldsToShow,
+			fn(ApplicationField $f) => $f->isRequired()
+		);
+
+		foreach($requiredFields as $field) {
+			if(!$userFields[$field->getName()]) {
+				return true;
+			}
+		}
+
+		if(!empty($fieldsToShow)
+		&& !$user->getLastLoggedIn()) {
+			return true;
+		}
+
+		return false;
+	}
+
+	public function setFields(User $user, array $kvp):void {
+		foreach($kvp as $key => $value) {
+			$existingRow = $this->db->fetch(
+				"getExistingUserFieldByName",
+				$key,
+				$user->getId()
+			);
+
+			if($existingRow) {
+				$this->db->delete(
+					"deleteUserField",
+					$existingRow->getInt("id")
+				);
+			}
+
+			$this->db->insert(
+				"setUserField", [
+				"userId" => $user->getId(),
+				"fieldName" => $key,
+				"value" => $value
+			]);
+		}
+	}
+
+	public function setLastLogin(User $user, DateTime $when = null):void {
+		if(is_null($when)) {
+			$when = new DateTime();
+		}
+
+		$this->db->update(
+			"setLastLoginDateTime",
+			$when->format("Y-m-d H:i:s"),
+			$user->getId()
+		);
+
+		$this->save($this->getById($user->getId()));
 	}
 }

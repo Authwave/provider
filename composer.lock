@@ -4,41 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "4e4fdc4a28220a3d9c4c1fc5db90249d",
+    "content-hash": "8262cd98c869512b4fc91202a05435bf",
     "packages": [
-        {
-            "name": "authwave/php-client",
-            "version": "dev-master",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/Authwave/php-client.git",
-                "reference": "5f56e2656f1fff8c62ae5755549fceb2b0b20de0"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/Authwave/php-client/zipball/5f56e2656f1fff8c62ae5755549fceb2b0b20de0",
-                "reference": "5f56e2656f1fff8c62ae5755549fceb2b0b20de0",
-                "shasum": ""
-            },
-            "require": {
-                "ext-openssl": "*",
-                "php": ">=7.4",
-                "phpgt/http": "1.*",
-                "phpgt/session": ">=1.1"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "8.*"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Authwave\\": "./src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "description": "PHP client library to implement Authwave in your application",
-            "time": "2020-04-01T16:37:54+00:00"
-        },
         {
             "name": "composer/semver",
             "version": "1.5.1",
@@ -4639,7 +4606,6 @@
     "minimum-stability": "stable",
     "stability-flags": {
         "phpgt/webengine": 20,
-        "authwave/php-client": 20,
         "dmore/behat-chrome-extension": 20
     },
     "prefer-stable": false,

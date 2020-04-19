@@ -7,7 +7,7 @@ create table application_field (
 	hint varchar(128) ,
 	help text ,
 	required bool ,
-	previousFieldId int ,
+	sortOrder int ,
 	showOnSignUp bool ,
 
 	primary key (id) ,
@@ -15,10 +15,5 @@ create table application_field (
 	foreign key application_field__application (applicationId)
 		references application(id)
 		on update cascade
-		on delete cascade ,
-
-	foreign key application_field__application_field__previoud (previousFieldId)
-		references application_field(id)
-		on update cascade
-		on delete set null
+		on delete cascade
 )

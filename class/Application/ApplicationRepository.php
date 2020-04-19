@@ -41,4 +41,30 @@ class ApplicationRepository {
 			$row->getString("clientLoginHost")
 		);
 	}
+
+	/** @return ApplicationField[] */
+	public function getApplicationFields(Application $application):array {
+		$fields = [];
+
+		$resultSet = $this->db->fetchAll(
+			"getAllFields",
+			$application->getId()
+		);
+
+		foreach($resultSet as $row) {
+			$fields []= new ApplicationField(
+				$application,
+				$row->getInt("fieldId"),
+				$row->getString("type"),
+				$row->getString("name"),
+				$row->getString("displayName"),
+				$row->getString("hint"),
+				$row->getString("help"),
+				$row->getBool("required"),
+				$row->getBool("showOnSignUp")
+			);
+		}
+
+		return $fields;
+	}
 }
