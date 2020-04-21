@@ -8,6 +8,7 @@ use Authwave\DataTransfer\LoginData;
 use Authwave\Email\ConfirmationCode;
 use DateTime;
 use Gt\Database\Query\QueryCollection;
+use Gt\Database\Result\Row;
 use Gt\Session\SessionStore;
 
 class UserRepository {
@@ -69,13 +70,7 @@ class UserRepository {
 			);
 		}
 
-		return new User(
-			$deployment,
-			$row->getInt("userId"),
-			$row->getString("uuid"),
-			$row->getString("email"),
-			$row->getDateTime("lastLoggedIn")
-		);
+		return $this->rowToUser($row, $deployment);
 	}
 
 	public function createInDeployment(
@@ -108,13 +103,7 @@ class UserRepository {
 			$row->getString("clientLoginHost")
 		);
 
-		return new User(
-			$deployment,
-			$row->getInt("userId"),
-			$row->getString("uuid"),
-			$row->getString("email"),
-			$row->getDateTime("lastLoggedIn")
-		);
+		return $this->rowToUser($row, $deployment);
 	}
 
 	/**
@@ -313,5 +302,24 @@ class UserRepository {
 		);
 
 		$this->save($this->getById($user->getId()));
+	}
+
+	private function rowToUser(
+		Row $row,
+		ApplicationDeployment $deployment
+	):User {
+		$userClass = User::class;
+
+		if($row->getBool("admin")) {
+			$userClass = AdminUser::class;
+		}
+
+		return new $userClass(
+			$deployment,
+			$row->getInt("userId"),
+			$row->getString("uuid"),
+			$row->getString("email"),
+			$row->getDateTime("lastLoggedIn")
+		);
 	}
 }
