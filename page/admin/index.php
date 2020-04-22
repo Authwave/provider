@@ -17,5 +17,7 @@ class IndexPage extends Page {
 			$this->redirect($this->deployment->getClientHost());
 			exit;
 		}
+
+		$this->document->bindKeyValue("email", $this->user->getEmail());
 	}
 }

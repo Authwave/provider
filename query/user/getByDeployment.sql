@@ -32,6 +32,8 @@ left join
 	application_admin
 on
 	application_deployment.id = application_admin.deploymentId
+and
+	application_admin.userId = user.id
 
 where
 	user.email = :email
