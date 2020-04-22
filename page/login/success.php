@@ -3,6 +3,7 @@ namespace Authwave\Page\Login;
 
 use Authwave\Application\ApplicationDeployment;
 use Authwave\Application\ApplicationRepository;
+use Authwave\DataTransfer\RequestData;
 use Authwave\User\User;
 use Authwave\User\UserRepository;
 use Gt\WebEngine\Logic\Page;
@@ -24,6 +25,8 @@ class SuccessPage extends Page {
 			);
 			exit;
 		}
+
+		$this->session->remove(RequestData::SESSION_REQUEST_DATA);
 
 		$this->redirectToClient(
 			$this->input->getString("continue")
