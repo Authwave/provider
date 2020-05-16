@@ -5,6 +5,7 @@ use Authwave\Application\ApplicationNotFoundForHostException;
 use Authwave\Application\ApplicationRepository;
 use Authwave\DataTransfer\RequestData;
 use Authwave\UI\Flash;
+use Authwave\User\UserNotInSessionException;
 use Authwave\User\UserRepository;
 use Gt\WebEngine\Logic\PageSetup;
 
@@ -75,10 +76,11 @@ class _SetupPage extends PageSetup {
 
 		$this->logicProperty->set("userRepo", $userRepo);
 
-		$user = $userRepo->load();
-		if($user) {
+		try {
+			$user = $userRepo->load();
 			$this->logicProperty->set("user", $user);
 		}
+		catch(UserNotInSessionException $exception) {}
 	}
 
 	private function flash():void {
@@ -90,16 +92,16 @@ class _SetupPage extends PageSetup {
 	}
 
 	private function getRequestFromQuery(array $params):?RequestData {
-		if(!isset($params["cipher"])
-		|| !isset($params["iv"])
-		|| !isset($params["path"])) {
+		if(!isset($params["c"])
+		|| !isset($params["i"])
+		|| !isset($params["p"])) {
 			return null;
 		}
 
 		return new RequestData(
-			$params["cipher"],
-			$params["iv"],
-			$params["path"]
+			$params["c"],
+			$params["i"],
+			$params["p"]
 		);
 	}
 }

@@ -160,7 +160,7 @@ class AuthenticatePage extends Page {
 		);
 		$this->redirect(
 			"/login/success?continue="
-			. base64_encode($authUri)
+			. $authUri->encode()
 		);
 		exit;
 	}

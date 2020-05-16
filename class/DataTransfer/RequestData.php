@@ -15,7 +15,7 @@ class RequestData {
 	) {
 		$this->cipher = $cipher;
 		$this->iv = $iv;
-		$this->path = $path;
+		$this->path = hex2bin($path);
 	}
 
 	public function getPath():string {

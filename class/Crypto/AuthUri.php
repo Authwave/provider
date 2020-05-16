@@ -47,4 +47,8 @@ class AuthUri Extends Uri {
 
 		return $uri;
 	}
+
+	public function encode():string {
+		return base64_encode((string)$this);
+	}
 }

@@ -25,6 +25,9 @@ class _CommonPage extends Page {
 			if($uriPath === "/admin") {
 				return;
 			}
+			elseif($uriPath === "/profile") {
+				return;
+			}
 			elseif($uriPath === "/config") {
 				if(isset($this->deployment)) {
 					$this->redirect($this->deployment->getClientHost());

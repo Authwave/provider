@@ -3,6 +3,7 @@ namespace Authwave\User;
 
 use Authwave\Application\ApplicationDeployment;
 use DateTime;
+use StdClass;
 
 class User {
 	private int $id;
@@ -10,6 +11,7 @@ class User {
 	private ApplicationDeployment $deployment;
 	private string $email;
 	private ?DateTime $lastLoggedIn;
+	private object $fields;
 
 	public function __construct(
 		ApplicationDeployment $deployment,
@@ -23,6 +25,7 @@ class User {
 		$this->deployment = $deployment;
 		$this->email = $email;
 		$this->lastLoggedIn = $lastLoggedIn;
+		$this->fields = new StdClass();
 	}
 
 	public function getId():int {
@@ -43,5 +46,13 @@ class User {
 
 	public function getLastLoggedIn():?DateTime {
 		return $this->lastLoggedIn;
+	}
+
+	public function addField(string $key, string $value):void {
+		$this->fields->{$key} = $value;
+	}
+
+	public function getFields():object {
+		return $this->fields;
 	}
 }

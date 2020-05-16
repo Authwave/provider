@@ -1,6 +1,7 @@
 <?php
 namespace Authwave\Crypto;
 
+use Authwave\User\AdminUser;
 use Authwave\User\User;
 
 class Cipher {
@@ -21,6 +22,9 @@ class Cipher {
 		$userData = (object)[
 			"uuid" => $this->user->getUuid(),
 			"email" => $this->user->getEmail(),
+			"fields" => $this->user->getFields(),
+			"type" => $this->user instanceof AdminUser
+				? "admin" : "user",
 		];
 
 		$rawCipher = @openssl_encrypt(

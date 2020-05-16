@@ -26,8 +26,22 @@ class UserRepository {
 		$this->session = $session;
 	}
 
-	public function load():?User {
-		return $this->session->get(self::SESSION_USER_OBJECT);
+	public function load(bool $refresh = false):User {
+		$userObject = $this->session->get(self::SESSION_USER_OBJECT);
+
+		if(!$refresh
+		&& $userObject) {
+			return $userObject;
+		}
+
+		if(!$userObject) {
+			throw new UserNotInSessionException();
+		}
+
+		/** @var User $userObject */
+		$userObject = $this->getById($userObject->getId());
+		$this->save($userObject);
+		return $userObject;
 	}
 
 	public function save(User $user):void {
@@ -314,12 +328,26 @@ class UserRepository {
 			$userClass = AdminUser::class;
 		}
 
-		return new $userClass(
+		/** @var User|AdminUser $user */
+		$user = new $userClass(
 			$deployment,
 			$row->getInt("userId"),
 			$row->getString("uuid"),
 			$row->getString("email"),
 			$row->getDateTime("lastLoggedIn")
 		);
+
+		$fieldResultSet = $this->db->fetchAll(
+			"getUserFields",
+			$user->getId()
+		);
+		foreach($fieldResultSet as $fieldRow) {
+			$user->addField(
+				$fieldRow->getString("name"),
+				$fieldRow->getString("value")
+			);
+		}
+
+		return $user;
 	}
 }
