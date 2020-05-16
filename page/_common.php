@@ -2,9 +2,11 @@
 namespace Authwave\Page;
 
 use Authwave\Application\ApplicationDeployment;
+use Authwave\Crypto\Secret;
 use Authwave\DataTransfer\RequestData;
 use Authwave\UI\Flash;
 use Gt\DomTemplate\TemplateComponentNotFoundException;
+use Gt\Http\Uri;
 use Gt\WebEngine\Logic\Page;
 
 class _CommonPage extends Page {
