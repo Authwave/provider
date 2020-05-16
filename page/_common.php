@@ -2,7 +2,6 @@
 namespace Authwave\Page;
 
 use Authwave\Application\ApplicationDeployment;
-use Authwave\DataTransfer\LoginData;
 use Authwave\DataTransfer\RequestData;
 use Authwave\UI\Flash;
 use Gt\DomTemplate\TemplateComponentNotFoundException;
