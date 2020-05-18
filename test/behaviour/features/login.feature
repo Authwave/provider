@@ -4,7 +4,7 @@ Feature: Log in flow
 	I should be able to log in or sign up through Authwave
 
 	Scenario Outline: Email confirmation link can be clicked to return
-		Given I make the login action
+		Given I make the login action on the client application
 		Then I should be on "/login"
 		When I fill in "email" with "<email>"
 		And I press "Continue"
@@ -19,9 +19,9 @@ Feature: Log in flow
 			|email|
 			|example1@test.authwave.com|
 			|example2@test.authwave.com|
-
+#
 	Scenario Outline: Short passwords can not be used
-		Given I make the login action
+		Given I make the login action on the client application
 		When I fill in "email" with "<email>"
 		And I press "Continue"
 		And I fill in "password" with "<password>"

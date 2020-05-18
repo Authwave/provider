@@ -1,6 +1,7 @@
 /.idea/
 /vendor/
 /style/.sass-cache
+/.sass-cache
 /style/flair
 /www/
 /data/

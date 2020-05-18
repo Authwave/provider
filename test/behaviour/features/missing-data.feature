@@ -11,7 +11,7 @@ Feature: Missing data
 
 	@db:no-data
 	Scenario: Provider is not set up, login access
-		Given I make the login action
+		Given I make the login action on the client application
 		Then I should be on "/config"
 		And I should see "This Authwave provider is not yet configured."
 
@@ -22,7 +22,7 @@ Feature: Missing data
 		And I should see "This Authwave provider is not yet configured."
 
 	Scenario: Provider does not show setup when configured
-		Given I make the login action
+		Given I make the login action on the client application
 		Then I should be on "/login"
 
 	Scenario: Provider redirects back to client application when no login request is made

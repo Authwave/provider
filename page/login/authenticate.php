@@ -44,6 +44,7 @@ class AuthenticatePage extends Page {
 		catch(PasswordTooShortException $exception) {
 			$this->flash->error("Your password is too short, please pick a stronger one with at least " . Strengthometer::MIN_LENGTH . " characters");
 			$this->reload();
+			exit;
 		}
 
 		$this->login(

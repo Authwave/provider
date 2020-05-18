@@ -12,6 +12,8 @@ use Gt\Http\Uri;
 use PHPUnit\Framework\Assert;
 
 class FeatureContext extends MinkContext {
+	const TEST_API_KEY = "0123456789abcdef";
+
 	private Database $database;
 	private int $appId;
 	private int $deploymentId;
@@ -69,16 +71,16 @@ class FeatureContext extends MinkContext {
 		$this->deploymentId = $this->database->insert(
 			"application/createDeployment", [
 			"applicationId" => $this->appId,
-			"clientKey" => "01234567890abcdef",
+			"clientKey" => self::TEST_API_KEY,
 			"clientHost" => "http://localhost:8080",
-			"clientLoginHost" => "http://localhost:8081",
+			"clientLoginHost" => "http://localhost:9105",
 		]);
 	}
 
 	private function setupBrowser():void {
 		$browserCommand = "chrome";
 
-		foreach(["chromium-browser", "chrome", "google-chrome", "google-chrome-browser"]
+		foreach(["chromium-browser", "chrome", "google-chrome", "google-chrome-browser", "google-chrome-stable"]
 		as $browserName) {
 			exec("which $browserName", $output);
 			if(!empty($output)) {
@@ -115,6 +117,29 @@ class FeatureContext extends MinkContext {
 			$config->get("database.username"),
 			$config->get("database.password")
 		);
+	}
+
+	private static function setupTestDatabase():void {
+		$settings = self::getDatabaseSettings();
+		$host = $settings->getHost();
+		$port = $settings->getPort();
+		$username = $settings->getUsername();
+		$password = $settings->getPassword();
+		$schema = $settings->getSchema();
+		$file = realpath(__DIR__ . "/db/basic.sql");
+
+		echo "Loading test database: $file ... ";
+
+		switch($settings->getDriver()) {
+		case Settings::DRIVER_MYSQL:
+			exec("mysql -h $host -P $port -u'$username' -p'$password' $schema < $file");
+			break;
+
+		default:
+			die("Error loading test database - unknown driver" . PHP_EOL);
+		}
+
+		echo "DONE" . PHP_EOL;
 	}
 
 	private static function backupDatabase():void {
@@ -161,10 +186,27 @@ class FeatureContext extends MinkContext {
 		echo "DONE" . PHP_EOL;
 	}
 
-	/** @Given I make the login action */
+	/** @Given I make the login action on the client application */
 	public function iMakeTheLoginAction() {
 		echo "Logging in ... " . PHP_EOL;
-		$this->visitPath("/?cipher=0123456789abcdef&iv=12345678&path=/");
+
+		$secretIv = "Dummy Login";
+		$iv = random_bytes(16);
+
+		$cipher = openssl_encrypt(
+			$secretIv,
+			"aes128",
+			self::TEST_API_KEY,
+			0,
+			$iv
+		);
+
+		$uri = "/?" . http_build_query([
+			"c" => base64_encode($cipher),
+			"i" => bin2hex($iv),
+			"p" => bin2hex("/"),
+		]);
+		$this->visitPath($uri);
 	}
 
 	/** @Then /^I should be on the client application$/ */
@@ -199,7 +241,7 @@ class FeatureContext extends MinkContext {
 	) {
 		$flashElements = $this->getSession()->getPage()->findAll(
 			"css",
-			".flash .$type"
+			".flash-container .$type p"
 		);
 
 		$matchingMessages = [];
