@@ -28,7 +28,7 @@ Feature: Missing data
 	Scenario: Provider redirects back to client application when no login request is made
 		Given I go to "/login"
 		Then I should be on the client application
-		Given I am on the homepage
+		Given I go to the provider
 		Then I should be on the client application
 
 	Scenario: Provider is set up, config page should be hidden

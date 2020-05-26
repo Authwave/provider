@@ -216,6 +216,12 @@ class FeatureContext extends MinkContext {
 		Assert::assertNotSame($uri->getAuthority(), $baseUri->getAuthority());
 	}
 
+	/** @Given /^I go to the provider$/ */
+	public function iGoToTheProvider() {
+		$this->getSession()->restart();
+		$this->getSession()->visit($this->getMinkParameter("base_url"));
+	}
+
 	/** @Given /^I should see the confirmed email as (.*)$/ */
 	public function iShouldSeeTheConfirmedEmailAs(string $email) {
 		$emailLink = $this->getSession()->getPage()->find(
