@@ -24,7 +24,8 @@ class IndexPage extends Page {
 		switch($secret->getMessageKey("action")) {
 		case "logout":
 			$this->session->kill();
-			// TODO: Redirect with confirmation of logout.
+			// TODO: Redirect with confirmation of logout using LogoutUri.
+			$this->redirect($this->deployment->getClientHost());
 			break;
 
 		default:

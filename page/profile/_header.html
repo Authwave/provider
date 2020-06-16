@@ -1,0 +1,38 @@
+<nav>
+	<div>
+		<a href="/">
+			<img src="" alt="" data-bind:src="applicationLogoSrc" data-bind:alt="applicationName" />
+		</a>
+	</div>
+
+	<ul>
+		<li>
+			<a href="/profile"><i class="fal fa-columns"></i>Profile</a>
+		</li>
+		<li>
+			<a href="/profile/info"><i class="fal fa-user"></i>Personal info</a>
+		</li>
+		<li>
+			<a href="/profile/security"><i class="fal fa-lock"></i>Security</a>
+		</li>
+		<li>
+			<a href="/profile/checkup"><i class="fal fa-check-square"></i>Check-up</a>
+		</li>
+		<li>
+			<a href="/profile/settings"><i class="fal fa-cog"></i>Settings</a>
+		</li>
+
+		<li class="new-section">
+			<a href="/" data-bind:href="clientHost"><i class="fal fa-arrow-left"></i>Back to app</a>
+		</li>
+		<li>
+			<a href="/logout"><i class="fal fa-sign-out"></i>Log out</a>
+		</li>
+	</ul>
+
+	<div>
+		<p>You are securely logged in as <b data-bind:text="email">you@exampl.com</b>.</p>
+	</div>
+</nav>
+
+<main>
