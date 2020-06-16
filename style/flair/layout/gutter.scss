@@ -1,0 +1,5 @@
+%l-gutter {
+	@media(min-width: $break-medium) {
+		padding-left: $size-logo + 1rem;
+	}
+}

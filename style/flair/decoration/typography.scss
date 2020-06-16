@@ -1,0 +1,24 @@
+%d-typography {
+	h1, h2, h3, h4, h5, h6 {
+		@extend %d-typography--heading;
+	}
+
+	p, ul, ol {
+		@extend %d-typography--body;
+	}
+
+	&--heading {
+		@extend %d-typography--child;
+		color: $palette-text-header;
+	}
+
+	&--body {
+		@extend %d-typography--child;
+		color: $palette-text-body;
+	}
+
+	&--child {
+		margin: 1rem;
+		max-width: 48em;
+	}
+}

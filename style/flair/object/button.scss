@@ -1,0 +1,101 @@
+%o-button {
+	@extend %d-ui;
+
+	display: inline-block;
+	cursor: pointer;
+	font-weight: 400;
+	color: $palette-text-body;
+	text-decoration: none;
+
+	// Sizes:
+	&--size-small {
+		@extend %d-ui--size-small;
+	}
+
+	&--size-large {
+		@extend %d-ui--size-large;
+	}
+
+	// Types:
+	&:not(&--type-filled, &--type-outline, &--type-text, &--type-flat) {
+		@extend %o-button--type-filled;
+	}
+
+	&--type-filled {
+		background: $palette-panel;
+
+		&:not(:hover):not(:focus):not(:active) {
+			box-shadow: 0 0.1rem 0.1rem 0 rgba(black, 0.15);
+		}
+
+		&%mode-primary {
+			background: $palette-primary;
+			color: $palette-primary-contrast;
+		}
+		&%mode-warning {
+			background: $palette-warning;
+			color: $palette-warning-contrast;
+		}
+	}
+
+	&--type-outline {
+		background: transparent;
+		color: $palette-text-body;
+		border-width: 2px;
+
+		&:not(:hover):not(:focus):not(:active) {
+			box-shadow: none;
+		}
+
+		&%mode-primary {
+			color: $palette-primary;
+			border-color: $palette-primary;
+		}
+
+		&%mode-warning {
+			color: $palette-warning;
+			border-color: $palette-warning;
+		}
+	}
+
+	&--type-text {
+		background: transparent;
+		color: $palette-text-body;
+		border-color: transparent;
+
+		&:not(:focus):not(:active) {
+			box-shadow: none;
+		}
+
+		&:hover {
+			background: $palette-panel;
+		}
+
+		&%mode-primary {
+			color: $palette-primary;
+			border-color: transparent;
+		}
+
+		&%mode-warning {
+			color: $palette-warning;
+			border-color: transparent;
+		}
+	}
+
+	&--type-flat {
+		background: transparent;
+		border-color: transparent;
+
+		&:not(:hover):not(:focus):not(:active) {
+			box-shadow: none;
+		}
+
+		&:hover {
+			border-color: transparent;
+		}
+
+		&:focus {
+
+		}
+	}
+}

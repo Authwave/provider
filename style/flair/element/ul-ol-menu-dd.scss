@@ -1,0 +1,13 @@
+ul,ol,menu,dd {
+	margin: 0;
+	padding: 0;
+	list-style-type: none;
+
+	li {
+		margin: 0;
+	}
+
+	ul,ol,menu,dd {
+		padding-left: 1rem;
+	}
+}

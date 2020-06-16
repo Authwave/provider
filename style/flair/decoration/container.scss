@@ -1,0 +1,38 @@
+%d-container {
+	border-radius: $container-border-radius;
+	box-shadow: $container-shadow-offset
+	$container-shadow-size
+	$container-shadow-sharpness
+	$container-shadow-palette;
+	background: $palette-container;
+
+	&:not(&--padding-small, &--padding-large) {
+		>* {
+			padding-left: $container-padding;
+			padding-right: $container-padding;
+
+			&:first-child {
+				padding-top: $container-padding;
+			}
+
+			&:last-child {
+				padding-bottom: $container-padding;
+			}
+		}
+	}
+
+	&--padding-small {
+		>* {
+			padding-left: $container-padding / 2;
+			padding-right: $container-padding / 2;
+
+			&:first-child {
+				padding-top: $container-padding / 2;
+			}
+
+			&:last-child {
+				padding-bottom: $container-padding / 2;
+			}
+		}
+	}
+}
