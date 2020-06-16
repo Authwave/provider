@@ -123,6 +123,8 @@ class AuthenticatePage extends Page {
 				$exception->getId()
 			);
 
+// TODO: Implement email queue once Cron can be executed back-to-back
+// (see https://github.com/PhpGt/Cron/issues/11)
 			$emailQueue = new ConfirmationEmailQueue(
 				$this->database->queryCollection("email")
 			);

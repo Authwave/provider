@@ -3,6 +3,7 @@ namespace Authwave\Page\Login;
 
 use Authwave\Application\ApplicationDeployment;
 use Authwave\Application\ApplicationRepository;
+use Authwave\DataTransfer\LoginData;
 use Authwave\DataTransfer\RequestData;
 use Authwave\User\User;
 use Authwave\User\UserRepository;
