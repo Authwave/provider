@@ -21,7 +21,6 @@ class IndexPage extends Page {
 		$this->session->set(LoginData::SESSION_LOGIN_DATA, $loginData);
 
 		$this->redirect("/login/authenticate");
-		exit;
 	}
 
 	private function prefill(Element $emailInput, bool $hasEmail):void {

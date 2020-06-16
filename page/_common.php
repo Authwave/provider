@@ -15,29 +15,24 @@ class _CommonPage extends Page {
 	public Flash $flash;
 
 	public function go():void {
-		$this->handleRedirect();
+		$this->handleClientRequest();
 		$this->flash();
 	}
 
-	private function handleRedirect():void {
+	private function handleClientRequest():void {
 		$uriPath = $this->server->getRequestUri()->getPath();
 
 		if(!isset($this->requestData)) {
 			if($uriPath === "/admin") {
 				return;
 			}
-			elseif($uriPath === "/profile") {
-				return;
-			}
 			elseif($uriPath === "/config") {
 				if(isset($this->deployment)) {
 					$this->redirect($this->deployment->getClientHost());
-					exit;
 				}
 			}
 			else {
 				$this->redirect($this->deployment->getClientHost());
-				exit;
 			}
 		}
 	}

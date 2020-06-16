@@ -35,7 +35,6 @@ class IndexPage extends Page {
 				$redirectUri,
 				303
 			);
-			exit;
 		}
 	}
 }

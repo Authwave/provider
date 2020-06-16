@@ -43,7 +43,6 @@ class SignupPage extends Page {
 		}
 		catch(UserFieldException $exception) {
 			$this->reload();
-			exit;
 		}
 
 		$authUri = AuthUriFactory::buildAuthUri(
@@ -57,6 +56,5 @@ class SignupPage extends Page {
 			"/login/success?continue="
 			. $authUri->encode()
 		);
-		exit;
 	}
 }

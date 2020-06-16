@@ -10,7 +10,7 @@ class _CommonPage extends Page {
 
 	public function go():void {
 		$this->logo(
-			$this->document->querySelector(".c-main-login")
+			$this->document->querySelector("form")
 		);
 	}
 

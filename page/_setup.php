@@ -32,7 +32,6 @@ class _SetupPage extends PageSetup {
 			$this->redirect(
 				$this->server->getRequestUri()->getPath()
 			);
-			exit;
 		}
 		else {
 			/** @var RequestData $requestData */
@@ -64,7 +63,6 @@ class _SetupPage extends PageSetup {
 			}
 
 			$this->redirect(self::CONFIG_PATH);
-			exit;
 		}
 	}
 

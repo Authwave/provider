@@ -23,7 +23,6 @@ class SuccessPage extends Page {
 				"/login/signup?continue="
 				. $this->input->getString("continue")
 			);
-			exit;
 		}
 
 		$this->session->remove(RequestData::SESSION_REQUEST_DATA);
@@ -39,7 +38,6 @@ class SuccessPage extends Page {
 		if(is_null($base64Redirect)
 		|| ($redirectUri = base64_decode($base64Redirect)) === false) {
 			$this->redirect("/");
-			exit;
 		}
 
 		$this->document->bindKeyValue(

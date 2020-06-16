@@ -23,11 +23,6 @@ class ConfirmPage extends Page {
 	public Flash $flash;
 	public RequestData $requestData;
 
-	public function go():void {
-		$cipher = $this->requestData->getCipher();
-		$key = $this->deployment->getClientKey();
-	}
-
 	public function doConfirm(InputData $data):void {
 		try {
 			$code = $data->getString("code");
@@ -42,7 +37,6 @@ class ConfirmPage extends Page {
 		catch(InvalidConfirmationCodeException $exception) {
 			$this->flash->error("Invalid confirmation code");
 			$this->reload();
-			exit;
 		}
 
 		$authUri = AuthUriFactory::buildAuthUri(
@@ -54,6 +48,5 @@ class ConfirmPage extends Page {
 			"/login/success?continue="
 			. base64_encode($authUri)
 		);
-		exit;
 	}
 }

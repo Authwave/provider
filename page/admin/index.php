@@ -15,7 +15,6 @@ class IndexPage extends Page {
 	public function go():void {
 		if(!$this->user instanceof AdminUser) {
 			$this->redirect($this->deployment->getClientHost());
-			exit;
 		}
 
 		$this->document->bindKeyValue("email", $this->user->getEmail());

@@ -5,88 +5,200 @@ $fa-font-path: "/asset/font/fontawesome";
 @import "font/fontawesome/fontawesome";
 @import "font/fontawesome/regular";
 @import "font/fontawesome/solid";
+@import "font/fontawesome/light";
 
 @import "variable/palette";
 @import "variable/font";
 
 @import "flair/flair";
 
-.c-main-login {
-	@extend %p-form-fields;
-
+body.dir--profile {
 	display: flex;
-	justify-content: center;
-	align-items: stretch;
-	max-width: 100%;
-	height: 100%;
+	flex-direction: column;
+	justify-content: stretch;
+	align-items: center;
+	background: #f4f4f4;
 
-	@media(min-width: $break-small) {
-		align-items: flex-start;
+	@media(min-width: $break-medium) {
+		flex-direction: row;
+		align-items: stretch;
 	}
 
-	>div {
-		width: 100%;
-		margin: 0 auto;
+	>nav {
+		max-width: 20rem;
 
-		@media(min-width: $break-small) {
-			width: 24rem;
-			padding-top: 0;
+		//@media(min-width: $break-medium) {
+		//	width: 20rem;
+		//}
+
+		>div {
+			a {
+				display: block;
+				margin: 2rem;
+
+				img {
+					width: 100%;
+				}
+			}
+
+			p {
+				margin: 2rem 1rem;
+				font-size: 0.8rem;
+				text-align: center;
+				opacity: 0.5;
+			}
+		}
+
+		>ul {
+			@extend %d-container, %d-container--padding-small;
+			margin: 1rem;
+			top: 0;
+
+			>li {
+				display: flex;
+				justify-content: stretch;
+
+				&.selected {
+					a {
+						background: $palette-ui;
+						opacity: 1;
+						color: $palette-ui-contrast;
+
+						&:hover {
+							background: $palette-ui;
+						}
+					}
+				}
+
+				&.new-section {
+					margin-top: 2rem;
+				}
+
+				a {
+					@extend %o-button, %o-button--type-flat;
+					display: flex;
+					align-items: center;
+					flex-grow: 1;
+					opacity: 0.75;
+
+					&:hover {
+						background: rgba($palette-ui, 0.1);
+						opacity: 1;
+					}
+
+					i {
+						font-size: 0.8rem;
+						margin-right: 1rem;
+					}
+				}
+			}
 		}
 	}
-
-	header {
-		padding-top: 1rem;
-		padding-bottom: 0;
-
-		@media(min-width: $break-small) {
-			padding-top: 4rem;
-			padding-bottom: 1rem;
-		}
-
-		img {
-			margin: 1rem auto;
-			max-width: 80%;
-			height: 3rem;
-			display: block;
-		}
-	}
-
-	main {
+	>main {
 		@extend %d-container;
+		//flex-grow: 1;
+		width: 100%;
+		//margin: 0 1rem;
+		//margin-left: -6rem;
+		//padding-left: 8rem;
+	}
+}
 
-		@media(max-width: $break-small) {
-			box-shadow: none;
-		}
+body.uri--profile {
+	>main {
+		ul {
+			display: flex;
+			list-style-type: none;
 
-		h1 {
-			font-size: 1.25rem;
-		}
-
-		p {
-			margin: 1rem 0;
-		}
-
-		label {
-			margin-top: 2rem;
-			margin-bottom: 2rem;
+			li {
+				@extend %d-container;
+			}
 		}
 	}
+}
 
-	.actions {
-		flex-wrap: wrap;
+body.dir--login {
+	background: #f4f4f4;
 
-		button {
-			@extend %o-button-filled;
+	form {
+		@extend %p-form-fields;
+
+		display: flex;
+		justify-content: center;
+		align-items: stretch;
+		max-width: 100%;
+		height: 100%;
+
+		//@media(min-width: $break-small) {
+		//	align-items: flex-start;
+		//}
+
+		>div {
 			width: 100%;
-			margin-bottom: 1rem;
-		}
-		a {
-			display: inline-block;
-			font-size: 0.8rem;
-		}
-	}
+			margin: 0 auto;
 
-	input[name=code] {
+			@media(min-width: $break-small) {
+				width: 24rem;
+				padding-top: 0;
+			}
+		}
+
+		header {
+			padding-top: 1rem;
+			padding-bottom: 0;
+
+			@media(min-width: $break-small) {
+				padding-top: 4rem;
+				padding-bottom: 1rem;
+			}
+
+			img {
+				margin: 1rem auto;
+				max-width: 80%;
+				height: 3rem;
+				display: block;
+			}
+		}
+
+		main {
+			@extend %d-container;
+
+			@media(max-width: $break-small) {
+				box-shadow: none;
+			}
+
+			h1 {
+				font-size: 1.25rem;
+			}
+
+			p {
+				margin: 1rem 0;
+			}
+
+			label {
+				margin-top: 2rem;
+				margin-bottom: 2rem;
+			}
+
+			input {
+				@extend %d-ui--size-large;
+			}
+
+			.actions {
+				flex-wrap: wrap;
+
+				button {
+					@extend %o-button--size-large, %mode-primary;
+					width: 100%;
+					margin-bottom: 1rem;
+				}
+
+				a {
+					display: inline-block;
+					font-size: 0.8rem;
+				}
+			}
+		}
 	}
 
 	.auth-option {
@@ -125,7 +237,7 @@ $fa-font-path: "/asset/font/fontawesome";
 			}
 
 			button {
-				@extend %o-button-filled;
+				@extend %o-button--type-filled, %o-button--size-large, %mode-primary;
 
 				&::before {
 					@extend %fa-icon, .fas;
@@ -216,11 +328,9 @@ $fa-font-path: "/asset/font/fontawesome";
 				}
 			}
 		}
-
-
 	}
 
-	&.success {
+	&.uri--login-success {
 		main {
 			position: relative;
 			padding-top: 12rem;
@@ -288,16 +398,5 @@ $fa-font-path: "/asset/font/fontawesome";
 	}
 	100% {
 		clip-path: circle(100% at 30% 50%);
-	}
-}
-
-.c-site-footer {
-	display: none;
-}
-
-body.dir--login {
-	.flash-container {
-		//height: 5rem;
-		//background: red;
 	}
 }

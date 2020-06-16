@@ -1,40 +1,37 @@
-$palette-1: #444 !default;
-$palette-2: #888 !default;
-$palette-3: #aaa !default;
-$palette-4: #ccc !default;
-$palette-5: #eee !default;
-$palette-1-contrast: #fff !default;
-$palette-2-contrast: #fff !default;
-$palette-3-contrast: #fff !default;
-$palette-4-contrast: #444 !default;
-$palette-5-contrast: #444 !default;
+$palette-text-header: #333;
+$palette-text-header-contrast: white;
+$palette-text-body: #333;
+$palette-text-body-contrast: white;
+$palette-link: #00e;
+$palette-link-contrast: white;
 
-$palette-user-input: white !default;
-$palette-user-input-hover: #fefefe !default;
-$palette-user-input-focus: #fefefe !default;
-$palette-user-input-active: #eee !default;
-$palette-user-input-border: #ccc !default;
-$palette-user-input-border-hover: mix($palette-user-input-border, $palette-1, 50%) !default;
-$palette-user-input-border-focus: $palette-1 !default;
-$palette-user-input-outline-focus: lighten($palette-user-input-border-focus, 25%) !default;
-$palette-user-input-outline-hover: rgba($palette-user-input-outline-focus, 0.5) !default;
+$palette-primary: #1474fb;
+$palette-warning: #c82333;
+$palette-primary-contrast: white;
+$palette-warning-contrast: white;
 
-$palette-link: $palette-1 !default;
-$palette-link-visited: $palette-2 !default;
+$palette-ui: $palette-primary !default;
+$palette-ui-hover: adjust_hue(lighten($palette-ui, 10%), 45deg) !default;
+$palette-ui-focus: adjust_hue(darken($palette-ui, 10%), -45deg) !default;
 
-$palette-button: $palette-1 !default;
-$palette-button-hover: lighten($palette-button, 10%) !default;
-$palette-button-focus: darken($palette-button, 10%) !default;
-$palette-button-contrast: $palette-1-contrast !default;
-$palette-button-contrast-hover: darken($palette-button-contrast, 5%) !default;
-$palette-button-contrast-focus: darken($palette-button-contrast, 15%) !default;
-
-$palette-text-body: #333 !default;
-$palette-text-header: #333 !default;
-$palette-text-minor: #888 !default;
-
-$palette-invalid: red !default; // TODO: Pick nicer default.
-$palette-ok: green !default; // TODO: Pick nicer default.
-
-$palette-container: #fff;
 $palette-panel: #eee;
+$palette-panel-contrast: black;
+$palette-container: #fff;
+
+$palette-ui-background: #fff !default;
+$palette-ui-background-hover: #fff !default;
+$palette-ui-background-focus: #fff !default;
+$palette-ui-background-active: #eee !default;
+$palette-ui-background-border: #fff !default;
+
+$palette-ui-border: #ccc !default;
+$palette-ui-border-hover: mix($palette-ui-border, $palette-ui, 50%) !default;
+$palette-ui-border-focus: $palette-ui !default;
+
+$palette-ui-outline: transparent !default;
+$palette-ui-outline-hover: rgba(lighten($palette-ui-border-hover, 15%), 0.5) !default;
+$palette-ui-outline-focus: lighten($palette-ui-border-hover, 15%) !default;
+
+$palette-ui-contrast: white !default;
+$palette-ui-contrast-hover: red !default;
+$palette-ui-contrast-focus: lime !default;

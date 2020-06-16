@@ -44,7 +44,6 @@ class AuthenticatePage extends Page {
 		catch(PasswordTooShortException $exception) {
 			$this->flash->error("Your password is too short, please pick a stronger one with at least " . Strengthometer::MIN_LENGTH . " characters");
 			$this->reload();
-			exit;
 		}
 
 		$this->login(
@@ -147,11 +146,9 @@ class AuthenticatePage extends Page {
 			catch(\Exception $exception) {
 				$this->flash->error("Error sending confirmation code");
 				$this->reload();
-				exit;
 			}
 
 			$this->redirect("/login/confirm");
-			exit;
 		}
 
 		$authUri = AuthUriFactory::buildAuthUri(
@@ -163,7 +160,6 @@ class AuthenticatePage extends Page {
 			"/login/success?continue="
 			. $authUri->encode()
 		);
-		exit;
 	}
 
 	private function outputProviders(Element $outputTo):void {
@@ -191,7 +187,6 @@ class AuthenticatePage extends Page {
 		}
 		catch(TypeError $error) {
 			$this->redirect("/login");
-			exit;
 		}
 	}
 
