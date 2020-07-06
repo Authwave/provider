@@ -18,6 +18,10 @@ class ApplicationDeployment {
 		string $clientHost,
 		string $clientLoginHost
 	) {
+		if(!strstr($clientHost, "//")) {
+			$clientHost = "//$clientHost";
+		}
+
 		$this->application = $application;
 		$this->id = $id;
 		$this->clientKey = $clientKey;
