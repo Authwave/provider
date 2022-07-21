@@ -1,0 +1,9 @@
+%o-container {
+	display: block;
+	margin: 0 auto;
+
+	&--small {
+		@extend %o-container;
+		max-width: var(--width-small);
+	}
+}

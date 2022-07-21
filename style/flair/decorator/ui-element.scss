@@ -1,0 +1,20 @@
+%d-ui-element {
+	box-sizing: border-box;
+	width: 100%;
+	padding: 0.5rem;
+	font-size: 1rem;
+	background-color: var(--pal-bg-ui);
+	border: var(--theme-ui-border);
+	color: var(--pal-text-ui);
+
+	&:hover {
+		background-color: var(--pal-bg-ui-hover);
+	}
+	&:focus {
+		outline: var(--theme-ui-outline-focus);
+		background-color: var(--pal-bg-ui-focus);
+	}
+	&:active {
+		background-color: var(--pal-bg-ui-active);
+	}
+}

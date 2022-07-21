@@ -1,0 +1,30 @@
+<login-header />
+
+<form method="post">
+	<p>Logging in as <a href="/login/?email={{email}}">you@example.com</a>.</p>
+	<p>Please choose how you would like to log in.</p>
+
+	<div class="login-options">
+		<div class="thingy-button">
+			<label>
+				<span>Your password</span>
+				<input type="password" name="password" autofocus />
+			</label>
+			<button name="do" value="password">
+				<span>Log in with password</span>
+			</button>
+		</div>
+
+		<div class="actions">
+			<button name="do" value="link">
+				<span>Email login link</span>
+			</button>
+		</div>
+	</div>
+
+	<div class="help">
+		<a href="/help#login-options" target="_blank">Need help?</a>
+	</div>
+</form>
+
+<login-footer />

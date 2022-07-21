@@ -1,0 +1,30 @@
+button {
+	@extend %d-ui-element;
+	--pal-bg-ui: var(--pal-bg-button);
+	cursor: pointer;
+
+	&:hover {
+		--pal-bg-ui-hover: var(--pal-bg-button-hover);
+	}
+	&:active {
+		--pal-bg-ui-active: var(--pal-bg-button-active);
+	}
+	&:focus {
+		--pal-bg-ui-focus: var(--pal-bg-button-focus);
+	}
+
+	&.primary {
+		--pal-bg-ui: var(--pal-bg-button-primary);
+		--pal-text-ui: var(--pal-text-button-primary);
+
+		&:hover {
+			--pal-bg-ui-hover: var(--pal-bg-button-primary-hover);
+		}
+		&:active {
+			--pal-bg-ui-active: var(--pal-bg-button-primary-hover-active);
+		}
+		&:focus {
+			--pal-bg-ui-focus: var(--pal-bg-button-primary-focus);
+		}
+	}
+}

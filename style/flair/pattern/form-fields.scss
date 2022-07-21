@@ -1,0 +1,67 @@
+%p-form-fields {
+	h1, h2, h3, h4, h5, h6 {
+		margin: 0.5rem 0;
+	}
+
+	label {
+		display: block;
+		margin: 1rem 0;
+
+		&:first-of-type {
+			margin-top: 0;
+		}
+
+		span {
+			display: block;
+			margin: 0.5rem 0;
+		}
+		input,textarea {
+			@extend %d-ui-element;
+		}
+	}
+
+	.thingy-button {
+		display: flex;
+		align-items: flex-end;
+
+		label {
+			flex-grow: 1;
+		}
+
+		button {
+			&::before {
+				content: ">";
+			}
+
+			width: 3rem;
+			margin-bottom: 1rem;
+			margin-left: 1rem;
+
+			span {
+				display: none;
+			}
+		}
+	}
+
+	.actions {
+		//display: grid;
+		//grid-template-columns: repeat(2, 1fr);
+		//gap: 1rem;
+		display: flex;
+		justify-content: space-between;
+		margin: 1rem 0;
+
+		button {
+			width: calc(50% - 0.5rem);
+
+			&:first-child:last-child {
+				width: 100%;
+			}
+		}
+
+		.primary {
+			order: 1;
+			//grid-column: span 2;
+		}
+	}
+}

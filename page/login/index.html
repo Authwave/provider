@@ -1,0 +1,25 @@
+<login-header />
+
+<form method="post">
+	<h1>Sign in</h1>
+	<label>
+		<span>Your e-mail address</span>
+		<input type="email" name="email" required autofocus />
+	</label>
+
+	<div class="help">
+		<a href="/help#forgot-email" target="_blank">Forgot email?</a>
+	</div>
+
+	<label class="pw">
+		<span>Your password</span>
+		<input type="password" name="password" tabindex="-1" />
+	</label>
+
+	<div class="actions">
+		<button name="do" value="continue" class="primary">Continue</button>
+		<button name="do" value="cancel" class="">Cancel</button>
+	</div>
+</form>
+
+<login-footer />
