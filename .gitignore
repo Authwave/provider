@@ -2,10 +2,6 @@
 /vendor/
 /style/.sass-cache
 /.sass-cache
-/style/flair
 /www/
 /data/
-/test/behaviour/browser.log
-/test/behaviour/browser.pid
-/test/behaviour/*.sql
 /config.*.ini
