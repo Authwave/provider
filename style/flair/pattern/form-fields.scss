@@ -5,6 +5,7 @@
 
 	label {
 		display: block;
+		flex-direction: column;
 		margin: 1rem 0;
 
 		&:first-of-type {
@@ -14,9 +15,14 @@
 		span {
 			display: block;
 			margin: 0.5rem 0;
+
+			&.error {
+				color: var(--pal-text-error);
+			}
+
 		}
 		input,textarea {
-			@extend %d-ui-element;
+
 		}
 	}
 

@@ -1,0 +1,51 @@
+<?php
+use Authwave\Session\LoginSession;
+use Gt\DomTemplate\DocumentBinder;
+use Gt\Http\Request;
+use Gt\Http\Response;
+use Gt\Input\Input;
+use Gt\Session\Session;
+
+function go(
+	Input $input,
+	Request $request,
+	Response $response,
+	LoginSession $loginSession,
+	DocumentBinder $binder,
+):void {
+	if($email = $input->getString("email")) {
+		if($request->getMethod() === "GET") {
+			$loginSession->clearData();
+		}
+
+		$binder->bindKeyValue("email", $email);
+	}
+
+	if($loginSession->getEmail()) {
+		$response->redirect("/login/authenticate/");
+	}
+}
+
+function do_continue(
+	Input $input,
+	Response $response,
+	LoginSession $loginSession,
+):void {
+	if($email = $input->getString("email") ?? $loginSession->getEmail()) {
+		$loginSession->setEmail($email);
+		$response->redirect("/login/authenticate/");
+	}
+	else {
+		// TODO: Show "please fill in your email address" error.
+	}
+}
+
+function do_cancel(
+	Response $response,
+	Session $session,
+	LoginSession $loginSession,
+):void {
+	$site = $loginSession->getSite();
+	$session->kill();
+	$response->redirect($site->uri);
+}

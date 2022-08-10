@@ -1,7 +1,7 @@
 <login-header />
 
 <form method="post">
-	<p>Logging in as <a href="/login/?email={{email}}">you@example.com</a>.</p>
+	<p>Logging in as <a href="/login/?email={{email}}" data-bind:text="email">you@example.com</a>.</p>
 	<p>Please choose how you would like to log in.</p>
 
 	<div class="login-options">
@@ -10,7 +10,7 @@
 				<span>Your password</span>
 				<input type="password" name="password" autofocus />
 			</label>
-			<button name="do" value="password">
+			<button name="do" value="password" class="primary">
 				<span>Log in with password</span>
 			</button>
 		</div>

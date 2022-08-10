@@ -3,7 +3,7 @@
 	<h1>Security check</h1>
 
 	<p>
-		We've just sent an email to your email address with a confirmation code.
+		We've just emailed you a confirmation code.
 	</p>
 	<p>
 		Please confirm your account by typing the confirmation code into the field below.
@@ -11,14 +11,15 @@
 
 	<label>
 		<span>Security code</span>
-		<input name="code" required autofocus autocomplete="off" />
+		<span data-template="error" data-bind:text class="error">Error message.</span>
+		<input name="token" required autofocus autocomplete="off" />
 	</label>
 
 	<div class="actions">
 		<button name="do" value="confirm" class="primary">Confirm</button>
 	</div>
 	<div class="help">
-		<a href="/login/">Cancel</a>
+		<a href="/login/?email={{email}}">Cancel</a>
 	</div>
 </form>
 <login-footer />

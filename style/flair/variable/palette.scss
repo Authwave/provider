@@ -1,21 +1,22 @@
 :root {
 	--pal-bg-page: #f4f4f4;
 	--pal-bg-ui: #fefefe;
-	--pal-bg-ui-hover: #f8f8ff;
-	--pal-bg-ui-focus: #fff;
-	--pal-bg-ui-active: #eee;
+	--pal-bg-ui--hover: #f8f8ff;
+	--pal-bg-ui--focus: #fff;
+	--pal-bg-ui--active: #eee;
+	--pal-bg-ui--disabled: #aaa;
 	--pal-bg-button: #eee;
-
-	--pal-bg-button-hover: #fff;
-	--pal-bg-button-focus: #fff;
-	--pal-bg-button-active: #eee;
+	--pal-bg-button--hover: #fff;
+	--pal-bg-button--focus: #fff;
+	--pal-bg-button--active: #eee;
 	--pal-bg-button-primary: royalblue;
-	--pal-bg-button-primary-hover: #5f82ea;
-	--pal-bg-button-primary-focus: #5f82ea;
-	--pal-bg-button-primary-hover-active: #3e5fc2;
+	--pal-bg-button-primary--hover: #5f82ea;
+	--pal-bg-button-primary--focus: #5f82ea;
+	--pal-bg-button-primary-hover--active: #3e5fc2;
 	--pal-bg-card: #fff;
 
 	--pal-text: #333;
+	--pal-text-error: orangered;
 	--pal-text-ui: var(--pal-text);
 	--pal-text-link: royalblue;
 	--pal-text-button: var(--pal-text);

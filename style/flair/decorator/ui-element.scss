@@ -8,13 +8,16 @@
 	color: var(--pal-text-ui);
 
 	&:hover {
-		background-color: var(--pal-bg-ui-hover);
+		background-color: var(--pal-bg-ui--hover);
 	}
 	&:focus {
 		outline: var(--theme-ui-outline-focus);
-		background-color: var(--pal-bg-ui-focus);
+		background-color: var(--pal-bg-ui--focus);
 	}
 	&:active {
-		background-color: var(--pal-bg-ui-active);
+		background-color: var(--pal-bg-ui--active);
+	}
+	&[disabled] {
+		background-color: var(--pal-bg-ui--disabled);
 	}
 }
