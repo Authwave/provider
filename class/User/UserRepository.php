@@ -1,7 +1,9 @@
 <?php
 namespace Authwave\User;
 
+use Authwave\Email\Emailer;
 use Authwave\Site\Site;
+use Authwave\Site\SiteRepository;
 use Gt\Database\Query\QueryCollection;
 use Gt\Database\Result\Row;
 use Gt\Logger\Log;
@@ -10,6 +12,8 @@ use Gt\Ulid\Ulid;
 class UserRepository {
 	public function __construct(
 		private readonly QueryCollection $db,
+		private readonly SiteRepository $siteRepo,
+		private readonly Emailer $emailer,
 	) {}
 
 	public function get(Site $site, string $email):?User {
@@ -21,6 +25,10 @@ class UserRepository {
 			),
 			$site,
 		);
+	}
+
+	private function getById(string $id):?User {
+		return $this->rowToUser($this->db->fetch("getById", $id));
 	}
 
 	public function checkLogin(User $user, string $password):bool {
@@ -76,6 +84,13 @@ class UserRepository {
 			"token" => $token,
 			"hash" => $hash,
 		]);
+
+		$user = $this->getById($userId);
+		$this->emailer->sendToken(
+			$user->email,
+			$user->site->name,
+			$token,
+		);
 	}
 
 	public function getLatestSecurityToken(string $userId):?string {
@@ -100,6 +115,10 @@ class UserRepository {
 	private function rowToUser(?Row $row, ?Site $site = null):?User {
 		if(!$row) {
 			return null;
+		}
+
+		if(!$site) {
+			$site = $this->siteRepo->getById($row->getString("siteId"));
 		}
 
 		return new User(

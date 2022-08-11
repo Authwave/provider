@@ -9,6 +9,6 @@ from
 	site
 
 where
-	host = ?
+	id = ?
 
 limit 1

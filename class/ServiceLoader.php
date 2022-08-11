@@ -1,6 +1,7 @@
 <?php
 namespace Authwave;
 
+use Authwave\Email\Emailer;
 use Authwave\Session\FlashSession;
 use Authwave\Session\LoginSession;
 use Authwave\Site\SiteRepository;
@@ -40,7 +41,16 @@ class ServiceLoader extends DefaultServiceLoader {
 	#[LazyLoad]
 	public function loadUserRepo():UserRepository {
 		return new UserRepository(
-			$this->container->get(Database::class)->queryCollection("user")
+			$this->container->get(Database::class)->queryCollection("user"),
+			$this->container->get(SiteRepository::class),
+			$this->container->get(Emailer::class),
+		);
+	}
+
+	#[LazyLoad]
+	public function loadEmailer():Emailer {
+		return new Emailer(
+			$this->config->getString("sendinblue.api_key")
 		);
 	}
 }

@@ -12,6 +12,10 @@ class SiteRepository {
 	) {
 	}
 
+	public function getById(string $id):?Site {
+		return $this->rowToSite($this->db->fetch("getById", $id));
+	}
+
 	public function load(?string $hexUri):Site {
 		if(!$hexUri) {
 			throw new SiteNotFoundException($hexUri);

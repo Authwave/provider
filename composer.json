@@ -5,7 +5,9 @@
 	"require": {
 		"php": ">=8.1",
 		"phpgt/cipher": "dev-master",
-		"phpgt/webengine": "dev-master"
+		"phpgt/webengine": "dev-master",
+		"league/commonmark": "^v2.3.5",
+		"ext-curl": "*"
 	},
 	"require-dev": {
 		"phpunit/phpunit": "v9.5.21"
