@@ -28,7 +28,7 @@ function go(
 
 	$site = $loginSession->getSite();
 	$userDataMessage = new PlainTextMessage(
-		http_build_query([
+		json_encode([
 			"email" => $loginSession->getEmail(),
 			"id" => $userRepo->get($site, $loginSession->getEmail())->id,
 		]),
