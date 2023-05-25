@@ -28,17 +28,17 @@ function do_password(
 ):void {
 	usleep(rand(500_000, 1_500_000));
 	$email = $loginSession->getEmail();
-	$site = $loginSession->getSite();
+	$deployment = $loginSession->getDeployment();
 	$password = $input->getString("password");
 
-	if($user = $userRepo->get($site, $email)) {
+	if($user = $userRepo->get($deployment, $email)) {
 		if($userRepo->checkLogin($user, $password)) {
 			$loginSession->setState(LoginState::LOGGED_IN);
 			$response->redirect("/login/success/");
 		}
 		else {
 			// todo: hook up the password after proving security!
-			$userRepo->generateSecurityToken(
+			$userRepo->generateAuthCode(
 				$user->id,
 				$password,
 			);
@@ -47,7 +47,7 @@ function do_password(
 	}
 	else {
 		$userRepo->create(
-			$site,
+			$deployment,
 			$email,
 			$password,
 		);

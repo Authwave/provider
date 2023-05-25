@@ -1,11 +1,10 @@
 <?php
 namespace Authwave;
 
-use Authwave\Email\Emailer;
+use Authwave\Email\EmailRepository;
 use Authwave\Session\FlashSession;
 use Authwave\Session\LoginSession;
-use Authwave\Site\SiteRepository;
-use Authwave\User\User;
+use Authwave\Model\ApplicationRepository;
 use Authwave\User\UserRepository;
 use Gt\Database\Database;
 use Gt\ServiceContainer\LazyLoad;
@@ -22,19 +21,16 @@ class ServiceLoader extends DefaultServiceLoader {
 	}
 
 	#[LazyLoad]
-	public function loadLoginSession():?LoginSession {
+	public function loadLoginSession():LoginSession {
 		$session = $this->container->get(Session::class);
-		if($sessionStore = $session->getStore(LoginSession::SESSION_STORE_KEY)) {
-			return new LoginSession($sessionStore);
-		}
-
-		return null;
+		$sessionStore = $session->getStore(LoginSession::SESSION_STORE_KEY, true);
+		return new LoginSession($sessionStore);
 	}
 
 	#[LazyLoad]
-	public function loadSiteRepo():SiteRepository {
-		return new SiteRepository(
-			$this->container->get(Database::class)->queryCollection("site")
+	public function loadSiteRepo():ApplicationRepository {
+		return new ApplicationRepository(
+			$this->container->get(Database::class)->queryCollection("application")
 		);
 	}
 
@@ -42,15 +38,15 @@ class ServiceLoader extends DefaultServiceLoader {
 	public function loadUserRepo():UserRepository {
 		return new UserRepository(
 			$this->container->get(Database::class)->queryCollection("user"),
-			$this->container->get(SiteRepository::class),
-			$this->container->get(Emailer::class),
+			$this->container->get(ApplicationRepository::class),
+			$this->container->get(EmailRepository::class),
 		);
 	}
 
 	#[LazyLoad]
-	public function loadEmailer():Emailer {
-		return new Emailer(
-			$this->config->getString("sendinblue.api_key")
+	public function loadEmailRepo():EmailRepository {
+		return new EmailRepository(
+			$this->container->get(Database::class)->queryCollection("email")
 		);
 	}
 }

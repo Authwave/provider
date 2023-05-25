@@ -1,8 +1,7 @@
 select
-	token
-
+	code
 from
-	user_token
+	user_auth_code
 
 where
 	userId = ?

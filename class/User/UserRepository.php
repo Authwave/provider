@@ -1,9 +1,9 @@
 <?php
 namespace Authwave\User;
 
-use Authwave\Email\Emailer;
-use Authwave\Site\Site;
-use Authwave\Site\SiteRepository;
+use Authwave\Email\EmailRepository;
+use Authwave\Model\ApplicationDeployment;
+use Authwave\Model\ApplicationRepository;
 use Gt\Database\Query\QueryCollection;
 use Gt\Database\Result\Row;
 use Gt\Logger\Log;
@@ -12,18 +12,21 @@ use Gt\Ulid\Ulid;
 class UserRepository {
 	public function __construct(
 		private readonly QueryCollection $db,
-		private readonly SiteRepository $siteRepo,
-		private readonly Emailer $emailer,
+		private readonly ApplicationRepository $applicationRepo,
+		private readonly EmailRepository $emailer,
 	) {}
 
-	public function get(Site $site, string $email):?User {
+	public function get(
+		ApplicationDeployment $deployment,
+		string $email,
+	):?User {
 		return $this->rowToUser(
 			$this->db->fetch(
-				"getBySiteAndEmail",
-				$site->id,
+				"getByDeploymentAndEmail",
+				$deployment->id,
 				$email,
 			),
-			$site,
+			$deployment,
 		);
 	}
 
@@ -41,17 +44,17 @@ class UserRepository {
 	}
 
 	public function create(
-		Site $site,
+		ApplicationDeployment $deployment,
 		string $email,
 		string $password,
 	):void {
 		$userId = new Ulid();
 		$this->db->insert("create", [
 			"id" => $userId,
-			"siteId" => $site->id,
+			"applicationDeploymentId" => $deployment->id,
 			"email" => $email,
 		]);
-		$this->generateSecurityToken($userId, $password);
+		$this->generateAuthCode($userId, $password);
 	}
 
 	/**
@@ -60,7 +63,7 @@ class UserRepository {
 	 * user will be forced to enter it when they log on. An optional new
 	 * password can be assigned when the user successfully enters the code.
 	 */
-	public function generateSecurityToken(
+	public function generateAuthCode(
 		string $userId,
 		string $newPassword = null,
 	):void {
@@ -69,61 +72,61 @@ class UserRepository {
 			$hash = password_hash($newPassword, PASSWORD_DEFAULT);
 		}
 
-		$token = str_pad(
+		$code = str_pad(
 			(string)rand(1_000, 99_999),
 			5,
 			"0",
 			STR_PAD_LEFT
 		);
 
-		Log::info("Generated new token for user $userId");
+		Log::info("Generated new auth code for user $userId");
 
-		$this->db->insert("createToken", [
+		$this->db->insert("createAuthCode", [
 			"id" => new Ulid(),
 			"userId" => $userId,
-			"token" => $token,
+			"code" => $code,
 			"hash" => $hash,
 		]);
 
 		$user = $this->getById($userId);
-		$this->emailer->sendToken(
+		$this->emailer->sendAuthCode(
 			$user->email,
-			$user->site->name,
-			$token,
+			$user->deployment->application->name,
+			$code,
 		);
 	}
 
-	public function getLatestSecurityToken(string $userId):?string {
-		return $this->db->fetchString("getLatestToken", $userId);
+	public function getLatestAuthCode(string $userId):?string {
+		return $this->db->fetchString("getLatestAuthCode", $userId);
 	}
 
-	public function consumeToken(string $userId, ?string $token):void {
-		if(!$token) {
+	public function consumeAuthCode(string $userId, ?string $authCode):void {
+		if(!$authCode) {
 			return;
 		}
 
-		$this->db->update("setPasswordFromToken", $userId, $token);
-		$this->db->delete("deleteToken", $userId, $token);
-		Log::info("Consumed token $token for user $userId");
+		$this->db->update("setHashFromAuthCode", $userId, $authCode);
+		$this->db->delete("consumeUserAuthToken", $userId, $authCode);
+		Log::info("Consumed token $authCode for user $userId");
 	}
 
-	public function cleanOldTokens():void {
-		$numCleaned = $this->db->delete("deleteOldTokens");
+	public function cleanOldAuthCodes():void {
+		$numCleaned = $this->db->delete("deleteOldAuthCodes");
 		Log::info("Cleaned $numCleaned old tokens");
 	}
 
-	private function rowToUser(?Row $row, ?Site $site = null):?User {
+	private function rowToUser(?Row $row, ?ApplicationDeployment $deployment = null):?User {
 		if(!$row) {
 			return null;
 		}
 
-		if(!$site) {
-			$site = $this->siteRepo->getById($row->getString("siteId"));
+		if(!$deployment) {
+			$deployment = $this->applicationRepo->getDeploymentById($row->getString("applicationDeploymentId"));
 		}
 
 		return new User(
-			$row->getString("id"),
-			$site,
+			$row->getString("userId"),
+			$deployment,
 			$row->getString("email"),
 		);
 	}

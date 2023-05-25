@@ -1,23 +1,33 @@
 <?php
 namespace Authwave\Session;
 
-use Authwave\Site\Site;
+use Authwave\Model\Application;
+use Authwave\Model\ApplicationDeployment;
 use Authwave\User\LoginState;
 use Gt\Session\SessionStore;
 
 class LoginSession {
-	const SESSION_STORE_KEY = "AUTHWAVE_LOGIN_SESSION";
+	const SESSION_STORE_KEY = "AUTHWAVE_PROVIDER_SESSION";
 
 	public function __construct(
 		private SessionStore $session,
 	) {
 	}
 
-	public function getSite():Site {
-		return $this->session->get("site");
+	public function getDeployment():ApplicationDeployment {
+		return $this->session->get("deployment");
 	}
 
-	public function getData(string $key):?string {
+	public function setDeployment(ApplicationDeployment $deployment):void {
+		$this->session->set("deployment", $deployment);
+	}
+
+	/** @param array<string, string> $kvp */
+	public function setData(array $kvp):void {
+		$this->session->set("data", $kvp);
+	}
+
+	public function getDataKey(string $key):?string {
 		$kvp = $this->session->get("data");
 		return $kvp[$key] ?? null;
 	}

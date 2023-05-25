@@ -1,14 +1,14 @@
-insert into user_token (
+insert into user_auth_code (
 	id,
 	userId,
-	token,
+	code,
 	createdAt,
 	hash
 )
 values (
 	:id,
 	:userId,
-	:token,
+	:code,
 	now(),
 	:hash
 )

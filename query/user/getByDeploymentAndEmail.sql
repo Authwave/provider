@@ -8,4 +8,6 @@ from
 	user
 
 where
-	user.id = ?
+	applicationDeploymentId = ?
+and
+	user.email = ?

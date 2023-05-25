@@ -1,10 +1,10 @@
 insert into user (
 	id,
-	siteId,
+	applicationDeploymentId,
 	email
 )
 values (
 	:id,
-	:siteId,
+	:applicationDeploymentId,
 	:email
 )

@@ -45,7 +45,9 @@ function do_cancel(
 	Session $session,
 	LoginSession $loginSession,
 ):void {
-	$site = $loginSession->getSite();
-	$session->kill();
-	$response->redirect($site->uri);
+	$deployment = $loginSession->getDeployment();
+	if(strtok($deployment->getClientReturnUri()->getHost(), ":") !== "localhost") {
+		$session->kill();
+	}
+	$response->redirect($deployment->getClientReturnUri());
 }

@@ -1,45 +1,40 @@
 <?php
+
+use Authwave\Crypto\ProviderUri;
 use Authwave\Session\LoginSession;
-use Authwave\Site\SiteRepository;
+use Authwave\Model\ApplicationRepository;
 use Gt\Cipher\EncryptedUri;
+use Gt\Cipher\Key;
 use Gt\Http\Response;
 use Gt\Http\Uri;
-use Gt\Input\Input;
 use Gt\Session\Session;
 
 function go(
-	SiteRepository $siteRepo,
+	ApplicationRepository $appRepo,
 	Uri $uri,
-	Input $input,
-	?LoginSession $loginSession,
+	LoginSession $loginSession,
 	Session $session,
 	Response $response,
 ):void {
-	if($input->contains("cipher") && $input->contains("iv")) {
-		$site = $siteRepo->load($input->getString("path"));
+	$providerUri = new ProviderUri($uri);
+	if($deploymentId = $providerUri->getDeploymentId()) {
+// TODO: There may be multiple client hosts with the same value, especially when
+// on localhost! The key needs to be used in this getter to avoid people being
+// able to retrieve other people's deployments just by knowing the host.
+		$deployment = $appRepo->getDeploymentById($deploymentId);
 
-		$enc = new EncryptedUri($uri);
-		$decrypted = $enc->decryptMessage($site->key);
+		$enc = new EncryptedUri(
+			$uri,
+			ProviderUri::QUERY_STRING_CIPHER,
+			ProviderUri::QUERY_STRING_INIT_VECTOR
+		);
+		$decrypted = $enc->decryptMessage(new Key($deployment->secret));
 		parse_str($decrypted, $data);
-		if($data["action"] === "login") {
-			$sessionStore = $session->getStore(
-				LoginSession::SESSION_STORE_KEY,
-				true
-			);
-			$sessionStore->set("site", $site);
-			$sessionStore->set("data", $data);
-			$response->redirect("/");
-		}
-	}
 
-	if($loginSession) {
-		if(!str_starts_with($uri->getPath(), "/login/")) {
-			$response->redirect("/login/");
-		}
-	}
-	else {
-		if($uri->getPath() !== "/login/error/") {
-			$response->redirect("/login/error/");
+		if($data["action"] === "login") {
+			$loginSession->setDeployment($deployment);
+			$loginSession->setData($data);
+			$response->redirect("/");
 		}
 	}
 }

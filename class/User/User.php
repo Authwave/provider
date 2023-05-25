@@ -1,12 +1,12 @@
 <?php
 namespace Authwave\User;
 
-use Authwave\Site\Site;
+use Authwave\Model\ApplicationDeployment;
 
 class User {
 	public function __construct(
 		public readonly string $id,
-		public readonly Site $site,
+		public readonly ApplicationDeployment $deployment,
 		public readonly string $email,
 	) {}
 }

@@ -3,6 +3,7 @@ use Authwave\Session\LoginSession;
 use Authwave\User\LoginState;
 use Authwave\User\UserRepository;
 use Gt\Cipher\InitVector;
+use Gt\Cipher\Key;
 use Gt\Cipher\Message\EncryptedMessage;
 use Gt\Cipher\Message\PlainTextMessage;
 use Gt\DomTemplate\DocumentBinder;
@@ -21,21 +22,21 @@ function go(
 		$response->redirect("/login/");
 	}
 
-	$secretIvB64 = $loginSession->getData("secretIv");
+	$secretIvB64 = $loginSession->getDataKey("secretIv");
 	$secretIvB64 = strtr($secretIvB64, " ", "+");
 	$secretIvBytes = base64_decode($secretIvB64);
 	$secretIv = (new InitVector())->withBytes($secretIvBytes);
 
-	$site = $loginSession->getSite();
+	$deployment = $loginSession->getDeployment();
 	$userDataMessage = new PlainTextMessage(
 		json_encode([
+			"id" => $userRepo->get($deployment, $loginSession->getEmail())->id,
 			"email" => $loginSession->getEmail(),
-			"id" => $userRepo->get($site, $loginSession->getEmail())->id,
 		]),
 		$secretIv,
 	);
-	$returnUri = $site->uri;
-	$cipherText = $userDataMessage->encrypt($site->key);
+	$returnUri = $deployment->getClientReturnUri();
+	$cipherText = $userDataMessage->encrypt(new Key($deployment->secret));
 
 	$queryString = http_build_query([
 		"AUTHWAVE_RESPONSE_DATA" => (string)$cipherText,

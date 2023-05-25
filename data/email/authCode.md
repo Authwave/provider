@@ -1,10 +1,10 @@
-# Your {{siteName}} security token is {{token}}
+# Your {{siteName}} access code is {{code}}
 
 You've just requested to access your {{siteName}} account.
 
 Use this code to complete your login:
 
-### {{token}}
+### {{code}}
 
 Thanks,
 

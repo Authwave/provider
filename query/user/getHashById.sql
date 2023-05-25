@@ -1,10 +1,6 @@
 select
-	hash
-
+	user.hash
 from
 	user
-
 where
-	id = ?
-
-limit 1
+	user.id = ?
