@@ -36,5 +36,10 @@ function go(
 			$loginSession->setData($data);
 			$response->redirect("/");
 		}
+		elseif($data["action"] === "logout") {
+			$loginSession->clearData();
+			$session->kill();
+			$response->redirect(new Uri($deployment->clientHost));
+		}
 	}
 }

@@ -52,5 +52,5 @@ function do_confirm(
 
 	$userRepo->consumeAuthCode($user->id, $token);
 	$loginSession->setState(LoginState::LOGGED_IN);
-	$response->redirect("/login/success");
+	$response->redirect("/login/success/");
 }

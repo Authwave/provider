@@ -14,7 +14,7 @@ class LoginSession {
 	) {
 	}
 
-	public function getDeployment():ApplicationDeployment {
+	public function getDeployment():?ApplicationDeployment {
 		return $this->session->get("deployment");
 	}
 
