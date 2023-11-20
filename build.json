@@ -1,0 +1,73 @@
+{
+	"script/**/*.es6": {
+		"require": {
+			"node": "*",
+			"babel": "*",
+			"webpack": "*"
+		},
+		"execute": {
+			"command": "webpack",
+			"arguments": ["--entry","./script/script.es6", "--output-path", "./www", "--output-filename", "script.js", "--devtool", "source-map", "--mode", "development"]
+		}
+	},
+
+	"script/*sw.js": {
+		"require": {
+			"vendor/bin/sync": "*"
+		},
+		"execute": {
+			"command": "vendor/bin/sync",
+			"arguments": ["--pattern", "*sw.js", "script", "www/"]
+		}
+	},
+
+	"script/**/*.js": {
+		"require": {
+			"vendor/bin/sync": "*"
+		},
+		"execute": {
+			"command": "vendor/bin/sync",
+			"arguments": ["--pattern", "*.js", "script", "www/script"]
+		}
+	},
+
+	"style/**/*.scss": {
+		"require": {
+			"sass": "*"
+		},
+		"execute": {
+			"command": "sass",
+			"arguments": ["./style/style.scss", "www/style.css"]
+		}
+	},
+
+	"style/**/*.css": {
+		"require": {
+			"vendor/bin/sync": "*"
+		},
+		"execute": {
+			"command": "vendor/bin/sync",
+			"arguments": ["--pattern", "*.css", "style", "www/style"]
+		}
+	},
+
+	"asset/**/*": {
+		"require": {
+			"vendor/bin/sync": ">=1.3.0"
+		},
+		"execute": {
+			"command": "vendor/bin/sync",
+			"arguments": ["./asset", "./www/asset", "--symlink"]
+		}
+	},
+
+	"data/upload/**/*": {
+		"require": {
+			"vendor/bin/sync": ">=1.3.0"
+		},
+		"execute": {
+			"command": "vendor/bin/sync",
+			"arguments": ["./data/upload", "./www/data/upload", "--symlink"]
+		}
+	}
+}

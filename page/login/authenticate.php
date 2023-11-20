@@ -1,15 +1,16 @@
 <?php
 use Authwave\Session\LoginSession;
 use Authwave\User\LoginState;
+use Authwave\User\User;
 use Authwave\User\UserRepository;
-use Gt\DomTemplate\DocumentBinder;
+use Gt\DomTemplate\Binder;
 use Gt\Http\Response;
 use Gt\Input\Input;
 
 function go(
 	Response $response,
 	LoginSession $loginSession,
-	DocumentBinder $binder,
+	Binder $binder,
 ):void {
 	$email = $loginSession->getEmail();
 
@@ -50,6 +51,29 @@ function do_password(
 			$deployment,
 			$email,
 			$password,
+		);
+	}
+
+	$response->redirect("/login/security-check/");
+}
+
+function do_link(
+	UserRepository $userRepo,
+	LoginSession $loginSession,
+	Response $response,
+):void {
+	$email = $loginSession->getEmail();
+	$deployment = $loginSession->getDeployment();
+
+	if($user = $userRepo->get($deployment, $email)) {
+		$userRepo->generateAuthCode(
+			$user->id,
+		);
+	}
+	else {
+		$userRepo->create(
+			$deployment,
+			$email,
 		);
 	}
 

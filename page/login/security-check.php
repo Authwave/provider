@@ -4,7 +4,7 @@ use Authwave\Session\LoginSession;
 use Authwave\User\LoginState;
 use Authwave\User\UserRepository;
 use Gt\Dom\HTMLDocument;
-use Gt\DomTemplate\DocumentBinder;
+use Gt\DomTemplate\Binder;
 use Gt\DomTemplate\ListElementCollection;
 use Gt\Http\Response;
 use Gt\Input\Input;
@@ -13,7 +13,7 @@ function go(
 	LoginSession $loginSession,
 	FlashSession $flash,
 	HTMLDocument $document,
-	DocumentBinder $binder,
+	Binder $binder,
 	ListElementCollection $listElementCollection,
 	UserRepository $userRepo,
 ):void {

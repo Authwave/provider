@@ -6,14 +6,16 @@ use Gt\Cipher\InitVector;
 use Gt\Cipher\Key;
 use Gt\Cipher\Message\EncryptedMessage;
 use Gt\Cipher\Message\PlainTextMessage;
-use Gt\DomTemplate\DocumentBinder;
+use Gt\DomTemplate\Binder;
 use Gt\Http\Response;
+use Gt\Input\Input;
 use Gt\Logger\Log;
 use Gt\Session\Session;
 
 function go(
+	Input $input,
 	Response $response,
-	DocumentBinder $binder,
+	Binder $binder,
 	LoginSession $loginSession,
 	UserRepository $userRepo,
 	Session $session,
@@ -44,4 +46,8 @@ function go(
 
 	$binder->bindKeyValue("returnUri", "$returnUri?$queryString");
 	$session->kill();
+
+	if(!$input->contains("debug")) {
+		$response->redirect("$returnUri?$queryString");
+	}
 }

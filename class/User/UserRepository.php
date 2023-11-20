@@ -46,7 +46,7 @@ class UserRepository {
 	public function create(
 		ApplicationDeployment $deployment,
 		string $email,
-		string $password,
+		string $password = null,
 	):void {
 		$userId = new Ulid();
 		$this->db->insert("create", [
