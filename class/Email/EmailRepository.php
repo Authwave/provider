@@ -1,8 +1,10 @@
 <?php
 namespace Authwave\Email;
 
+use DateTime;
 use DateTimeInterface;
 use Gt\Database\Query\QueryCollection;
+use Gt\Logger\Log;
 use Gt\Ulid\Ulid;
 use League\CommonMark\CommonMarkConverter;
 use League\CommonMark\Environment\Environment;
@@ -15,9 +17,10 @@ class EmailRepository {
 
 	public function __construct(
 		private readonly QueryCollection $db,
+		private readonly string $apiKey,
 	) {}
 
-	public function send(
+	public function schedule(
 		string $toAddress,
 		string $templateName,
 		array $kvp = [],
@@ -28,6 +31,10 @@ class EmailRepository {
 		$filePath = "data/email/$templateName.md";
 		if(!is_file($filePath)) {
 			throw new EmailTemplateNotFoundException($templateName);
+		}
+
+		if(!$when) {
+			$when = new DateTime();
 		}
 
 		$markdown = file_get_contents($filePath);
@@ -67,45 +74,18 @@ class EmailRepository {
 			"htmlContent" => (string)$html,
 		]);
 
-		return $emailId;
+// TODO: Move this to a background task.
+		$this->sendScheduled();
 
-//		$emailData = [
-//			"sender" => [
-//				"name" => $fromName,
-//				"email" => $fromAddress,
-//			],
-//			"to" => [
-//				[
-//					"email" => $toAddress,
-//				]
-//			],
-//			"subject" => $subject,
-//			"textContent" => $markdown,
-//			"htmlContent" => (string)$html,
-//		];
-//
-//// TODO: Upgrade to use fetch()
-//		$ch = curl_init("https://api.sendinblue.com/v3/smtp/email");
-//		curl_setopt($ch, CURLOPT_HTTPHEADER, [
-//			"accept: application/json",
-//			"api-key: $this->apiKey",
-//			"content-type: application/json",
-//		]);
-//		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($emailData));
-//		curl_setopt($ch,CURLOPT_RETURNTRANSFER, true);
-//
-//		$response = curl_exec($ch);
-//		$emailId = trim($response);
-//		Log::info("Send email: $templateName ($emailId)");
-//		return trim($emailId);
+		return $emailId;
 	}
 
-	public function sendAuthCode(
+	public function scheduleAuthCode(
 		string $email,
 		string $siteName,
 		string $code,
 	):string {
-		return $this->send(
+		return $this->schedule(
 			$email,
 			"authCode",
 			[
@@ -113,5 +93,76 @@ class EmailRepository {
 				"siteName" => $siteName,
 			],
 		);
+	}
+
+	/** @return array<string> */
+	public function sendScheduled():array {
+		$sentEmailIdList = [];
+
+		foreach($this->db->fetchAll("getScheduled") as $row) {
+			$sentMessageId = $this->send(
+				$row->getString("senderName"),
+				$row->getString("senderAddress"),
+				$row->getString("toEmail"),
+				$row->getString("subject"),
+				$row->getString("textContent"),
+				$row->getString("htmlContent"),
+			);
+
+			$this->db->update("markAsSent", [
+				"id" => $row->getString("id"),
+				"sentMessageId" => $sentMessageId,
+			]);
+
+			array_push($sentEmailIdList, $row->getString("id"));
+		}
+
+		return $sentEmailIdList;
+	}
+
+	public function send(
+		string $fromName,
+		string $fromAddress,
+		string $toAddress,
+		string $subject,
+		string $markdown,
+		string $html,
+	):string {
+		$emailData = [
+			"sender" => [
+				"name" => $fromName,
+				"email" => $fromAddress,
+			],
+			"to" => [
+				[
+					"email" => $toAddress,
+				]
+			],
+			"subject" => $subject,
+			"textContent" => $markdown,
+			"htmlContent" => $html,
+		];
+
+		if($this->apiKey) {
+// TODO: Upgrade to use fetch()
+			$ch = curl_init("https://api.brevo.com/v3/smtp/email");
+			curl_setopt($ch, CURLOPT_HTTPHEADER, [
+				"accept: application/json",
+				"api-key: $this->apiKey",
+				"content-type: application/json",
+			]);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($emailData));
+			curl_setopt($ch,CURLOPT_RETURNTRANSFER, true);
+
+			$response = curl_exec($ch);
+			$emailId = trim($response);
+			Log::info("Sent email: $subject ($emailId)");
+		}
+		else {
+			$emailId = "NO API KEY";
+			Log::info("Marked email as sent: $subject ($emailId)");
+		}
+
+		return trim($emailId);
 	}
 }

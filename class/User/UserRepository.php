@@ -89,7 +89,7 @@ class UserRepository {
 		]);
 
 		$user = $this->getById($userId);
-		$this->emailer->sendAuthCode(
+		$this->emailer->scheduleAuthCode(
 			$user->email,
 			$user->deployment->application->name,
 			$code,

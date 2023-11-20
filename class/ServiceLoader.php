@@ -46,7 +46,8 @@ class ServiceLoader extends DefaultServiceLoader {
 	#[LazyLoad]
 	public function loadEmailRepo():EmailRepository {
 		return new EmailRepository(
-			$this->container->get(Database::class)->queryCollection("email")
+			$this->container->get(Database::class)->queryCollection("email"),
+			$this->config->getString("brevo.api_key"),
 		);
 	}
 }
