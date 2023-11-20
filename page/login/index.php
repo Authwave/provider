@@ -49,5 +49,5 @@ function do_cancel(
 	if(strtok($deployment->getClientReturnUri()->getHost(), ":") !== "localhost") {
 		$session->kill();
 	}
-	$response->redirect($deployment->getClientReturnUri());
+	$response->redirect($deployment->getClientReturnUri()->withQueryValue("do", "cancel"));
 }

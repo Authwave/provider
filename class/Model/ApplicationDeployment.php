@@ -18,8 +18,19 @@ class ApplicationDeployment {
 	}
 
 	public function getClientReturnUri():UriInterface {
+		$scheme = "https";
+
+		$host = $this->clientHost;
+		$schemeSeparator = strpos($host, "://");
+
+		if($schemeSeparator !== false) {
+			$scheme = strtok($host, "://");
+			$host = substr($host, $schemeSeparator + 3);
+		}
+
 		return (new Uri())
-			->withHost($this->clientHost)
+			->withScheme($scheme)
+			->withHost($host)
 			->withPath($this->clientLoginPath);
 	}
 }
