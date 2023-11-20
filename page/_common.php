@@ -39,7 +39,7 @@ function go(
 		elseif($data["action"] === "logout") {
 			$loginSession->clearData();
 			$session->kill();
-			$response->redirect(new Uri($deployment->clientHost));
+			$response->redirect(new Uri($deployment->getClientReturnUri()));
 		}
 	}
 }
