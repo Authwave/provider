@@ -84,6 +84,7 @@ class EmailRepository {
 		string $email,
 		string $siteName,
 		string $code,
+		string $fromEmail,
 	):string {
 		return $this->schedule(
 			$email,
@@ -92,6 +93,8 @@ class EmailRepository {
 				"code" => $code,
 				"siteName" => $siteName,
 			],
+			$fromEmail,
+			$siteName,
 		);
 	}
 

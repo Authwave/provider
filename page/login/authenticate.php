@@ -38,7 +38,6 @@ function do_password(
 			$response->redirect("/login/success/");
 		}
 		else {
-			// todo: hook up the password after proving security!
 			$userRepo->generateAuthCode(
 				$user->id,
 				$password,

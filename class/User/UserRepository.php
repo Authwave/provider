@@ -93,6 +93,7 @@ class UserRepository {
 			$user->email,
 			$user->deployment->application->name,
 			$code,
+			$user->deployment->application->emailSendFrom,
 		);
 	}
 

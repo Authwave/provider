@@ -44,6 +44,7 @@ class ApplicationRepository {
 		return new Application(
 			$row->getString("applicationId"),
 			$row->getString("name"),
+			$row->getString("emailSendFrom"),
 		);
 	}
 

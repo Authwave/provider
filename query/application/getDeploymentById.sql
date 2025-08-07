@@ -1,6 +1,7 @@
 select
 	application.id as applicationId,
 	application.name,
+	application.emailSendFrom,
 
 	application_deployment.id as applicationDeploymentId,
 	application_deployment.title,
