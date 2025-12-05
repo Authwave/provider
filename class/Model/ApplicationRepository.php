@@ -27,6 +27,17 @@ class ApplicationRepository {
 		return $deployment;
 	}
 
+	public function getDeploymentByProviderHost(string $host):ApplicationDeployment {
+		$deployment = $this->rowToApplicationDeployment(
+			$this->db->fetch("getDeploymentByProviderHost", $host)
+		);
+		if(!$deployment) {
+			throw new ApplicationDeploymentNotFoundException($host);
+		}
+
+		return $deployment;
+	}
+
 	public function getDeploymentByClientHost(string $clientHost):ApplicationDeployment {
 		$deployment = $this->rowToApplicationDeployment(
 			$this->db->fetch("getDeploymentByClientHost", $clientHost)

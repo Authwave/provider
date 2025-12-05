@@ -1,4 +1,5 @@
 <?php
+use Authwave\Model\ApplicationDeployment;
 use Authwave\Session\LoginSession;
 use Gt\DomTemplate\Binder;
 use Gt\Http\Request;
@@ -13,7 +14,6 @@ function go(
 	Response $response,
 	LoginSession $loginSession,
 	Binder $binder,
-	ServerInfo $server,
 ):void {
 	if($email = $input->getString("email")) {
 		if($request->getMethod() === "GET") {

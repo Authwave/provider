@@ -20,4 +20,4 @@ on
 	application_deployment.applicationId = application.id
 
 where
-	application_deployment.id = ?
+	providerHost = ?
