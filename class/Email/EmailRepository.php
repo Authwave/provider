@@ -116,7 +116,7 @@ class EmailRepository {
 		foreach($this->db->fetchAll("getScheduled") as $row) {
 			$emailSettings = $this->defaultEmailSettings;
 
-			if($emailSettingsObj = json_decode($row->getString("emailSettings"))) {
+			if($emailSettingsObj = json_decode($row->getString("emailSettings"), true)) {
 				$emailSettings = new EmailSettings(
 					$emailSettingsObj["host"] ?? $emailSettings->host,
 					$emailSettingsObj["port"] ?? $emailSettings->port,

@@ -58,10 +58,15 @@ function do_password(
 }
 
 function do_link(
+	Input $input,
 	UserRepository $userRepo,
 	LoginSession $loginSession,
 	Response $response,
 ):void {
+	if($input->getString("password")) {
+		do_password($input, $userRepo, $loginSession, $response);
+	}
+
 	$email = $loginSession->getEmail();
 	$deployment = $loginSession->getDeployment();
 
