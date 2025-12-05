@@ -8,15 +8,6 @@
 			"arguments": ["script/script.es6", "--bundle", "--sourcemap", "--outfile=www/script.js", "--loader:.es6=js", "--target=chrome105,firefox105,edge105,safari15"]
 		}
 	},
-	"script/*sw.js": {
-		"require": {
-			"vendor/bin/sync": "*"
-		},
-		"execute": {
-			"command": "vendor/bin/sync",
-			"arguments": ["--pattern", "*sw.js", "script", "www/"]
-		}
-	},
 
 	"script/**/*.js": {
 		"require": {

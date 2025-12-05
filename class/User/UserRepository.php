@@ -46,7 +46,7 @@ class UserRepository {
 	public function create(
 		ApplicationDeployment $deployment,
 		string $email,
-		string $password = null,
+		?string $password = null,
 	):void {
 		$userId = new Ulid();
 		$this->db->insert("create", [
@@ -54,7 +54,7 @@ class UserRepository {
 			"applicationDeploymentId" => $deployment->id,
 			"email" => $email,
 		]);
-		$this->generateAuthCode($userId, $password);
+		$this->generateAuthCode($deployment, $userId, $password);
 	}
 
 	/**
@@ -64,8 +64,9 @@ class UserRepository {
 	 * password can be assigned when the user successfully enters the code.
 	 */
 	public function generateAuthCode(
+		ApplicationDeployment $deployment,
 		string $userId,
-		string $newPassword = null,
+		?string $newPassword = null,
 	):void {
 		$hash = null;
 		if($newPassword) {
@@ -90,6 +91,7 @@ class UserRepository {
 
 		$user = $this->getById($userId);
 		$this->emailer->scheduleAuthCode(
+			$deployment,
 			$user->email,
 			$user->deployment->application->name,
 			$code,

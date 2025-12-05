@@ -1,5 +1,6 @@
 insert into email (
 	id,
+	deploymentId,
 	createdAt,
 	scheduledToSendAt,
 	subject,
@@ -11,6 +12,7 @@ insert into email (
 )
 values (
 	:id,
+	:deploymentId,
 	now(),
 	:scheduledToSendAt,
 	:subject,

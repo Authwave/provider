@@ -7,7 +7,8 @@
 		"phpgt/cipher": "dev-master",
 		"phpgt/webengine": "dev-master",
 		"league/commonmark": "^v2.3.5",
-		"ext-curl": "*"
+		"ext-curl": "*",
+		"symfony/mailer": "^8.0"
 	},
 	"require-dev": {
 		"phpunit/phpunit": "v9.5.21"

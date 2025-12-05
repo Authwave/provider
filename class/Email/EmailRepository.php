@@ -1,6 +1,8 @@
 <?php
 namespace Authwave\Email;
 
+use Authwave\Model\ApplicationDeployment;
+use Authwave\Model\EmailSettings;
 use DateTime;
 use DateTimeInterface;
 use Gt\Database\Query\QueryCollection;
@@ -10,6 +12,10 @@ use League\CommonMark\CommonMarkConverter;
 use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\Attributes\AttributesExtension;
 use League\CommonMark\Extension\Autolink\AutolinkExtension;
+use Symfony\Component\Mailer\Mailer;
+use Symfony\Component\Mailer\Transport;
+use Symfony\Component\Mime\Address;
+use Symfony\Component\Mime\Email;
 
 class EmailRepository {
 	const DEFAULT_EMAIL_FROM_ADDRESS = "support@authwave.com";
@@ -17,10 +23,12 @@ class EmailRepository {
 
 	public function __construct(
 		private readonly QueryCollection $db,
-		private readonly string $apiKey,
+		private readonly EmailSettings $defaultEmailSettings,
+		private readonly ?Mailer $mailer = null,
 	) {}
 
 	public function schedule(
+		ApplicationDeployment $deployment,
 		string $toAddress,
 		string $templateName,
 		array $kvp = [],
@@ -65,6 +73,7 @@ class EmailRepository {
 		$emailId = new Ulid();
 		$this->db->insert("schedule", [
 			"id" => $emailId,
+			"deploymentId" => $deployment->id,
 			"scheduledToSendAt" => $when,
 			"subject" => $subject,
 			"toEmail" => $toAddress,
@@ -81,12 +90,14 @@ class EmailRepository {
 	}
 
 	public function scheduleAuthCode(
+		ApplicationDeployment $deployment,
 		string $email,
 		string $siteName,
 		string $code,
 		string $fromEmail,
 	):string {
 		return $this->schedule(
+			$deployment,
 			$email,
 			"authCode",
 			[
@@ -103,6 +114,17 @@ class EmailRepository {
 		$sentEmailIdList = [];
 
 		foreach($this->db->fetchAll("getScheduled") as $row) {
+			$emailSettings = $this->defaultEmailSettings;
+
+			if($emailSettingsObj = json_decode($row->getString("emailSettings"))) {
+				$emailSettings = new EmailSettings(
+					$emailSettingsObj["host"] ?? $emailSettings->host,
+					$emailSettingsObj["port"] ?? $emailSettings->port,
+					$emailSettingsObj["username"] ?? $emailSettings->username,
+					$emailSettingsObj["password"] ?? $emailSettings->password,
+				);
+			}
+
 			$sentMessageId = $this->send(
 				$row->getString("senderName"),
 				$row->getString("senderAddress"),
@@ -110,6 +132,7 @@ class EmailRepository {
 				$row->getString("subject"),
 				$row->getString("textContent"),
 				$row->getString("htmlContent"),
+				$emailSettings,
 			);
 
 			$this->db->update("markAsSent", [
@@ -130,42 +153,35 @@ class EmailRepository {
 		string $subject,
 		string $markdown,
 		string $html,
+		EmailSettings $emailSettings,
 	):string {
-		$emailData = [
-			"sender" => [
-				"name" => $fromName,
-				"email" => $fromAddress,
-			],
-			"to" => [
-				[
-					"email" => $toAddress,
-				]
-			],
-			"subject" => $subject,
-			"textContent" => $markdown,
-			"htmlContent" => $html,
-		];
+		$transport = Transport::fromDsn(implode("", [
+			"smtp://",
+			$emailSettings->username,
+			":",
+			$emailSettings->password,
+			"@",
+			$emailSettings->host,
+			":",
+			$emailSettings->port,
+		]));
 
-		if($this->apiKey) {
-// TODO: Upgrade to use fetch()
-			$ch = curl_init("https://api.brevo.com/v3/smtp/email");
-			curl_setopt($ch, CURLOPT_HTTPHEADER, [
-				"accept: application/json",
-				"api-key: $this->apiKey",
-				"content-type: application/json",
-			]);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($emailData));
-			curl_setopt($ch,CURLOPT_RETURNTRANSFER, true);
+		$mailer = $this->mailer ?? new Mailer($transport);
+		$email = new Email();
+		$email->addFrom(new Address($fromAddress, $fromName));
+		$email->addTo(new Address($toAddress));
+		$email->subject($subject);
+		$email->text($markdown);
+		$email->html($html);
 
-			$response = curl_exec($ch);
-			$emailId = trim($response);
-			Log::info("Sent email: $subject ($emailId)");
-		}
-		else {
-			$emailId = "NO API KEY";
-			Log::info("Marked email as sent: $subject ($emailId)");
-		}
+		$ulid = new Ulid("EMAIL");
+		$headers = $email->getHeaders();
+		$headers->addIdHeader("Message-ID", "$ulid@authwave.com");
+		$authwaveVersion = shell_exec("git rev-parse HEAD") ?? "unknown";
+		$authwaveVersion = trim($authwaveVersion);
+		$headers->addHeader("X-AUTHWAVE-VERSION", $authwaveVersion);
 
-		return trim($emailId);
+		$mailer->send($email);
+		return $ulid;
 	}
 }

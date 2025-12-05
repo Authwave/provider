@@ -3,6 +3,8 @@ namespace Authwave\Model;
 
 use Gt\Database\Query\QueryCollection;
 use Gt\Database\Result\Row;
+use ReflectionClass;
+use ReflectionProperty;
 
 class ApplicationRepository {
 	public function __construct(
@@ -41,10 +43,22 @@ class ApplicationRepository {
 			return null;
 		}
 
+		$emailSettings = null;
+		if($settingsJsonString = $row->getString("emailSettings")) {
+			$settingsJson = json_decode($settingsJsonString, true);
+			$emailSettings = new EmailSettings(
+				$settingsJson["host"] ?? null,
+				$settingsJson["port"] ?? null,
+				$settingsJson["username"] ?? null,
+				$settingsJson["password"] ?? null,
+			);
+		}
+
 		return new Application(
 			$row->getString("applicationId"),
 			$row->getString("name"),
 			$row->getString("emailSendFrom"),
+			$emailSettings,
 		);
 	}
 

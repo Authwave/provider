@@ -39,6 +39,7 @@ function do_password(
 		}
 		else {
 			$userRepo->generateAuthCode(
+				$deployment,
 				$user->id,
 				$password,
 			);
@@ -66,6 +67,7 @@ function do_link(
 
 	if($user = $userRepo->get($deployment, $email)) {
 		$userRepo->generateAuthCode(
+			$deployment,
 			$user->id,
 		);
 	}

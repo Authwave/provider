@@ -1,5 +1,5 @@
 select
-	id,
+	email.id,
 	sentAt,
 	sentMessageId,
 	createdAt,
@@ -9,10 +9,21 @@ select
 	senderName,
 	senderAddress,
 	textContent,
-	htmlContent
+	htmlContent,
+	application.emailSettings
 
 from
 	email
+
+inner join
+	application_deployment
+on
+	application_deployment.id = deploymentId
+
+inner join
+	application
+on
+	application.id = application_deployment.applicationId
 
 where
 	sentAt is null
