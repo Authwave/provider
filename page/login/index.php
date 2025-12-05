@@ -1,5 +1,6 @@
 <?php
 use Authwave\Model\ApplicationDeployment;
+use Authwave\Model\ApplicationRepository;
 use Authwave\Session\LoginSession;
 use Gt\DomTemplate\Binder;
 use Gt\Http\Request;
@@ -26,6 +27,10 @@ function go(
 	if($loginSession->getEmail()) {
 		$response->redirect("/login/authenticate/");
 	}
+
+	$deployment = $loginSession->getDeployment();
+	$clientHost = $deployment->clientHost;
+	$binder->bindKeyValue("clientHost", $clientHost);
 }
 
 function do_continue(
