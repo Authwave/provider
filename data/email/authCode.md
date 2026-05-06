@@ -1,8 +1,8 @@
-# Your {{siteName}} access code is {{code}}
+# Your {{siteName}} security code is {{code}}
 
-You've just requested to access your {{siteName}} account.
+You've just requested to login to your {{siteName}} account.
 
-Use this code to complete your login:
+Use this security code to complete your login:
 
 ### {{code}}
 
