@@ -4,14 +4,15 @@
 
 	"require": {
 		"php": ">=8.1",
-		"phpgt/cipher": "dev-master",
-		"phpgt/webengine": "dev-master",
+		"phpgt/cipher": "^1.0",
+		"phpgt/webengine": "^5.0",
 		"league/commonmark": "^v2.3.5",
 		"ext-curl": "*",
 		"symfony/mailer": "^8.0"
 	},
 	"require-dev": {
-		"phpunit/phpunit": "v9.5.21"
+		"phpunit/phpunit": "^9.5",
+		"authwave/php-client": "2022.x-dev"
 	},
 
 	"autoload": {
