@@ -2,7 +2,7 @@
 
 <form method="post">
 	<p>Logging in as <a href="/login/?email={{email}}" data-bind:text="email">you@example.com</a>.</p>
-	<p>Please choose how you would like to log in.</p>
+	<p>Enter your password, or choose a new one to receive a security code by email.</p>
 
 	<div class="login-options">
 		<div class="thingy-button">
@@ -14,6 +14,8 @@
 				<span>Log in with password</span>
 			</button>
 		</div>
+
+		<p>Alternatively, send a login link to your email to login without a password.</p>
 
 		<div class="actions">
 			<button name="do" value="link">

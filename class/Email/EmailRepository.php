@@ -99,7 +99,7 @@ class EmailRepository {
 		return $this->schedule(
 			$deployment,
 			$email,
-			"authCode",
+			"securityCode",
 			[
 				"code" => $code,
 				"siteName" => $siteName,

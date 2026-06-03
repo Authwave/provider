@@ -80,7 +80,7 @@ class UserRepository {
 			STR_PAD_LEFT
 		);
 
-		Log::info("Generated new auth code for user $userId");
+		Log::info("Generated new security code for user $userId");
 
 		$this->db->insert("createAuthCode", [
 			"id" => new Ulid(),
