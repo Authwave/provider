@@ -12,7 +12,6 @@ use League\CommonMark\CommonMarkConverter;
 use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\Attributes\AttributesExtension;
 use League\CommonMark\Extension\Autolink\AutolinkExtension;
-use Symfony\Component\Mailer\Envelope;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Address;
@@ -170,10 +169,9 @@ class EmailRepository {
 		$mailer = $this->mailer ?? new Mailer($transport);
 		$email = new Email();
 		$email->addFrom(new Address($fromAddress, $fromName));
-		$email->returnPath($fromAddress);
 		$email->addTo(new Address($toAddress));
 		$email->subject($subject);
-		$email->text(strip_tags($markdown));
+		$email->text($markdown);
 		$email->html($html);
 
 		$ulid = new Ulid("EMAIL");
@@ -183,10 +181,7 @@ class EmailRepository {
 		$authwaveVersion = trim($authwaveVersion);
 		$headers->addHeader("X-AUTHWAVE-VERSION", $authwaveVersion);
 
-		$mailer->send($email, new Envelope(
-			new Address($fromAddress),
-			[new Address($toAddress)],
-		));
+		$mailer->send($email);
 		return $ulid;
 	}
 }
