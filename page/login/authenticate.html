@@ -1,42 +1,32 @@
+<login-header />
+
 <form method="post">
-	<div>
-		<header>
-			<img src="/asset/default-logo.svg"
-				alt="{applicationName} logo"
-				data-bind:src="applicationLogoSrc"
-				data-bind-attributes />
-		</header>
+	<p>Logging in as <a href="/login/?email={{email}}" data-bind:text="email">you@example.com</a>.</p>
+	<p>Enter your password, or choose a new one to receive a security code by email.</p>
 
-		<main>
-			<p>Logging in as <a href="/login?email" data-bind:text="email" data-bind-attributes>you@domain.example</a>.</p>
-			<p>Please choose how you would like to log in.</p>
+	<div class="login-options">
+		<div class="thingy-button">
+			<label>
+				<span>Your password</span>
+				<input type="password" name="password" minlength="12" autofocus />
+			</label>
+			<button name="do" value="password" class="primary">
+				<span>Log in with password</span>
+			</button>
+		</div>
 
-			<div class="auth-option password">
-				<label>
-					<span>Your password</span>
-					<input name="password" type="password" placeholder="e.g. ••••••••••••" autofocus />
-				</label>
+		<p>Alternatively, send a login link to your email to login without a password.</p>
 
-				<button name="do" value="password" title="Log in with password">
-					<span>Log in with password</span>
-				</button>
-			</div>
-
-			<div class="auth-option social">
-				<ul>
-					<li data-template>
-						<button name="do" value="social{}" data-bind-attributes>Log in with&nbsp;<span data-bind:text>Provider</span></button>
-					</li>
-				</ul>
-			</div>
-
-			<div class="auth-option email">
-				<button title="Log in with email link" name="do" value="email">Email login link</button>
-			</div>
-
-			<div class="actions">
-				<a href="/help">Need help?</a>
-			</div>
-		</main>
+		<div class="actions">
+			<button name="do" value="link">
+				<span>Email login link</span>
+			</button>
+		</div>
 	</div>
+
+<!--	<div class="help">-->
+<!--		<a href="/help#login-options" target="_blank">Need help?</a>-->
+<!--	</div>-->
 </form>
+
+<!--<login-footer />-->

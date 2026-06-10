@@ -1,353 +1,136 @@
 <?php
 namespace Authwave\User;
 
-use Authwave\Application\Application;
-use Authwave\Application\ApplicationDeployment;
-use Authwave\Application\ApplicationField;
-use Authwave\DataTransfer\LoginData;
-use Authwave\Email\ConfirmationCode;
-use DateTime;
+use Authwave\Email\EmailRepository;
+use Authwave\Model\ApplicationDeployment;
+use Authwave\Model\ApplicationRepository;
 use Gt\Database\Query\QueryCollection;
 use Gt\Database\Result\Row;
-use Gt\Session\SessionStore;
+use Gt\Logger\Log;
+use Gt\Ulid\Ulid;
 
 class UserRepository {
-	public const SESSION_KEY = "authwave.user";
-	public const SESSION_USER_OBJECT = "authwave_user_object";
-
-	private QueryCollection $db;
-	private SessionStore $session;
-
 	public function __construct(
-		QueryCollection $db,
-		SessionStore $session
-	) {
-		$this->db = $db;
-		$this->session = $session;
-	}
+		private readonly QueryCollection $db,
+		private readonly ApplicationRepository $applicationRepo,
+		private readonly EmailRepository $emailer,
+	) {}
 
-	public function load(bool $refresh = false):User {
-		$userObject = $this->session->get(self::SESSION_USER_OBJECT);
-
-		if(!$refresh
-		&& $userObject) {
-			return $userObject;
-		}
-
-		if(!$userObject) {
-			throw new UserNotInSessionException();
-		}
-
-		/** @var User $userObject */
-		$userObject = $this->getById($userObject->getId());
-		$this->save($userObject);
-		return $userObject;
-	}
-
-	public function save(User $user):void {
-		$this->session->set(self::SESSION_USER_OBJECT, $user);
-	}
-
-	public function getOrCreate(
-		LoginData $loginData,
-		ApplicationDeployment $deployment
-	):User {
-		try {
-			$user = $this->getByDeployment(
-				$loginData->getEmail(),
-				$deployment
-			);
-		}
-		catch(UserEmailNotFoundInDeploymentException $exception) {
-			$userId = $this->createInDeployment(
-				$loginData->getEmail(),
-				$deployment
-			);
-			$user = $this->getById($userId);
-		}
-
-		return $user;
-	}
-
-	public function getByDeployment(
+	public function get(
+		ApplicationDeployment $deployment,
 		string $email,
-		ApplicationDeployment $deployment
 	):?User {
-		$row = $this->db->fetch(
-			"getByDeployment", [
-			"email" => $email,
-			"deploymentId" => $deployment->getId(),
-		]);
-		if(!$row) {
-			throw new UserEmailNotFoundInDeploymentException(
-				"$email ({$deployment->getId()})"
-			);
-		}
-
-		return $this->rowToUser($row, $deployment);
-	}
-
-	public function createInDeployment(
-		string $email,
-		ApplicationDeployment $deployment
-	):int {
-		$uuid = bin2hex(random_bytes(16));
-
-		return $this->db->insert(
-			"createUser", [
-			"uuid" => $uuid,
-			"email" => $email,
-			"deploymentId" => $deployment->getId()
-		]);
-	}
-
-	public function getById(int $id):User {
-		$row = $this->db->fetch("getById", $id);
-
-		$application = new Application(
-			$row->getInt("applicationId"),
-			$row->getString("displayName")
-		);
-
-		$deployment = new ApplicationDeployment(
-			$application,
-			$row->getInt("deploymentId"),
-			$row->getString("clientKey"),
-			$row->getString("clientHost"),
-			$row->getString("clientLoginHost")
-		);
-
-		return $this->rowToUser($row, $deployment);
-	}
-
-	/**
-	 * Return void if the login is successful.
-	 */
-	public function handleLogin(
-		User $user,
-		string $type,
-		?string $data
-	):void {
-		$exception = new LoginNeedsEmailConfirmationException();
-
-		switch($type) {
-		case LoginData::TYPE_PASSWORD:
-			$detail = $this->db->fetchString(
-				"getConfirmedIdentificationDetail",
-				$user->getId(),
-				$type
-			);
-
-			if($detail
-			&& password_verify($data, $detail)) {
-				return;
-			}
-
-			$id = $this->db->insert(
-				"setIdentificationDetail", [
-				"userId" => $user->getId(),
-				"type" => LoginData::TYPE_PASSWORD,
-				"detail" => password_hash($data, PASSWORD_DEFAULT),
-			]);
-
-			$exception->setId($id);
-			break;
-
-		case LoginData::TYPE_EMAIL:
-// There is no way to be "successful" when the user is requesting email login
-// as a confirmation email _is_ the identification mechanism.
-			$id = $this->db->insert(
-				"setIdentificationDetail", [
-				"userId" => $user->getId(),
-				"type" => LoginData::TYPE_EMAIL,
-				"detail" => $user->getEmail(),
-			]);
-
-			$exception->setId($id);
-			break;
-		}
-
-		throw $exception;
-	}
-
-	public function storeConfirmationCode(
-		string $code,
-		int $id
-	) {
-		$this->db->update(
-			"setIdentificationCode",
-			$code,
-			$id
+		return $this->rowToUser(
+			$this->db->fetch(
+				"getByDeploymentAndEmail",
+				$deployment->id,
+				$email,
+			),
+			$deployment,
 		);
 	}
 
-	public function confirm(User $user, string $code):void {
-		$row = $this->db->fetch(
-			"getIdentification",
-			$user->getId(),
-			$code
-		);
-
-		if(!$row) {
-			throw new InvalidConfirmationCodeException($code);
-		}
-
-		$this->db->update(
-			"confirm",
-			$user->getId(),
-			$code
-		);
+	private function getById(string $id):?User {
+		return $this->rowToUser($this->db->fetch("getById", $id));
 	}
 
-	/** @return UserField[] Assoc. array, key is ApplicationField name */
-	public function getUserFields(User $user):array {
-		$fields = [];
-		$resultSet = $this->db->fetchAll(
-			"getUserFields",
-			$user->getId()
-		);
-
-		$application = null;
-
-		foreach($resultSet as $row) {
-			if(!$application) {
-				$application = new Application(
-					$row->getInt("applicationId"),
-					$row->getString("applicationDisplayName")
-				);
-			}
-
-			$name = $row->getString("name");
-
-			$applicationField = new ApplicationField(
-				$application,
-				$row->getInt("fieldId"),
-				$row->getString("type"),
-				$name,
-				$row->getString("displayName"),
-				$row->getString("hint"),
-				$row->getString("help"),
-				$row->getBool("required"),
-				$row->getBool("showOnSignUp")
-			);
-
-			$fields[$name] = new UserField(
-				$user,
-				$applicationField,
-				$row->getInt("userFieldId"),
-				$row->getString("value")
-			);
-		}
-
-		return $fields;
-	}
-
-	/**
-	 * @param ApplicationField[] $applicationFields
-	 */
-	public function doesUserNeedSignupFields(
-		User $user,
-		array $applicationFields
-	):bool {
-		$userFields = $this->getUserFields($user);
-
-		if(empty($applicationFields)) {
+	public function checkLogin(User $user, string $password):bool {
+		$hash = $this->db->fetchString("getHashById", $user->id);
+		if(!$hash) {
 			return false;
 		}
 
-		$fieldsToShow = array_filter(
-			$applicationFields,
-			fn(ApplicationField $f) => $f->doesShowOnSignUp()
-		);
-
-		/** @var ApplicationField[] $requiredFields */
-		$requiredFields = array_filter(
-			$fieldsToShow,
-			fn(ApplicationField $f) => $f->isRequired()
-		);
-
-		foreach($requiredFields as $field) {
-			if(!$userFields[$field->getName()]) {
-				return true;
-			}
-		}
-
-		if(!empty($fieldsToShow)
-		&& !$user->getLastLoggedIn()) {
-			return true;
-		}
-
-		return false;
+		return password_verify($password, $hash);
 	}
 
-	public function setFields(User $user, array $kvp):void {
-		foreach($kvp as $key => $value) {
-			$existingRow = $this->db->fetch(
-				"getExistingUserFieldByName",
-				$key,
-				$user->getId()
-			);
-
-			if($existingRow) {
-				$this->db->delete(
-					"deleteUserField",
-					$existingRow->getInt("id")
-				);
-			}
-
-			$this->db->insert(
-				"setUserField", [
-				"userId" => $user->getId(),
-				"fieldName" => $key,
-				"value" => $value
-			]);
-		}
+	public function create(
+		ApplicationDeployment $deployment,
+		string $email,
+		?string $password = null,
+	):void {
+		$userId = new Ulid();
+		$this->db->insert("create", [
+			"id" => $userId,
+			"applicationDeploymentId" => $deployment->id,
+			"email" => $email,
+		]);
+		$this->generateAuthCode($deployment, $userId, $password);
 	}
 
-	public function setLastLogin(User $user, DateTime $when = null):void {
-		if(is_null($when)) {
-			$when = new DateTime();
+	/**
+	 * Generating a security token will create a new random value to insert
+	 * into the user_token table. When there's a token in the table, the
+	 * user will be forced to enter it when they log on. An optional new
+	 * password can be assigned when the user successfully enters the code.
+	 */
+	public function generateAuthCode(
+		ApplicationDeployment $deployment,
+		string $userId,
+		?string $newPassword = null,
+	):void {
+		$hash = null;
+		if($newPassword) {
+			$hash = password_hash($newPassword, PASSWORD_DEFAULT);
 		}
 
-		$this->db->update(
-			"setLastLoginDateTime",
-			$when->format("Y-m-d H:i:s"),
-			$user->getId()
+		$code = str_pad(
+			(string)rand(1_000, 99_999),
+			5,
+			"0",
+			STR_PAD_LEFT
 		);
 
-		$this->save($this->getById($user->getId()));
-	}
+		Log::info("Generated new security code for user $userId");
 
-	private function rowToUser(
-		Row $row,
-		ApplicationDeployment $deployment
-	):User {
-		$userClass = User::class;
+		$this->db->insert("createAuthCode", [
+			"id" => new Ulid(),
+			"userId" => $userId,
+			"code" => $code,
+			"hash" => $hash,
+		]);
 
-		if($row->getBool("admin")) {
-			$userClass = AdminUser::class;
-		}
-
-		/** @var User|AdminUser $user */
-		$user = new $userClass(
+		$user = $this->getById($userId);
+		$this->emailer->scheduleAuthCode(
 			$deployment,
-			$row->getInt("userId"),
-			$row->getString("uuid"),
-			$row->getString("email"),
-			$row->getDateTime("lastLoggedIn")
+			$user->email,
+			$user->deployment->application->name,
+			$code,
+			$user->deployment->application->emailSendFrom,
 		);
+	}
 
-		$fieldResultSet = $this->db->fetchAll(
-			"getUserFields",
-			$user->getId()
-		);
-		foreach($fieldResultSet as $fieldRow) {
-			$user->addField(
-				$fieldRow->getString("name"),
-				$fieldRow->getString("value")
-			);
+	public function getLatestAuthCode(string $userId):?string {
+		return $this->db->fetchString("getLatestAuthCode", $userId);
+	}
+
+	public function consumeAuthCode(string $userId, ?string $authCode):void {
+		if(!$authCode) {
+			return;
 		}
 
-		return $user;
+		$this->db->update("setHashFromAuthCode", $userId, $authCode);
+		$this->db->delete("consumeUserAuthToken", $userId, $authCode);
+		Log::info("Consumed token $authCode for user $userId");
+	}
+
+	public function cleanOldAuthCodes():void {
+		$numCleaned = $this->db->delete("deleteOldAuthCodes");
+		Log::info("Cleaned $numCleaned old tokens");
+	}
+
+	private function rowToUser(?Row $row, ?ApplicationDeployment $deployment = null):?User {
+		if(!$row) {
+			return null;
+		}
+
+		if(!$deployment) {
+			$deployment = $this->applicationRepo->getDeploymentById($row->getString("applicationDeploymentId"));
+		}
+
+		return new User(
+			$row->getString("userId"),
+			$deployment,
+			$row->getString("email"),
+		);
 	}
 }

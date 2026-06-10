@@ -1,60 +1,52 @@
 <?php
-namespace Authwave\Page;
 
-use Authwave\Application\ApplicationDeployment;
-use Authwave\Crypto\Secret;
-use Authwave\DataTransfer\RequestData;
-use Authwave\UI\Flash;
-use Gt\DomTemplate\TemplateComponentNotFoundException;
+use Authwave\Crypto\ProviderUri;
+use Authwave\Session\LoginSession;
+use Authwave\Model\ApplicationRepository;
+use Gt\Cipher\EncryptedUri;
+use Gt\Cipher\Key;
+use Gt\Http\Response;
 use Gt\Http\Uri;
-use Gt\WebEngine\Logic\Page;
+use Gt\Session\Session;
 
-class _CommonPage extends Page {
-	public RequestData $requestData;
-	public ApplicationDeployment $deployment;
-	public Flash $flash;
+function go(
+	ApplicationRepository $appRepo,
+	Uri $uri,
+	LoginSession $loginSession,
+	Session $session,
+	Response $response,
+):void {
+	$providerUri = new ProviderUri($uri);
+	if($deploymentId = $providerUri->getDeploymentId()) {
+		$deployment = $appRepo->getDeploymentById($deploymentId);
 
-	public function go():void {
-		$this->handleClientRequest();
-		$this->flash();
-	}
+		$enc = new EncryptedUri(
+			$uri,
+			ProviderUri::QUERY_STRING_CIPHER,
+			ProviderUri::QUERY_STRING_INIT_VECTOR
+		);
+		$decrypted = $enc->decryptMessage(new Key($deployment->secret));
+		parse_str($decrypted, $data);
 
-	private function handleClientRequest():void {
-		$uriPath = $this->server->getRequestUri()->getPath();
-
-		if(!isset($this->requestData)) {
-			if($uriPath === "/admin") {
-				return;
-			}
-			elseif($uriPath === "/config") {
-				if(isset($this->deployment)) {
-					$this->redirect($this->deployment->getClientHost());
-				}
-			}
-			else {
-				$this->redirect($this->deployment->getClientHost());
-			}
+		if($data["action"] === "login") {
+			$loginSession->setDeployment($deployment);
+			$loginSession->setData($data);
+			$response->redirect("/");
+		}
+		elseif($data["action"] === "logout") {
+			$loginSession->clearData();
+			$session->kill();
+			$response->redirect((new Uri($deployment->getClientReturnUri()))->withQueryValue("do", "logout"));
 		}
 	}
-
-	private function flash():void {
-		foreach($this->flash->getQueue() as $type => $list) {
-			foreach($list as $message) {
-				try {
-					$t = $this->document->getTemplate(
-						"ui-flash-message"
-					);
-				}
-				catch(TemplateComponentNotFoundException $exception) {
-					break(2);
-				}
-
-				$t->bindValue($message);
-				$inserted = $t->insertTemplate();
-				$inserted->classList->add($type);
-			}
+	elseif(!$loginSession->getDeployment()) {
+		$host = $uri->getHost();
+		$port = $uri->getPort();
+		if($port && $port !== 443) {
+			$host .= ":$port";
 		}
 
-		$this->flash->clear();
+		$deployment = $appRepo->getDeploymentByProviderHost($host);
+		$response->redirect($deployment->clientHost . $deployment->clientLoginPath);
 	}
 }

@@ -1,39 +1,61 @@
 <?php
-namespace Authwave\Page\Login;
+use Authwave\Model\ApplicationDeployment;
+use Authwave\Model\ApplicationRepository;
+use Authwave\Session\LoginSession;
+use Gt\DomTemplate\Binder;
+use Gt\Http\Request;
+use Gt\Http\Response;
+use Gt\Http\ServerInfo;
+use Gt\Input\Input;
+use Gt\Session\Session;
 
-use Authwave\DataTransfer\LoginData;
-use Authwave\DataTransfer\RequestData;
-use Gt\DomTemplate\Element;
-use Gt\Input\InputData\InputData;
-use Gt\WebEngine\Logic\Page;
-
-class IndexPage extends Page {
-	public function go():void {
-		$this->prefill(
-			$this->document->querySelector("[name=email]"),
-			$this->input->contains("email")
-		);
-		$this->session->remove(LoginData::SESSION_LOGIN_DATA);
-	}
-
-	public function doContinue(InputData $data):void {
-		$loginData = new LoginData($data->getString("email"));
-		$this->session->set(LoginData::SESSION_LOGIN_DATA, $loginData);
-
-		$this->redirect("/login/authenticate");
-	}
-
-	private function prefill(Element $emailInput, bool $hasEmail):void {
-		if(!$hasEmail) {
-			return;
+function go(
+	Input $input,
+	Request $request,
+	Response $response,
+	LoginSession $loginSession,
+	Binder $binder,
+):void {
+	if($email = $input->getString("email")) {
+		if($request->getMethod() === "GET") {
+			$loginSession->clearData();
 		}
 
-		/** @var LoginData $loginData */
-		$loginData = $this->session->get(LoginData::SESSION_LOGIN_DATA);
-		if(!$loginData) {
-			return;
-		}
-
-		$emailInput->value = $loginData->getEmail();
+		$binder->bindKeyValue("email", $email);
 	}
+
+	if($loginSession->getEmail()) {
+		$response->redirect("/login/authenticate/");
+	}
+
+	$deployment = $loginSession->getDeployment();
+	$clientHost = $deployment->clientHost;
+	$binder->bindKeyValue("clientHost", $clientHost);
+	$binder->bindKeyValue("title", $deployment->title);
+}
+
+function do_continue(
+	Input $input,
+	Response $response,
+	LoginSession $loginSession,
+):void {
+	if($email = $input->getString("email") ?? $loginSession->getEmail()) {
+		$loginSession->setEmail($email);
+		$response->redirect("/login/authenticate/");
+	}
+	else {
+		// TODO: Show "please fill in your email address" error.
+	}
+}
+
+function do_cancel(
+	Response $response,
+	Session $session,
+	LoginSession $loginSession,
+):void {
+	$deployment = $loginSession->getDeployment();
+	if(strtok($deployment->getClientReturnUri()->getHost(), ":") !== "localhost") {
+		$session->kill();
+	}
+	$response->redirect($deployment->getClientReturnUri()->withQueryValue("do", "cancel"));
 }

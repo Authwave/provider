@@ -1,16 +1,8 @@
-<meta http-equiv="refresh" content="2;url={redirectUri}" data-bind-attributes />
+<login-header />
 
 <form method="post">
-	<div>
-		<header>
-			<img src="/asset/default-logo.svg"
-				alt="{applicationName} logo"
-				data-bind:src="applicationLogoSrc"
-				data-bind-attributes />
-		</header>
-
-		<main>
-			<h1>You're logged in</h1>
-		</main>
-	</div>
+	<h1>You're now logged in</h1>
+	<p><a href="{{returnUri}}">Continue to the application</a>.</p>
 </form>
+
+<login-footer />

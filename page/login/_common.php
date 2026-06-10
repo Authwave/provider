@@ -1,31 +1,20 @@
 <?php
-namespace Authwave\Page\Login;
+use Authwave\Session\LoginSession;
+use Gt\Dom\HTMLDocument;
+use Gt\DomTemplate\Binder;
 
-use Authwave\Application\ApplicationDeployment;
-use Gt\DomTemplate\Element;
-use Gt\WebEngine\Logic\Page;
+function go(
+	HTMLDocument $document,
+	Binder $binder,
+	LoginSession $loginSession,
+):void {
+	$deployment = $loginSession->getDeployment();
+	$logoFilePath = "data/upload/{$deployment->application->id}/logo.svg";
 
-class _CommonPage extends Page {
-	public ApplicationDeployment $deployment;
+	$binder->bindKeyValue("title", "$deployment->title - Login");
+	$binder->bindKeyValue("applicationName", $deployment->title);
 
-	public function go():void {
-		$this->logo(
-			$this->document->querySelector("form")
-		);
-	}
-
-	private function logo(Element $loginContainer):void {
-		$displayName = $this->deployment->getApplication()
-			->getDisplayName();
-		$lcDisplayName = strtolower($displayName);
-
-		$loginContainer->bindKeyValue(
-			"applicationName",
-			$displayName
-		);
-		$loginContainer->bindKeyValue(
-			"applicationLogoSrc",
-			"/asset/applicationLogo/$lcDisplayName.svg"
-		);
+	if(is_file($logoFilePath)) {
+		$binder->bindKeyValue("logoPath", "/$logoFilePath");
 	}
 }

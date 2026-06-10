@@ -1,0 +1,25 @@
+<login-header />
+<form method="post">
+	<h1>Security check</h1>
+
+	<p>
+		We've just emailed <a href="/login/?email={{email}}" data-bind:text="email">email@example.com</a> a security code.
+	</p>
+	<p>
+		Please confirm your account by typing the security code into the field below.
+	</p>
+
+	<label>
+		<span>Security code</span>
+		<span data-template="error" data-bind:text class="error">Error message.</span>
+		<input name="token" required autofocus autocomplete="off" />
+	</label>
+
+	<div class="actions">
+		<button name="do" value="confirm" class="primary">Confirm</button>
+	</div>
+	<div class="help">
+		<a href="/login/?email={{email}}">Cancel</a>
+	</div>
+</form>
+<login-footer />

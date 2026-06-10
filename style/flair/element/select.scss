@@ -1,5 +1,4 @@
 select {
-	@extend %d-ui;
-	-moz-appearance:none;
+	@extend %d-ui-element;
 	cursor: pointer;
 }

@@ -3,17 +3,16 @@
 	"description": "Hosted or self-hosted Authwave provider.",
 
 	"require": {
-		"php": ">=7.4",
-		"ext-openssl": "*",
-
-		"phpgt/webengine": "dev-master",
-		"sendgrid/sendgrid": "~7"
+		"php": ">=8.1",
+		"phpgt/cipher": "^1.0",
+		"phpgt/webengine": "^5.0",
+		"league/commonmark": "^v2.3.5",
+		"ext-curl": "*",
+		"symfony/mailer": "^8.0"
 	},
 	"require-dev": {
-		"phpunit/phpunit": "8.*",
-		"behat/behat": "^3.3",
-		"behat/mink": "^1.7",
-		"dmore/behat-chrome-extension": "dev-master@dev"
+		"phpunit/phpunit": "^9.5",
+		"authwave/php-client": "2022.x-dev"
 	},
 
 	"autoload": {

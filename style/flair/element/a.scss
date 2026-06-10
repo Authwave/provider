@@ -1,19 +1,11 @@
 a {
-	&.button {
-		@extend %o-button;
-	}
-
+	color: var(--pal-text-link);
 	text-decoration: none;
-	color: $palette-link;
 
 	&:hover {
 		text-decoration: underline;
 	}
 	&:focus {
-		text-decoration: underline;
-	}
-	&:active {
-		background: $palette-link;
-		color: $palette-link-contrast;
+		outline: var(--theme-ui-outline-focus);
 	}
 }

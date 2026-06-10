@@ -1,0 +1,136 @@
+$fa-font-path: "/asset/font/fontawesome";
+
+@import "font/roboto";
+@import "font/fontawesome/fontawesome";
+@import "font/fontawesome/regular";
+
+@import "variable/palette";
+
+@import "flair/flair-main";
+
+body.dir--login {
+	>login-header {
+		@extend %o-container--small;
+		padding: 6rem 0 2rem;
+
+		img {
+			display: block;
+			margin: 0 auto;
+			max-width: 80%;
+			height: 3rem;
+			box-sizing: border-box;
+		}
+	}
+
+	>form {
+		@extend %p-form-fields, %o-card, %o-container--small;
+
+		.pw {
+			position: absolute;
+			transform: translateX(-1000vw) scale(0.01, 0.01);
+		}
+
+		.login-options {
+			>* {
+				&:not(:last-of-type) {
+					margin-bottom: 4rem;
+
+					&::before {
+						position: absolute;
+						z-index: 2;
+						left: 0;
+						right: 0;
+						transform: translateY(2.5rem);
+						content: "or";
+						display: block;
+						box-sizing: border-box;
+						width: 2rem;
+						margin: 0 auto;
+						padding: 0.5rem;
+						text-align: center;
+						background-color: white;
+					}
+					&::after {
+						position: absolute;
+						z-index: 1;
+						left: 0;
+						right: 0;
+						transform: translateY(1.5rem);
+						content: "";
+						display: block;
+						box-sizing: border-box;
+						width: 16rem;
+						margin: 0 auto;
+						height: 2px;
+						background-color: var(--pal-border-ui);
+						text-align: center;
+						opacity: 0.25;
+					}
+
+				}
+			}
+		}
+	}
+
+	>login-footer {
+		@extend %o-container--small;
+		padding-top: 2rem;
+
+		footer {
+			display: flex;
+			justify-content: space-between;
+		}
+
+		label {
+			span {
+				display: none;
+			}
+		}
+		select {
+			background-color: transparent;
+			border: none;
+			font-size: 0.75rem;
+			opacity: 0.75;
+
+			&:hover, &:focus {
+				opacity: 1;
+			}
+
+			@media(min-width: $break-small) {
+				margin-left: -0.5rem;
+			}
+		}
+		ul {
+			display: flex;
+
+			@media(min-width: $break-small) {
+				margin-right: -0.5rem;
+			}
+
+			>li {
+				a {
+					display: block;
+					padding: 0.5rem;
+					font-size: 0.75rem;
+					color: var(--pal-text);
+					opacity: 0.75;
+				}
+			}
+		}
+	}
+}
+
+body.uri--login--success {
+	form {
+		$size: 12rem;
+
+		position: relative;
+		height: $size + 4rem + 2rem;
+	}
+}
+
+body.uri--login--error {
+	form {
+		margin-top: 8rem;
+	}
+}

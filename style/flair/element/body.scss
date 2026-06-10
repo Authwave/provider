@@ -1,7 +1,7 @@
 body {
-	height: 100%;
-	min-width: 320px;
 	margin: 0;
-	font-family: $font-body;
-	color: $palette-text-body;
+	height: 100%;
+	background-color: var(--pal-bg-page);
+	color: var(--pal-text);
+	font-family: var(--theme-font);
 }

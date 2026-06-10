@@ -1,27 +1,6 @@
 input {
-	&[type=button], &[type=reset], &[type=file] {
-		@extend %o-button;
-	}
-
-	&:not([type]),
-	&[type=color],
-	&[type=date],
-	&[type=datetime],
-	&[type=datetime-local],
-	&[type=month],
-	&[type=week],
-	&[type=time],
-	&[type=email],
-		//&[type=file],
-		//&[type=image],
-	&[type=password],
-	&[type=search],
-	&[type=tel],
-	&[type=text],
-	&[type=url],
-	&[type=number] {
-		@extend %d-ui;
-
-		cursor: text;
+	&:not([type=checkbox]),
+	&:not([type=radio]) {
+		@extend %d-ui-element;
 	}
 }

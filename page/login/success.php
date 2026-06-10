@@ -1,49 +1,53 @@
 <?php
-namespace Authwave\Page\Login;
-
-use Authwave\Application\ApplicationDeployment;
-use Authwave\Application\ApplicationRepository;
-use Authwave\DataTransfer\LoginData;
-use Authwave\DataTransfer\RequestData;
-use Authwave\User\User;
+use Authwave\Session\LoginSession;
+use Authwave\User\LoginState;
 use Authwave\User\UserRepository;
-use Gt\WebEngine\Logic\Page;
+use Gt\Cipher\InitVector;
+use Gt\Cipher\Key;
+use Gt\Cipher\Message\EncryptedMessage;
+use Gt\Cipher\Message\PlainTextMessage;
+use Gt\DomTemplate\Binder;
+use Gt\Http\Response;
+use Gt\Input\Input;
+use Gt\Logger\Log;
+use Gt\Session\Session;
 
-class SuccessPage extends Page {
-	public ApplicationRepository $appRepo;
-	public UserRepository $userRepo;
-	public ApplicationDeployment $deployment;
-	public User $user;
-
-	public function go():void {
-		if($this->userRepo->doesUserNeedSignupFields(
-			$this->user,
-			$this->appRepo->getApplicationFields($this->deployment->getApplication())
-		)) {
-			$this->redirect(
-				"/login/signup?continue="
-				. $this->input->getString("continue")
-			);
-		}
-
-		$this->session->remove(RequestData::SESSION_REQUEST_DATA);
-
-		$this->redirectToClient(
-			$this->input->getString("continue")
-		);
+function go(
+	Input $input,
+	Response $response,
+	Binder $binder,
+	LoginSession $loginSession,
+	UserRepository $userRepo,
+	Session $session,
+):void {
+	if($loginSession->getState() !== LoginState::LOGGED_IN) {
+		$response->redirect("/login/");
 	}
 
-	private function redirectToClient(string $base64Redirect = null):void {
-		$this->userRepo->setLastLogin($this->user);
+	$secretIvB64 = $loginSession->getDataKey("secretIv");
+	$secretIvB64 = strtr($secretIvB64, " ", "+");
+	$secretIvBytes = base64_decode($secretIvB64);
+	$secretIv = (new InitVector())->withBytes($secretIvBytes);
 
-		if(is_null($base64Redirect)
-		|| ($redirectUri = base64_decode($base64Redirect)) === false) {
-			$this->redirect("/");
-		}
+	$deployment = $loginSession->getDeployment();
+	$userDataMessage = new PlainTextMessage(
+		json_encode([
+			"id" => $userRepo->get($deployment, $loginSession->getEmail())->id,
+			"email" => $loginSession->getEmail(),
+		]),
+		$secretIv,
+	);
+	$returnUri = $deployment->getClientReturnUri();
+	$cipherText = $userDataMessage->encrypt(new Key($deployment->secret));
 
-		$this->document->bindKeyValue(
-			"redirectUri",
-			$redirectUri
-		);
+	$queryString = http_build_query([
+		"AUTHWAVE_RESPONSE_DATA" => (string)$cipherText,
+	]);
+
+	$binder->bindKeyValue("returnUri", "$returnUri?$queryString");
+	$session->kill();
+
+	if(!$input->contains("debug")) {
+		$response->redirect("$returnUri?$queryString");
 	}
 }
