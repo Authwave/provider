@@ -21,3 +21,10 @@ on
 
 where
 	providerHost = ?
+
+order by
+		(
+			application.productionApplicationDeploymentId is not null
+			and
+			application_deployment.id = application.productionApplicationDeploymentId
+		) desc

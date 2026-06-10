@@ -18,10 +18,6 @@ function go(
 ):void {
 	$providerUri = new ProviderUri($uri);
 	if($deploymentId = $providerUri->getDeploymentId()) {
-
-// TODO: There may be multiple client hosts with the same value, especially when
-// on localhost! The key needs to be used in this getter to avoid people being
-// able to retrieve other people's deployments just by knowing the host.
 		$deployment = $appRepo->getDeploymentById($deploymentId);
 
 		$enc = new EncryptedUri(
