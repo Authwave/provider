@@ -9,7 +9,7 @@ use Authwave\Model\ApplicationRepository;
 use Authwave\User\UserRepository;
 use Gt\Database\Database;
 use Gt\Session\Session;
-use Gt\WebEngine\Middleware\DefaultServiceLoader;
+use GT\WebEngine\Service\DefaultServiceLoader;
 
 class ServiceLoader extends DefaultServiceLoader {
 	public function loadFlashSession():FlashSession {
