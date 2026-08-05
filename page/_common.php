@@ -29,12 +29,12 @@ function go(
 		parse_str($decrypted, $data);
 
 		if($data["action"] === "login") {
-			$loginSession->setDeployment($deployment);
+			$loginSession->setDeploymentForLogin($deployment);
 			$loginSession->setData($data);
 			$response->redirect("/");
 		}
 		elseif($data["action"] === "logout") {
-			$loginSession->clearData();
+			$loginSession->clearDataForLogout($deployment);
 			$session->kill();
 			$response->redirect((new Uri($deployment->getClientReturnUri()))->withQueryValue("do", "logout"));
 		}
@@ -47,6 +47,6 @@ function go(
 		}
 
 		$deployment = $appRepo->getDeploymentByProviderHost($host);
-		$response->redirect($deployment->clientHost . $deployment->clientLoginPath);
+		$appRepo->redirectToDeployment($deployment, $host, $response);
 	}
 }

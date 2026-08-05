@@ -1,14 +1,18 @@
 <?php
 namespace Authwave\Model;
 
+use Authwave\Security\Action;
+use Authwave\Security\AnonUser;
+use Authwave\Security\Audit;
 use Gt\Database\Query\QueryCollection;
 use Gt\Database\Result\Row;
-use ReflectionClass;
-use ReflectionProperty;
+use Gt\Http\Response;
 
 class ApplicationRepository {
 	public function __construct(
-		private readonly QueryCollection $db
+		private readonly QueryCollection $db,
+		private readonly Audit $audit,
+		private readonly AnonUser $anonUser,
 	) {
 	}
 
@@ -36,6 +40,22 @@ class ApplicationRepository {
 		}
 
 		return $deployment;
+	}
+
+	public function redirectToDeployment(
+		ApplicationDeployment $deployment,
+		string $host,
+		Response $response,
+	):never {
+		$redirectTo = $deployment->clientHost
+			. $deployment->clientLoginPath;
+
+		$this->audit->create(Action::CLIENT_LOGIN_REDIRECTED, [
+			"deploymentId" => $deployment->id,
+			"providerHost" => $host,
+			"redirectTo" => $redirectTo,
+		], $this->anonUser);
+		$response->redirect($redirectTo);
 	}
 
 	public function getDeploymentByClientHost(string $clientHost):ApplicationDeployment {
