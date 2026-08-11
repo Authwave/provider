@@ -4,6 +4,8 @@ namespace Authwave\User;
 use Authwave\Email\EmailRepository;
 use Authwave\Model\ApplicationDeployment;
 use Authwave\Model\ApplicationRepository;
+use Authwave\Security\Audit;
+use Authwave\Security\Action;
 use Gt\Database\Query\QueryCollection;
 use Gt\Database\Result\Row;
 use Gt\Logger\Log;
@@ -14,6 +16,7 @@ class UserRepository {
 		private readonly QueryCollection $db,
 		private readonly ApplicationRepository $applicationRepo,
 		private readonly EmailRepository $emailer,
+		private readonly Audit $audit,
 	) {}
 
 	public function get(
@@ -36,25 +39,36 @@ class UserRepository {
 
 	public function checkLogin(User $user, string $password):bool {
 		$hash = $this->db->fetchString("getHashById", $user->id);
-		if(!$hash) {
-			return false;
-		}
+		$success = $hash && password_verify($password, $hash);
 
-		return password_verify($password, $hash);
+		$this->audit->create(
+			$success
+				? Action::PASSWORD_LOGIN_SUCCEEDED
+				: Action::PASSWORD_LOGIN_FAILED,
+			["deploymentId" => $user->deployment->id],
+			$user,
+		);
+
+		return $success;
 	}
 
 	public function create(
 		ApplicationDeployment $deployment,
 		string $email,
 		?string $password = null,
-	):void {
+	):User {
 		$userId = new Ulid();
 		$this->db->insert("create", [
 			"id" => $userId,
 			"applicationDeploymentId" => $deployment->id,
 			"email" => $email,
 		]);
+		$user = new User((string)$userId, $deployment, $email);
+		$this->audit->create(Action::USER_CREATED, [
+			"deploymentId" => $deployment->id,
+		], $user);
 		$this->generateAuthCode($deployment, $userId, $password);
+		return $user;
 	}
 
 	/**
@@ -81,6 +95,10 @@ class UserRepository {
 		);
 
 		Log::info("Generated new security code for user $userId");
+		$user = $this->getById($userId);
+		$this->audit->create(Action::SECURITY_CODE_REQUESTED, [
+			"deploymentId" => $deployment->id,
+		], $user);
 
 		$this->db->insert("createAuthCode", [
 			"id" => new Ulid(),
@@ -89,8 +107,8 @@ class UserRepository {
 			"hash" => $hash,
 		]);
 
-		$user = $this->getById($userId);
 		$this->emailer->scheduleAuthCode(
+			$user,
 			$deployment,
 			$user->email,
 			$user->deployment->application->name,
@@ -103,7 +121,27 @@ class UserRepository {
 		return $this->db->fetchString("getLatestAuthCode", $userId);
 	}
 
-	public function consumeAuthCode(string $userId, ?string $authCode):void {
+	public function checkAuthCode(User $user, string $authCode):bool {
+		$expectedAuthCode = $this->getLatestAuthCode($user->id);
+		$success = !is_null($expectedAuthCode)
+			&& hash_equals($expectedAuthCode, $authCode);
+
+		$this->audit->create(
+			$success
+				? Action::SECURITY_CODE_ACCEPTED
+				: Action::SECURITY_CODE_REJECTED,
+			["deploymentId" => $user->deployment->id],
+			$user,
+		);
+
+		if($success) {
+			$this->consumeAuthCode($user->id, $expectedAuthCode);
+		}
+
+		return $success;
+	}
+
+	private function consumeAuthCode(string $userId, ?string $authCode):void {
 		if(!$authCode) {
 			return;
 		}

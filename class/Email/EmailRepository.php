@@ -3,6 +3,10 @@ namespace Authwave\Email;
 
 use Authwave\Model\ApplicationDeployment;
 use Authwave\Model\EmailSettings;
+use Authwave\Security\Audit;
+use Authwave\Security\Action;
+use Authwave\Security\AnonUser;
+use Authwave\User\User;
 use DateTime;
 use DateTimeInterface;
 use Gt\Database\Query\QueryCollection;
@@ -24,10 +28,12 @@ class EmailRepository {
 	public function __construct(
 		private readonly QueryCollection $db,
 		private readonly EmailSettings $defaultEmailSettings,
+		private readonly Audit $audit,
 		private readonly ?Mailer $mailer = null,
 	) {}
 
 	public function schedule(
+		User|AnonUser $user,
 		ApplicationDeployment $deployment,
 		string $toAddress,
 		string $templateName,
@@ -71,6 +77,11 @@ class EmailRepository {
 		$html = $converter->convert($markdown);
 
 		$emailId = new Ulid();
+		$this->audit->create(Action::EMAIL_SCHEDULED, [
+			"deploymentId" => $deployment->id,
+			"emailId" => (string)$emailId,
+			"template" => $templateName,
+		], $user);
 		$this->db->insert("schedule", [
 			"id" => $emailId,
 			"deploymentId" => $deployment->id,
@@ -90,6 +101,7 @@ class EmailRepository {
 	}
 
 	public function scheduleAuthCode(
+		User|AnonUser $user,
 		ApplicationDeployment $deployment,
 		string $email,
 		string $siteName,
@@ -97,6 +109,7 @@ class EmailRepository {
 		string $fromEmail,
 	):string {
 		return $this->schedule(
+			$user,
 			$deployment,
 			$email,
 			"securityCode",
