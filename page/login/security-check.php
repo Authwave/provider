@@ -1,6 +1,9 @@
 <?php
 use Authwave\Session\FlashSession;
 use Authwave\Session\LoginSession;
+use Authwave\Security\Action;
+use Authwave\Security\AnonUser;
+use Authwave\Security\Audit;
 use Authwave\User\LoginState;
 use Authwave\User\UserRepository;
 use Gt\Dom\HTMLDocument;
@@ -33,6 +36,8 @@ function do_confirm(
 	LoginSession $loginSession,
 	FlashSession $flash,
 	UserRepository $userRepo,
+	Audit $audit,
+	AnonUser $anonUser,
 ):void {
 	usleep(rand(500_000, 1_500_000));
 	$email = $loginSession->getEmail();
@@ -40,17 +45,18 @@ function do_confirm(
 	$user = $userRepo->get($site, $email);
 
 	if(!$user) {
+		$audit->create(Action::SECURITY_CODE_REJECTED, [
+			"deploymentId" => $site->id,
+			"reason" => "user_not_found",
+		], $anonUser);
 		$response->redirect("/login/");
 	}
 
-	$token = $userRepo->getLatestAuthCode($user->id);
-
-	if(is_null($token) || $input->getString("token") !== $token) {
+	if(!$userRepo->checkAuthCode($user, $input->getString("token"))) {
 		$flash->setFlash("The code you entered is incorrect.", "error");
 		$response->reload();
 	}
 
-	$userRepo->consumeAuthCode($user->id, $token);
 	$loginSession->setState(LoginState::LOGGED_IN);
 	$response->redirect("/login/success/");
 }

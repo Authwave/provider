@@ -2,6 +2,9 @@
 use Authwave\Model\ApplicationDeployment;
 use Authwave\Model\ApplicationRepository;
 use Authwave\Session\LoginSession;
+use Authwave\Security\Action;
+use Authwave\Security\AnonUser;
+use Authwave\Security\Audit;
 use Gt\DomTemplate\Binder;
 use Gt\Http\Request;
 use Gt\Http\Response;
@@ -16,9 +19,11 @@ function go(
 	LoginSession $loginSession,
 	Binder $binder,
 ):void {
+	$deployment = $loginSession->getDeployment();
+
 	if($email = $input->getString("email")) {
 		if($request->getMethod() === "GET") {
-			$loginSession->clearData();
+			$loginSession->clearDataForLogout($deployment);
 		}
 
 		$binder->bindKeyValue("email", $email);
@@ -28,7 +33,6 @@ function go(
 		$response->redirect("/login/authenticate/");
 	}
 
-	$deployment = $loginSession->getDeployment();
 	$clientHost = $deployment->clientHost;
 	$binder->bindKeyValue("clientHost", $clientHost);
 	$binder->bindKeyValue("title", $deployment->title);
@@ -38,13 +42,19 @@ function do_continue(
 	Input $input,
 	Response $response,
 	LoginSession $loginSession,
+	Audit $audit,
+	AnonUser $anonUser,
 ):void {
 	if($email = $input->getString("email") ?? $loginSession->getEmail()) {
 		$loginSession->setEmail($email);
 		$response->redirect("/login/authenticate/");
 	}
 	else {
-		// TODO: Show "please fill in your email address" error.
+		$audit->create(Action::EMAIL_REJECTED, [
+			"deploymentId" => $loginSession->getDeployment()->id,
+			"reason" => "missing_email",
+		], $anonUser);
+		// TODO: DomValidation
 	}
 }
 
@@ -52,8 +62,13 @@ function do_cancel(
 	Response $response,
 	Session $session,
 	LoginSession $loginSession,
+	Audit $audit,
+	AnonUser $anonUser,
 ):void {
 	$deployment = $loginSession->getDeployment();
+	$audit->create(Action::LOGIN_CANCELLED, [
+		"deploymentId" => $deployment->id,
+	], $anonUser);
 	if(strtok($deployment->getClientReturnUri()->getHost(), ":") !== "localhost") {
 		$session->kill();
 	}

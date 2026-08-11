@@ -1,8 +1,10 @@
 <?php
 namespace Authwave\Session;
 
-use Authwave\Model\Application;
 use Authwave\Model\ApplicationDeployment;
+use Authwave\Security\Action;
+use Authwave\Security\AnonUser;
+use Authwave\Security\Audit;
 use Authwave\User\LoginState;
 use Gt\Session\SessionStore;
 
@@ -11,6 +13,8 @@ class LoginSession {
 
 	public function __construct(
 		private SessionStore $session,
+		private readonly Audit $audit,
+		private readonly AnonUser $anonUser,
 	) {
 	}
 
@@ -18,7 +22,10 @@ class LoginSession {
 		return $this->session->get("deployment");
 	}
 
-	public function setDeployment(ApplicationDeployment $deployment):void {
+	public function setDeploymentForLogin(ApplicationDeployment $deployment):void {
+		$this->audit->create(Action::LOGIN_REQUESTED, [
+			"deploymentId" => $deployment->id,
+		], $this->anonUser);
 		$this->session->set("deployment", $deployment);
 	}
 
@@ -32,7 +39,10 @@ class LoginSession {
 		return $kvp[$key] ?? null;
 	}
 
-	public function clearData():void {
+	public function clearDataForLogout(ApplicationDeployment $deployment):void {
+		$this->audit->create(Action::LOGOUT_REQUESTED, [
+			"deploymentId" => $deployment->id,
+		], $this->anonUser);
 		$this->session->remove("email");
 	}
 
@@ -41,6 +51,10 @@ class LoginSession {
 	}
 
 	public function setEmail(string $email):void {
+		$this->audit->create(Action::EMAIL_SUBMITTED, [
+			"deploymentId" => $this->getDeployment()->id,
+			"email" => $email,
+		], $this->anonUser);
 		$this->session->set("email", $email);
 	}
 

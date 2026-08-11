@@ -1,5 +1,7 @@
 <?php
 use Authwave\Session\LoginSession;
+use Authwave\Security\Action;
+use Authwave\Security\Audit;
 use Authwave\User\LoginState;
 use Authwave\User\UserRepository;
 use Gt\Cipher\InitVector;
@@ -19,6 +21,7 @@ function go(
 	LoginSession $loginSession,
 	UserRepository $userRepo,
 	Session $session,
+	Audit $audit,
 ):void {
 	if($loginSession->getState() !== LoginState::LOGGED_IN) {
 		$response->redirect("/login/");
@@ -30,9 +33,10 @@ function go(
 	$secretIv = (new InitVector())->withBytes($secretIvBytes);
 
 	$deployment = $loginSession->getDeployment();
+	$user = $userRepo->get($deployment, $loginSession->getEmail());
 	$userDataMessage = new PlainTextMessage(
 		json_encode([
-			"id" => $userRepo->get($deployment, $loginSession->getEmail())->id,
+			"id" => $user->id,
 			"email" => $loginSession->getEmail(),
 		]),
 		$secretIv,
@@ -49,6 +53,9 @@ function go(
 	);
 
 	$binder->bindKeyValue("returnUri", (string)$returnUri);
+	$audit->create(Action::LOGIN_COMPLETED, [
+		"deploymentId" => $deployment->id,
+	], $user);
 	$session->kill();
 
 	if(!$input->contains("debug")) {
