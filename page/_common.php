@@ -36,7 +36,25 @@ function go(
 		elseif($data["action"] === "logout") {
 			$loginSession->clearData();
 			$session->kill();
-			$response->redirect((new Uri($deployment->getClientReturnUri()))->withQueryValue("do", "logout"));
+
+			if(isset($data["redirectTo"])) {
+				$redirectUri = new Uri($data["redirectTo"]);
+				if(!$redirectUri->getHost()) {
+					$clientReturnUri = new Uri($deployment->getClientReturnUri());
+					$redirectUri = $clientReturnUri
+						->withPath($redirectUri->getPath())
+						->withQuery($redirectUri->getQuery())
+						->withFragment($redirectUri->getFragment());
+				}
+
+				$response->redirect($redirectUri);
+			}
+			else {
+				$response->redirect(
+					(new Uri($deployment->getClientReturnUri()))
+						->withQueryValue("do", "logout")
+				);
+			}
 		}
 	}
 	elseif(!$loginSession->getDeployment()) {
