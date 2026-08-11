@@ -47,10 +47,14 @@ function go(
 	if($returnQuery = $loginSession->getDataKey("returnQuery")) {
 		$returnUri = $returnUri->withQuery($returnQuery);
 	}
-	$returnUri = $returnUri->withQueryValue(
-		"AUTHWAVE_RESPONSE_DATA",
-		(string)$cipherText,
-	);
+	$queryString = $returnUri->getQuery();
+	if($queryString) {
+		$queryString .= "&";
+	}
+	$queryString .= http_build_query([
+		"AUTHWAVE_RESPONSE_DATA" => (string)$cipherText,
+	]);
+	$returnUri = $returnUri->withQuery($queryString);
 
 	$binder->bindKeyValue("returnUri", (string)$returnUri);
 	$audit->create(Action::LOGIN_COMPLETED, [
