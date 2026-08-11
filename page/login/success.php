@@ -40,14 +40,18 @@ function go(
 	$returnUri = $deployment->getClientReturnUri();
 	$cipherText = $userDataMessage->encrypt(new Key($deployment->secret));
 
-	$queryString = http_build_query([
-		"AUTHWAVE_RESPONSE_DATA" => (string)$cipherText,
-	]);
+	if($returnQuery = $loginSession->getDataKey("returnQuery")) {
+		$returnUri = $returnUri->withQuery($returnQuery);
+	}
+	$returnUri = $returnUri->withQueryValue(
+		"AUTHWAVE_RESPONSE_DATA",
+		(string)$cipherText,
+	);
 
-	$binder->bindKeyValue("returnUri", "$returnUri?$queryString");
+	$binder->bindKeyValue("returnUri", (string)$returnUri);
 	$session->kill();
 
 	if(!$input->contains("debug")) {
-		$response->redirect("$returnUri?$queryString");
+		$response->redirect($returnUri);
 	}
 }
