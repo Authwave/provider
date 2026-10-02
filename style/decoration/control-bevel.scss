@@ -1,0 +1,20 @@
+%d-control-bevel {
+	box-shadow:
+		var(--shadow--control--inset-top),
+		var(--shadow--control--inset-bottom),
+		var(--shadow--control);
+
+	&:hover:not(:disabled, [aria-disabled="true"]) {
+		box-shadow:
+			var(--shadow--control--inset-top--hover),
+			var(--shadow--control--inset-bottom--hover),
+			var(--shadow--control);
+	}
+
+	&:active:not(:disabled, [aria-disabled="true"]) {
+		box-shadow:
+			var(--shadow--control--inset-top--active),
+			var(--shadow--control--inset-bottom--active),
+			var(--shadow--control);
+	}
+}

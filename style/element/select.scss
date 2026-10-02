@@ -1,0 +1,5 @@
+@use "../decoration/control";
+
+select {
+	@extend %d-control;
+}

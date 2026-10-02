@@ -1,6 +1,0 @@
-input {
-	&:not([type=checkbox]),
-	&:not([type=radio]) {
-		@extend %d-ui-element;
-	}
-}

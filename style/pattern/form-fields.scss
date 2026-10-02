@@ -1,0 +1,26 @@
+@use "../object/field";
+
+%p-form-fields {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space--gap, 1rem);
+	justify-content: stretch;
+
+	label {
+		@extend %o-field;
+	}
+
+	.actions {
+		display: flex;
+		gap: var(--space--gap, 1rem);
+		justify-content: stretch;
+
+		>* {
+			flex-grow: 1;
+		}
+	}
+
+	> p {
+		margin-block: 0;
+	}
+}

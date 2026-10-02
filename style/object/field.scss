@@ -1,0 +1,17 @@
+%o-field {
+	display: block;
+
+	span {
+		display: block;
+		font-family: var(--font--label--family);
+		font-size: var(--size--label--font);
+		color: var(--pal--heading--text);
+		margin: var(--space--label--margin) 0;
+
+// TODO: Treat inputs that come before the span differently.
+		&+input, &+textarea {
+			box-sizing: border-box;
+			width: 100%;
+		}
+	}
+}

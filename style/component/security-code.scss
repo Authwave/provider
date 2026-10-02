@@ -1,0 +1,44 @@
+security-code {
+	display: block;
+	min-inline-size: 0;
+
+	> fieldset {
+		min-inline-size: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+
+		> legend {
+			padding: 0;
+			margin-block-end: var(--space--label--margin);
+			font-family: var(--font--label--family);
+			font-size: var(--size--label--font);
+			color: var(--pal--heading--text);
+		}
+	}
+
+	.security-code-fallback[hidden] {
+		display: none;
+	}
+
+	.security-code-digits {
+		display: grid;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		gap: var(--space--code-input--gap);
+		direction: ltr;
+
+		> input {
+			--pal--border-hover: var(--pal--code-input--border);
+			box-sizing: border-box;
+			inline-size: 100%;
+			min-inline-size: 0;
+			min-block-size: 0;
+			aspect-ratio: 1;
+			padding: 0;
+			border: var(--border--code-input);
+			font-family: var(--font--code-input--family);
+			font-size: var(--size--code-input--font);
+			text-align: center;
+		}
+	}
+}

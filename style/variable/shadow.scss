@@ -1,0 +1,14 @@
+:root {
+	--shadow--control--inset-top: inset 0 1px 2px 0 var(--pal--control--highlight);
+	--shadow--control--inset-bottom: inset 0 -1px 2px 0 var(--pal--control--shade);
+	--shadow--control--inset-top--hover: inset 0 2px 2px 0 var(--pal--control--highlight-hover);
+	--shadow--control--inset-bottom--hover: inset 0 -1px 4px 0 var(--pal--control--shade-hover);
+	--shadow--control--inset-top--active: inset 0 1px 2px 0 var(--pal--control--shade-hover);
+	--shadow--control--inset-bottom--active: inset 0 -1px 4px 0 var(--pal--control--highlight-hover);
+	--shadow--control: 0 0.1rem 0.1rem 0rem color-mix(in srgb, var(--pal--heading--text), transparent 95%);
+
+	&[data-color-scheme="dark"] {
+		--shadow--control--inset-top: inset 0 1px 2px 0 var(--pal--control--shade);
+		--shadow--control--inset-top--hover: inset 0 2px 2px 0 var(--pal--control--shade-hover);
+	}
+}
