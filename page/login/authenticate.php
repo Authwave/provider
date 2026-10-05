@@ -63,6 +63,7 @@ function do_link(
 	LoginSession $loginSession,
 	Response $response,
 ):void {
+	usleep(rand(500_000, 1_500_000));
 	if($input->getString("password")) {
 		do_password($input, $userRepo, $loginSession, $response);
 	}

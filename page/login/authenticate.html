@@ -5,12 +5,12 @@
 		<p>Logging in as <a href="/login/?email={{email}}" data-bind:text="email">example@example.com</a>.</p>
 	</header>
 
-	<form method="post">
+	<form method="post" data-flux>
 		<p>Enter your password to continue. If you don't have one yet, or you've forgotten it, enter the password you'd like to use.</p>
 		<div class="field-action">
 			<label>
 				<span>Password</span>
-				<input type="password" name="password" autocomplete="current-password" placeholder="e.g. •••••••••••••••" minlength="12" data-autofocus />
+				<input type="password" name="password" autocomplete="current-password" placeholder="e.g. •••••••••••••••" minlength="12" required data-autofocus />
 			</label>
 
 			<button name="do" value="password" class="primary" type="submit" data-icon="login">
@@ -21,7 +21,9 @@
 		<p>Alternatively, receive a security code by email to log in without a password.</p>
 
 		<div class="actions">
-			<button name="do" value="link" type="submit" data-icon="mail">Email security code</button>
+			<button name="do" value="link" type="submit" data-icon="mail" formnovalidate>
+				<span>Email security code</span>
+			</button>
 		</div>
 	</form>
 

@@ -1,0 +1,69 @@
+@use "../variable/icon" as variable;
+
+form[data-flux].flux-form-waiting {
+	cursor: wait;
+
+	button, input, select, textarea, [contenteditable] {
+		cursor: wait;
+	}
+}
+
+form[data-flux] {
+	button[type="submit"], button:not([type]) {
+		position: relative;
+
+		> span, &::before {
+			transition: opacity 1s ease;
+		}
+
+		&::after {
+			--flux-loader-size: 32px;
+			content: "";
+			position: absolute;
+			inset: 0;
+			margin: auto;
+			transform-origin: center;
+			z-index: 1;
+			width: var(--flux-loader-size);
+			height: var(--flux-loader-size);
+			background-color: currentColor;
+			mask: url("#{variable.$path}loader-4.svg") center / var(--flux-loader-size) var(--flux-loader-size) no-repeat;
+			opacity: 0;
+			transition: opacity 0.2s ease;
+		}
+
+		&.flux-button-waiting {
+			> span, &::before {
+				opacity: 0;
+			}
+
+			&::after {
+				opacity: 1;
+				transition: opacity 1s ease;
+				will-change: transform;
+				animation: flux-loader-spin 1s infinite steps(8, end);
+			}
+		}
+	}
+}
+
+@keyframes flux-loader-spin {
+	to {
+		rotate: 1turn;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	form[data-flux] {
+		button[type="submit"], button:not([type]) {
+			> span, &::before, &::after {
+				transition: none;
+			}
+
+			&.flux-button-waiting::after {
+				transition: none;
+				animation: none;
+			}
+		}
+	}
+}

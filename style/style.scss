@@ -25,6 +25,8 @@
 
 @use "component/security-code";
 
+@use "vendor/flux";
+
 @use "page/login";
 @use "page/authenticate";
 @use "page/security-check";
