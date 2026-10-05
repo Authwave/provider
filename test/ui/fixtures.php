@@ -4,8 +4,11 @@ if(PHP_SAPI !== "cli") { exit(1); }
 require dirname(__DIR__, 2) . "/vendor/autoload.php";
 require __DIR__ . "/View.php";
 chdir(dirname(__DIR__, 2));
-foreach(["index", "authenticate", "security-check", "success"] as $page) {
-	$view = new Authwave\Test\UI\View("login/$page");
+foreach(["index", "authenticate", "security-check", "success", "access-denied"] as $page) {
+	$view = new Authwave\Test\UI\View($page === "access-denied" ? "_error/403" : "login/$page");
+	if($page === "access-denied") {
+		$view->document->body->classList->add("dir--login");
+	}
 	$style = $view->document->createElement("style");
 	$style->textContent = (new Authwave\Model\ApplicationTheme("light", [
 		"primary" => "#123456", "pageBackground" => "#f0f1f2", "buttonPrimaryText" => "#fff",

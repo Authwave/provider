@@ -15,7 +15,7 @@ try {
 	server = createServer(async (request, response) => {
 		const path = new URL(request.url, "http://localhost").pathname;
 		let file;
-		if(/^\/(index|authenticate|security-check|success)\.html$/.test(path)) file = join(temporary, path);
+		if(/^\/(index|authenticate|security-check|success|access-denied)\.html$/.test(path)) file = join(temporary, path);
 		else if(path === "/style.css" || path === "/script.js") file = join(root, "www", path);
 		else if(path.startsWith("/asset/") && !path.includes("..")) file = join(root, path);
 		const types = {css: "text/css", js: "text/javascript", html: "text/html", svg: "image/svg+xml", woff2: "font/woff2"};
@@ -75,7 +75,7 @@ try {
 		await send("Emulation.setDeviceMetricsOverride", {width, height: 844, deviceScaleFactor: 1, mobile: width < 600});
 		for(const mode of ["light", "dark"]) {
 			await send("Emulation.setEmulatedMedia", {features: [{name: "prefers-color-scheme", value: mode}]});
-			for(const page of ["index", "authenticate", "security-check", "success"]) {
+			for(const page of ["index", "authenticate", "security-check", "success", "access-denied"]) {
 				await navigate(page);
 				assert.equal(await evaluate("document.documentElement.dataset.colorScheme"), mode);
 				assert.equal(await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--pal--theme').trim()"), mode === "light" ? "#123456" : "#abcdef");
@@ -165,7 +165,7 @@ try {
 	assert.equal(await evaluate("document.querySelector('form').checkValidity()"), true);
 	assert.equal(await evaluate("new FormData(document.querySelector('form')).get('token')"), "01234");
 	assert.deepEqual(failures, []);
-	console.log("Passed: four pages at mobile/desktop widths in light/dark mode; assets; code entry, paste, confirm focus, Backspace, validation and no-JavaScript submission.");
+	console.log("Passed: five pages at mobile/desktop widths in light/dark mode; assets; code entry, paste, confirm focus, Backspace, validation and no-JavaScript submission.");
 } finally {
 	socket?.close();
 	if(browser && browser.exitCode === null) {

@@ -308,4 +308,48 @@ class LoginDesignTest extends TestCase {
 		self::assertTrue((new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), strtoupper($this->user->email)))->allows($this->user));
 	}
 
+	public function testAccessDeniedPageUsesLoginBrandingAndStartsClientHandshake():void {
+		$this->login->setState(LoginState::LOGGED_IN);
+		$this->login->requestAdmin();
+		$view = new View("_error/403");
+		$this->callFile("page/_error/_common.php", "go", $view->document, $view->binder, $this->login);
+		self::assertTrue($view->document->body->classList->contains("dir--login"));
+		self::assertSame("Test application logo", $view->document->querySelector(".logo")->getAttribute("alt"));
+		self::assertStringContainsString("doesn't have access to user administration", $view->document->body->textContent);
+		$link = $view->document->querySelector(".auth-heading a");
+		self::assertSame("https://client.example.test/callback", $link->getAttribute("href"));
+		self::assertSame("Continue to Test application", $link->textContent);
+		self::assertSame("/login/access-denied/", $view->document->querySelector("form")->getAttribute("action"));
+		self::assertFalse($this->login->isAdminRequested());
+	}
+
+	public function testSwitchAccountEndpointRequiresAuthentication():void {
+		$this->redirects("/login/", fn() => $this->call("access-denied", "go", $this->login, $this->response));
+		self::assertTrue($this->login->isAdminRequested());
+	}
+
+	public function testSwitchingAccountClearsIdentityAndRemembersAdminDestination():void {
+		$this->login->setState(LoginState::LOGGED_IN);
+		$request = $this->createMock(Request::class);
+		$request->method("getMethod")->willReturn("POST");
+		$request->method("getUri")->willReturn(new \Gt\Http\Uri("https://login.example.test/login/access-denied/"));
+		$this->redirects("/login/", fn() => $this->call("access-denied", "do_switch_account", $request, $this->login, $this->response));
+		self::assertNull($this->login->getEmail());
+		self::assertSame(LoginState::NOT_LOGGED_IN, $this->login->getState());
+		self::assertTrue($this->login->isAdminRequested());
+	}
+
+	public function testSwitchingAccountCannotRunFromGetOrAdminErrorRendering():void {
+		$this->login->setState(LoginState::LOGGED_IN);
+		$this->response->expects(self::never())->method("redirect");
+		foreach([["GET", "/login/access-denied/"], ["POST", "/admin/"]] as [$method, $path]) {
+			$request = $this->createMock(Request::class);
+			$request->method("getMethod")->willReturn($method);
+			$request->method("getUri")->willReturn(new \Gt\Http\Uri("https://login.example.test$path"));
+			$this->call("access-denied", "do_switch_account", $request, $this->login, $this->response);
+			self::assertSame($this->user->email, $this->login->getEmail());
+			self::assertSame(LoginState::LOGGED_IN, $this->login->getState());
+		}
+	}
+
 }
