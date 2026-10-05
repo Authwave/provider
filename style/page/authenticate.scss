@@ -1,19 +1,4 @@
-@use "../pattern/field-action";
-@use "../object/icon-button";
-
 body.uri--login--authenticate {
-	.field-action {
-		@extend %p-field-action;
-
-		> button {
-			@extend %o-icon-button;
-		}
-	}
-
-	.actions {
-		flex-direction: column;
-	}
-
 	.providers {
 		display: grid;
 		grid-template-columns: repeat(4, minmax(0, 1fr));

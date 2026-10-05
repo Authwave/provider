@@ -26,7 +26,7 @@ function do_password(
 	LoginSession $loginSession,
 	Response $response,
 ):void {
-	usleep(rand(500_000, 1_500_000));
+	usleep(rand(500_000, 1_000_000));
 	$email = $loginSession->getEmail();
 	$deployment = $loginSession->getDeployment();
 	$password = $input->getString("password");

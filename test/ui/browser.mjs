@@ -10,6 +10,11 @@ import {setTimeout as delay} from "node:timers/promises";
 const root = resolve(import.meta.dirname, "../..");
 const temporary = await mkdtemp(join(tmpdir(), "authwave-ui-"));
 let browser, socket, server;
+let pendingPost = null;
+let finishPost = null;
+let nextRedirect = null;
+const responseFixtures = new Map();
+const postRequests = [];
 try {
 	execFileSync("php", ["test/ui/fixtures.php", temporary], {cwd: root});
 	server = createServer(async (request, response) => {
@@ -19,6 +24,23 @@ try {
 		else if(path === "/style.css" || path === "/script.js") file = join(root, "www", path);
 		else if(path.startsWith("/asset/") && !path.includes("..")) file = join(root, path);
 		const types = {css: "text/css", js: "text/javascript", html: "text/html", svg: "image/svg+xml", woff2: "font/woff2"};
+		if(request.method === "POST") {
+			let body = "";
+			for await(const chunk of request) body += chunk;
+			postRequests.push({path, body, headers: request.headers});
+			await pendingPost;
+			if(nextRedirect) {
+				const location = nextRedirect;
+				nextRedirect = null;
+				response.writeHead(303, {Location: location}).end();
+				return;
+			}
+		}
+		if(responseFixtures.has(path)) {
+			const {status = 200, html} = responseFixtures.get(path);
+			response.writeHead(status, {"Content-Type": "text/html"}).end(html);
+			return;
+		}
 		try {
 			const data = await readFile(file || "");
 			response.writeHead(200, {"Content-Type": types[file.split(".").pop()] || "application/octet-stream"});
@@ -48,7 +70,8 @@ try {
 		}
 		if(message.method === "Runtime.exceptionThrown") failures.push(message.params.exceptionDetails.text);
 		if(message.method === "Network.responseReceived" && message.params.response.status >= 400
-			&& !message.params.response.url.endsWith("favicon.ico")) failures.push(message.params.response.url);
+			&& !message.params.response.url.endsWith("favicon.ico")
+			&& !message.params.response.url.endsWith("/denied-step.html")) failures.push(message.params.response.url);
 	});
 	const send = (method, params = {}) => new Promise((resolve, reject) => {
 		pending.set(++id, {resolve, reject});
@@ -66,6 +89,13 @@ try {
 			await delay(50);
 		}
 		assert.fail(`Page did not load: ${page}`);
+	};
+	const waitFor = async expression => {
+		for(let attempts = 0; attempts < 100; attempts++) {
+			if(await evaluate(expression)) return;
+			await delay(20);
+		}
+		assert.fail(`Condition not met: ${expression}`);
 	};
 	await send("Page.enable");
 	await send("Runtime.enable");
@@ -139,8 +169,9 @@ try {
 	assert.equal(await evaluate("document.activeElement.value"), "confirm");
 	await evaluate(`document.querySelector('form').addEventListener('submit', event => {
 		event.preventDefault();
+		event.stopImmediatePropagation();
 		window.submitted = Object.fromEntries(new FormData(event.target, event.submitter));
-	})`);
+	}, {capture: true})`);
 	await send("Input.dispatchKeyEvent", {type: "keyDown", key: "Enter", code: "Enter", text: "\r", unmodifiedText: "\r", windowsVirtualKeyCode: 13});
 	await send("Input.dispatchKeyEvent", {type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13});
 	assert.deepEqual(await evaluate("window.submitted"), {token: "01234", do: "confirm"});
@@ -157,6 +188,155 @@ try {
 	})()`);
 	assert.equal(await evaluate("new FormData(document.querySelector('form')).get('token')"), "98765");
 	assert.equal(await evaluate("document.activeElement.value"), "confirm");
+	// Hold real Flux requests open so the submitting state can be inspected.
+	for(const [page, button] of [["index", "continue"], ["authenticate", "password"], ["authenticate", "link"]]) {
+		await navigate(page);
+		await evaluate(`document.querySelector('input').value = ${JSON.stringify(page === "index" ? "test@example.test" : "test-password-123")}`);
+		pendingPost = new Promise(resolve => { finishPost = resolve; });
+		const count = postRequests.length;
+		await evaluate(`(() => {
+			const form = document.querySelector('form');
+			const button = document.querySelector('button[value="${button}"]');
+			form.requestSubmit(button);
+			form.requestSubmit(button);
+		})()`);
+		await waitFor("!!document.querySelector('button.flux-button-waiting')");
+		assert.equal(await evaluate("document.querySelector('input').readOnly"), true);
+		const submittedValue = page === "index" ? "test@example.test" : "test-password-123";
+		await evaluate("document.querySelector('input').focus()");
+		assert.equal(await evaluate("document.activeElement === document.querySelector('input')"), true);
+		assert.equal(await evaluate("getComputedStyle(document.querySelector('input')).cursor"), "wait");
+		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting')).cursor"), "wait");
+		assert.notEqual(await evaluate("getComputedStyle(document.querySelector('input')).pointerEvents"), "none");
+		await send("Input.insertText", {text: "accidental edit"});
+		assert.equal(await evaluate("document.querySelector('input').value"), submittedValue);
+		assert.equal(await evaluate("new FormData(document.querySelector('form')).get(document.querySelector('input').name)"), submittedValue);
+		// Other submit buttons and implicit keyboard submission must also be blocked.
+		await evaluate(`document.querySelectorAll('button[type=submit]').forEach(button => button.click()); document.querySelector('form').requestSubmit(); document.querySelector('input').focus()`);
+		await send("Input.dispatchKeyEvent", {type: "keyDown", key: "Enter", code: "Enter", text: "\r", windowsVirtualKeyCode: 13});
+		await send("Input.dispatchKeyEvent", {type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13});
+		assert.equal(await evaluate("document.querySelector('.flux-button-waiting').value"), button);
+		assert.equal(await evaluate("document.querySelectorAll('.flux-button-waiting').length"), 1);
+		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').maskImage.includes('loader-4.svg')"), true);
+		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').position"), "absolute");
+		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').animationName"), "flux-loader-spin");
+		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').transitionDuration"), "1s");
+		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').transitionDelay"), "0s");
+		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting > span')).transitionDuration"), "1s");
+		if(page === "authenticate") {
+			assert.equal(await evaluate(`getComputedStyle(document.querySelector('.flux-button-waiting'), '::before').maskImage.includes('${button === "password" ? "login" : "mail"}.svg')`), true);
+		}
+		await waitFor("getComputedStyle(document.querySelector('.flux-button-waiting > span')).opacity === '0' && getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').opacity === '1'");
+		await send("Emulation.setEmulatedMedia", {features: [{name: "prefers-reduced-motion", value: "reduce"}]});
+		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').animationName"), "none");
+		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').transitionDuration"), "0s");
+		await send("Emulation.setEmulatedMedia", {features: []});
+		finishPost();
+		finishPost = null;
+		pendingPost = null;
+		await waitFor("!document.querySelector('.flux-form-waiting, .flux-button-waiting')");
+		assert.equal(await evaluate("document.querySelector('input').readOnly"), false);
+		assert.equal(postRequests.length, count + 1);
+		assert.ok(postRequests.at(-1).body.includes(`name="do"\r\n\r\n${button}`));
+	}
+	// Failed requests must clear the loader and leave the original icon available.
+	await send("Network.emulateNetworkConditions", {offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0});
+	await evaluate(`document.querySelector('form').requestSubmit(document.querySelector('button[value="link"]'))`);
+	await waitFor("!document.querySelector('.flux-form-waiting, .flux-button-waiting')");
+	assert.equal(await evaluate("document.querySelector('input').readOnly"), false);
+	await evaluate("document.querySelector('input').focus()");
+	assert.equal(await evaluate("document.activeElement === document.querySelector('input')"), true);
+	assert.equal(await evaluate("getComputedStyle(document.querySelector('button[value=link]'), '::before').maskImage.includes('mail.svg')"), true);
+	await send("Network.emulateNetworkConditions", {offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1});
+	const countBeforeRetry = postRequests.length;
+	await evaluate("window.previousForm = document.querySelector('form'); window.previousForm.requestSubmit(document.querySelector('button[value=link]'))");
+	await waitFor("window.previousForm !== document.querySelector('form')");
+	assert.equal(postRequests.length, countBeforeRetry + 1, "A failed submission must allow a retry");
+	// Repeat code submissions to check controls still work after Flux replaces them.
+	await navigate("security-check");
+	for(const token of ["12345", "67890"]) {
+		await evaluate(`document.querySelector('.security-code-digits input').focus()`);
+		for(const digit of token) await send("Input.insertText", {text: digit});
+		pendingPost = new Promise(resolve => { finishPost = resolve; });
+		await evaluate("window.previousForm = document.querySelector('form'); window.previousForm.requestSubmit(document.querySelector('button[value=confirm]'))");
+		await waitFor("!!document.querySelector('.flux-button-waiting')");
+		await evaluate(`(() => { document.querySelector('.security-code-digits input').focus();
+			const data = new DataTransfer(); data.setData('text/plain', '99999');
+			document.activeElement.dispatchEvent(new ClipboardEvent('paste', {clipboardData: data, bubbles: true, cancelable: true})); })()`);
+		await send("Input.dispatchKeyEvent", {type: "keyDown", key: "Backspace", code: "Backspace", windowsVirtualKeyCode: 8});
+		await send("Input.dispatchKeyEvent", {type: "keyUp", key: "Backspace", code: "Backspace", windowsVirtualKeyCode: 8});
+		assert.equal(await evaluate("new FormData(document.querySelector('form')).get('token')"), token);
+		finishPost();
+		finishPost = null;
+		pendingPost = null;
+		await waitFor("window.previousForm !== document.querySelector('form') && document.querySelectorAll('.security-code-digits input').length === 5");
+		assert.ok(postRequests.at(-1).body.includes(`name="token"\r\n\r\n${token}`));
+	}
+	// Follow real redirects between different screens, including HTTP 403 and
+	// a browser navigation to a client on another origin (without CORS).
+	responseFixtures.set("/authenticate-step.html", {html: await readFile(join(temporary, "authenticate.html"), "utf8")});
+	responseFixtures.set("/security-code-step.html", {html: await readFile(join(temporary, "security-check.html"), "utf8")});
+	responseFixtures.set("/denied-step.html", {status: 403, html: await readFile(join(temporary, "access-denied.html"), "utf8")});
+	responseFixtures.set("/client-return", {html: "<!doctype html><html><head><title>Client</title></head><body>CLIENT APPLICATION</body></html>"});
+	const clientUrl = origin.replace("127.0.0.1", "localhost") + "/client-return";
+	const successHtml = (await readFile(join(temporary, "success.html"), "utf8"))
+		.replace('href="https://client.example.test/callback"', `href="${clientUrl}" data-client-redirect`);
+	responseFixtures.set("/client-handoff.html", {html: successHtml});
+	await send("Emulation.setTouchEmulationEnabled", {enabled: false});
+	// Headless Chromium may report no pointing device. Emulate the desktop
+	// capability query while retaining native media queries for themes/motion.
+	const desktopMedia = await send("Page.addScriptToEvaluateOnNewDocument", {source: `
+		const nativeMatchMedia = window.matchMedia.bind(window);
+		window.matchMedia = query => {
+			const result = nativeMatchMedia(query);
+			if(query === '(hover: hover) and (pointer: fine)') {
+				Object.defineProperty(result, 'matches', {value: true});
+			}
+			return result;
+		};
+	`});
+	await navigate("index");
+	assert.equal(await evaluate("matchMedia('(hover: hover) and (pointer: fine)').matches"), true);
+	assert.equal(await evaluate("document.activeElement.type"), "email");
+	nextRedirect = "/authenticate-step.html";
+	await evaluate("document.activeElement.value = ''");
+	await send("Input.insertText", {text: "test@example.test"});
+	await send("Input.dispatchKeyEvent", {type: "keyDown", key: "Enter", code: "Enter", text: "\r", windowsVirtualKeyCode: 13});
+	await send("Input.dispatchKeyEvent", {type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13});
+	await waitFor("!!document.querySelector('input[type=password]') && location.pathname === '/authenticate-step.html'");
+	assert.equal(await evaluate("document.activeElement.type"), "password");
+	assert.equal(await evaluate("document.body.classList.contains('uri--login--authenticate')"), true);
+	assert.ok(postRequests.at(-1).headers['x-authwave-flux'] === '1');
+	nextRedirect = "/security-code-step.html";
+	await send("Input.insertText", {text: "test-password-123"});
+	await send("Input.dispatchKeyEvent", {type: "keyDown", key: "Enter", code: "Enter", text: "\r", windowsVirtualKeyCode: 13});
+	await send("Input.dispatchKeyEvent", {type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13});
+	await waitFor("!!document.querySelector('.security-code-digits input') && location.pathname === '/security-code-step.html'");
+	assert.equal(await evaluate("document.activeElement === document.querySelector('.security-code-digits input')"), true);
+	nextRedirect = "/denied-step.html";
+	for(const digit of "12345") await send("Input.insertText", {text: digit});
+	await evaluate("document.querySelector('form').requestSubmit(document.querySelector('button[value=confirm]'))");
+	await waitFor("!!document.querySelector('button[value=switch-account]') && location.pathname === '/denied-step.html'");
+	assert.equal(await evaluate(`document.body.textContent.includes("doesn't have access")`), true);
+	assert.equal(await evaluate("document.querySelector('input[type=password]')"), null);
+	nextRedirect = "/index.html";
+	await evaluate("document.querySelector('form').requestSubmit(document.querySelector('button[value=switch-account]'))");
+	await waitFor("!!document.querySelector('input[type=email]') && location.pathname === '/index.html'");
+	assert.ok(postRequests.at(-1).body.includes('name="do"\r\n\r\nswitch-account'));
+	nextRedirect = "/client-handoff.html";
+	await evaluate("document.querySelector('input').value = 'test@example.test'; document.querySelector('form').requestSubmit(document.querySelector('button'))");
+	await waitFor(`location.href === ${JSON.stringify(clientUrl)} && document.body.textContent === 'CLIENT APPLICATION'`);
+	// Touch devices must not open the keyboard automatically on the next step.
+	await send("Page.removeScriptToEvaluateOnNewDocument", {identifier: desktopMedia.identifier});
+	await send("Emulation.setTouchEmulationEnabled", {enabled: true});
+	await navigate("index");
+	assert.equal(await evaluate("matchMedia('(hover: hover) and (pointer: fine)').matches"), false);
+	assert.equal(await evaluate("document.activeElement === document.body"), true);
+	nextRedirect = "/authenticate-step.html";
+	await evaluate("document.querySelector('input').focus(); document.querySelector('input').value = 'test@example.test'; document.querySelector('form').requestSubmit(document.querySelector('button'))");
+	await waitFor("!!document.querySelector('input[type=password]') && location.pathname === '/authenticate-step.html'");
+	assert.equal(await evaluate("document.activeElement === document.querySelector('input[type=password]')"), false);
+	await send("Emulation.setTouchEmulationEnabled", {enabled: false});
 	await send("Emulation.setScriptExecutionDisabled", {value: true});
 	await navigate("security-check");
 	assert.equal(await evaluate("document.querySelector('[name=token]').type"), "text");
@@ -165,13 +345,14 @@ try {
 	assert.equal(await evaluate("document.querySelector('form').checkValidity()"), true);
 	assert.equal(await evaluate("new FormData(document.querySelector('form')).get('token')"), "01234");
 	assert.deepEqual(failures, []);
-	console.log("Passed: five pages at mobile/desktop widths in light/dark mode; assets; code entry, paste, confirm focus, Backspace, validation and no-JavaScript submission.");
+	console.log("Passed: five responsive pages and assets; code entry and no-JavaScript submission; Flux loaders, field locking, duplicate prevention, failure retry and repeated code submissions.");
 } finally {
+	finishPost?.();
 	socket?.close();
 	if(browser && browser.exitCode === null) {
 		browser.kill();
 		await new Promise(resolve => browser.once("exit", resolve));
 	}
 	await new Promise(resolve => server ? server.close(resolve) : resolve());
-	await rm(temporary, {recursive: true, force: true});
+	await rm(temporary, {recursive: true, force: true, maxRetries: 3, retryDelay: 100});
 }

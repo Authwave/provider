@@ -217,7 +217,7 @@ class LoginDesignTest extends TestCase {
 		$this->users->method("get")->willReturn($this->user);
 		$this->session->expects(self::once())->method("kill");
 		$this->call("_common", "go", $view->document, $view->binder, $this->login);
-		$this->call("success", "go", new Input(["debug" => "1"]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), null));
+		$this->call("success", "go", new Input(["debug" => "1"]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), null), $this->createMock(Request::class));
 		$uri = $view->document->querySelector("main p a")->getAttribute("href");
 		self::assertStringStartsWith("https://client.example.test/callback?", $uri);
 		parse_str(parse_url($uri, PHP_URL_QUERY), $query);
@@ -233,10 +233,11 @@ class LoginDesignTest extends TestCase {
 		$this->session->expects(self::never())->method("kill");
 		$this->response->expects(self::never())->method("redirect");
 		$this->call("_common", "go", $view->document, $view->binder, $this->login);
-		$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), $this->user->email));
+		$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), $this->user->email), $this->createMock(Request::class));
 		$link = $view->document->querySelector('a[href="/admin/"]');
 		self::assertNotNull($link);
 		self::assertFalse($link->parentElement->hasAttribute("hidden"));
+		self::assertNull($view->document->querySelector("a[data-client-redirect]"));
 		self::assertStringContainsString("AUTHWAVE_RESPONSE_DATA=", $view->document->querySelector("main p a")->getAttribute("href"));
 	}
 
@@ -247,7 +248,7 @@ class LoginDesignTest extends TestCase {
 		$this->users->method("get")->willReturn($this->user);
 		$this->session->expects(self::once())->method("kill");
 		try {
-			$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), "someone-else@example.test"));
+			$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), "someone-else@example.test"), $this->createMock(Request::class));
 			self::fail("Expected client redirect");
 		}
 		catch(Redirect $redirect) {
@@ -274,7 +275,7 @@ class LoginDesignTest extends TestCase {
 		$this->users->method("get")->willReturn($this->user);
 		$this->session->expects(self::never())->method("kill");
 		$view = new View("login/success");
-		$this->redirects("/admin/", fn() => $this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), $this->user->email)));
+		$this->redirects("/admin/", fn() => $this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), $this->user->email), $this->createMock(Request::class)));
 		$admin = new View("admin/index");
 		$this->callFile("page/admin/_common.php", "go", $this->login, $this->users, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), $this->user->email), $this->response, $admin->binder);
 		self::assertStringContainsString("ADMIN AREA", $admin->document->body->textContent);
@@ -350,6 +351,21 @@ class LoginDesignTest extends TestCase {
 			self::assertSame($this->user->email, $this->login->getEmail());
 			self::assertSame(LoginState::LOGGED_IN, $this->login->getState());
 		}
+	}
+
+	public function testFluxSuccessRendersBrowserHandoffWithoutCrossOriginFetch():void {
+		$view = new View("login/success");
+		$this->login->setState(LoginState::LOGGED_IN);
+		$this->login->setData(["secretIv" => (string)new InitVector()]);
+		$this->users->method("get")->willReturn($this->user);
+		$this->session->expects(self::once())->method("kill");
+		$this->response->expects(self::never())->method("redirect");
+		$request = $this->createMock(Request::class);
+		$request->method("getHeaderLine")->with("X-Authwave-Flux")->willReturn("1");
+		$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class)), $request);
+		$link = $view->document->querySelector("a[data-client-redirect]");
+		self::assertNotNull($link);
+		self::assertStringStartsWith("https://client.example.test/callback?AUTHWAVE_RESPONSE_DATA=", $link->getAttribute("href"));
 	}
 
 }

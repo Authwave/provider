@@ -100,6 +100,10 @@ Place logos in `data/upload/<applicationId>/`: `logo.<extension>` for light mode
 
 The five code boxes progressively enhance a single required `token` input. Without JavaScript the single input remains usable. With JavaScript the boxes support paste/autofill, navigation, Backspace and focus on Confirm when complete. Desktop autofocus and viewport scrolling are app scripts, separate from reusable controls.
 
+Forms marked `data-flux` use `@phpgt/flux` for submission. The submitted button fades to a spinner while fields stay focusable but read-only, and repeated submissions are blocked. Failed requests release the form for retry. Reduced-motion preferences disable the spin and fades. The body and title are update targets so redirects between login steps, the admin success choice and the 403 page replace the complete screen.
+
+Flux requests carry `X-Authwave-Flux: 1`. For ordinary users, the success handler returns a page with a `data-client-redirect` link instead of letting fetch follow an external redirect. The after-render handler navigates the browser to that link; native form submissions keep their existing HTTP redirect. Administrator success pages retain the application/admin choice. The account-switching form on the 403 page uses the same loading behaviour.
+
 Social-provider demo buttons are omitted because this repository has no matching actions. “Didn't receive the code?” returns to authentication to request another code using the existing handler. Re-enter a proposed password there if setting or changing it.
 
 ## Build and verification
@@ -121,4 +125,4 @@ node test/ui/browser.mjs
 
 The browser test needs Node 22+ and Chromium (`CHROMIUM` may specify its executable). Optional `UI_SCREENSHOT_DIR` saves screenshots. It renders the actual templates using the framework's component expansion, route classes and binding, then serves temporary fixtures. PHP tests call actual page handlers with in-memory sessions and mocked repositories. Neither suite connects to the configured database or sends email.
 
-Coverage includes password and email-code paths, code errors, cancellation, encrypted callback data, mobile/desktop layouts, light/dark mode, asset loading, code entry and paste, Confirm/Backspace focus and the no-JavaScript fallback. These checks do not replace testing actual email delivery, the client handoff and the operating-system keyboard on a deployed environment. The legacy Behat runner changes the configured database and is not part of these isolated checks.
+Coverage includes password and email-code paths, code errors, cancellation, encrypted callback data, mobile/desktop layouts, light/dark mode, asset loading, code entry and paste, Confirm/Backspace focus and the no-JavaScript fallback. Browser checks also cover spinners, duplicate submissions, network-failure retries, repeated code submissions, redirects between screens, the HTTP 403 page, account switching and navigation to a simulated client on another origin. These checks do not replace testing actual email delivery, a deployed client integration and the operating-system keyboard. The legacy Behat runner changes the configured database and is not part of these isolated checks.

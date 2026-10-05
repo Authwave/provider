@@ -1,4 +1,7 @@
 document.querySelectorAll("security-code").forEach(initialiseSecurityCode);
+document.addEventListener("flux:after-render", () => {
+	document.querySelectorAll("security-code").forEach(initialiseSecurityCode);
+});
 
 function initialiseSecurityCode(element) {
 	const template = element.querySelector("template");
@@ -25,6 +28,9 @@ function initialiseSecurityCode(element) {
 		valueInput.value = inputs.map(input => input.value).join("");
 	};
 	const fill = (value, index) => {
+		if(inputs[index].readOnly) {
+			return;
+		}
 		const code = digits(value);
 		if(!code) {
 			return;
@@ -57,6 +63,9 @@ function initialiseSecurityCode(element) {
 		input.value = initial[index] || "";
 		input.defaultValue = input.value;
 		const backspace = () => {
+			if(input.readOnly) {
+				return;
+			}
 			if(!input.value && index > 0) {
 				inputs[index - 1].value = "";
 				focus(index - 1);
@@ -129,15 +138,32 @@ function initialiseSecurityCode(element) {
 	fallback.hidden = true;
 	sync();
 	valueInput.form?.addEventListener("formdata", event => {
-		sync();
-		event.formData.set(valueInput.name, valueInput.value);
+		// Flux may reattach this listener to a replacement form.
+		const code = event.currentTarget.querySelector("security-code");
+		if(!code) {
+			return;
+		}
+		const value = code.querySelector(".security-code-fallback input");
+		value.value = Array.from(code.querySelectorAll(".security-code-digits input"))
+			.map(input => input.value).join("");
+		event.formData.set(value.name, value.value);
 	});
-	valueInput.form?.addEventListener("reset", () => {
-		requestAnimationFrame(sync);
+	valueInput.form?.addEventListener("reset", event => {
+		const form = event.currentTarget;
+		requestAnimationFrame(() => {
+			const code = form.querySelector("security-code");
+			if(!code) {
+				return;
+			}
+			const value = code.querySelector(".security-code-fallback input");
+			value.value = Array.from(code.querySelectorAll(".security-code-digits input"))
+				.map(input => input.value).join("");
+		});
 	});
 	confirm?.addEventListener("keydown", event => {
 		if(event.key !== "Backspace" || event.isComposing || event.altKey
-			|| event.ctrlKey || event.metaKey || event.shiftKey || !isComplete()) {
+			|| event.ctrlKey || event.metaKey || event.shiftKey || !isComplete()
+			|| inputs[inputs.length - 1].readOnly) {
 			return;
 		}
 		event.preventDefault();
@@ -148,6 +174,7 @@ function initialiseSecurityCode(element) {
 	document.addEventListener("keydown", event => {
 		if(event.defaultPrevented || event.isComposing || event.altKey || event.ctrlKey
 			|| event.metaKey || !/^[0-9]$/.test(event.key) || !element.isConnected
+			|| element.closest("[inert], form.flux-form-waiting")
 			|| document.activeElement?.matches("input, textarea, select, [contenteditable]:not([contenteditable=\"false\"])")
 			|| document.activeElement?.isContentEditable) {
 			return;

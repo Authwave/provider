@@ -7,7 +7,7 @@
 
 		<h1 id="auth-title">You're logged in!</h1>
 		<p>You have logged in successfully.</p>
-		<p><a href="{{returnUri}}">Continue to <span data-bind:text="applicationName">Amazing App</span></a>.</p>
+		<p><a href="{{returnUri}}" data-bind:data-client-redirect="?continueAutomatically">Continue to <span data-bind:text="applicationName">Amazing App</span></a>.</p>
 		<p hidden data-bind:hidden="?!isAdmin"><a href="/admin/">User Administration</a></p>
 	</header>
 </main>

@@ -10,6 +10,7 @@ use Gt\Cipher\Key;
 use Gt\Cipher\Message\PlainTextMessage;
 use Gt\DomTemplate\Binder;
 use Gt\Http\Response;
+use Gt\Http\Request;
 use Gt\Input\Input;
 use Gt\Session\Session;
 
@@ -22,6 +23,7 @@ function go(
 	Session $session,
 	Audit $audit,
 	AdminAccess $adminAccess,
+	Request $request,
 ):void {
 	if($loginSession->getState() !== LoginState::LOGGED_IN) {
 		$response->redirect("/login/");
@@ -79,7 +81,11 @@ function go(
 		$session->kill();
 	}
 
-	if(!$isAdmin && !$input->contains("debug")) {
+	$continueAutomatically = !$isAdmin && !$input->contains("debug");
+	$binder->bindKeyValue("continueAutomatically", $continueAutomatically);
+	// Let Flux finish on this origin; the rendered link performs the browser
+	// navigation to the client, which must not be followed by fetch/CORS.
+	if($continueAutomatically && $request->getHeaderLine("X-Authwave-Flux") !== "1") {
 		$response->redirect($returnUri);
 	}
 }
