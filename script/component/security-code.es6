@@ -145,6 +145,21 @@ function initialiseSecurityCode(element) {
 		sync();
 		focus(inputs.length - 1);
 	});
+	document.addEventListener("keydown", event => {
+		if(event.defaultPrevented || event.isComposing || event.altKey || event.ctrlKey
+			|| event.metaKey || !/^[0-9]$/.test(event.key) || !element.isConnected
+			|| document.activeElement?.matches("input, textarea, select, [contenteditable]:not([contenteditable=\"false\"])")
+			|| document.activeElement?.isContentEditable) {
+			return;
+		}
+		const index = inputs.findIndex(input => !input.value);
+		if(index === -1) {
+			return;
+		}
+		event.preventDefault();
+		focus(index);
+		fill(event.key, index);
+	});
 	if(shouldFocus) {
 		focus(Math.max(0, inputs.findIndex(input => !input.value)));
 	}
