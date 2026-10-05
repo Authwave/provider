@@ -23,6 +23,10 @@ class LoginSession {
 	}
 
 	public function setDeploymentForLogin(ApplicationDeployment $deployment):void {
+		$this->session->remove("email");
+		$this->session->remove("data");
+		$this->session->remove("adminRequested");
+		$this->setState(LoginState::NOT_LOGGED_IN);
 		$this->audit->create(Action::LOGIN_REQUESTED, [
 			"deploymentId" => $deployment->id,
 		], $this->anonUser);
@@ -44,6 +48,7 @@ class LoginSession {
 			"deploymentId" => $deployment->id,
 		], $this->anonUser);
 		$this->session->remove("email");
+		$this->setState(LoginState::NOT_LOGGED_IN);
 	}
 
 	public function getEmail():?string {
@@ -51,6 +56,9 @@ class LoginSession {
 	}
 
 	public function setEmail(string $email):void {
+		if($email !== $this->getEmail()) {
+			$this->setState(LoginState::NOT_LOGGED_IN);
+		}
 		$this->audit->create(Action::EMAIL_SUBMITTED, [
 			"deploymentId" => $this->getDeployment()->id,
 			"email" => $email,
@@ -65,5 +73,17 @@ class LoginSession {
 	public function getState():LoginState {
 		return $this->session->get(LoginState::class)
 			?? LoginState::NOT_LOGGED_IN;
+	}
+
+	public function requestAdmin():void {
+		$this->session->set("adminRequested", true);
+	}
+
+	public function isAdminRequested():bool {
+		return $this->session->get("adminRequested") === true;
+	}
+
+	public function clearAdminRequest():void {
+		$this->session->remove("adminRequested");
 	}
 }

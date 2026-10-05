@@ -2,6 +2,7 @@
 use Authwave\Session\LoginSession;
 use Authwave\Security\Action;
 use Authwave\Security\Audit;
+use Authwave\Security\AdminAccess;
 use Authwave\User\LoginState;
 use Authwave\User\UserRepository;
 use Gt\Cipher\InitVector;
@@ -20,18 +21,34 @@ function go(
 	UserRepository $userRepo,
 	Session $session,
 	Audit $audit,
+	AdminAccess $adminAccess,
 ):void {
 	if($loginSession->getState() !== LoginState::LOGGED_IN) {
 		$response->redirect("/login/");
+		return;
 	}
+
+	$deployment = $loginSession->getDeployment();
+	$user = $userRepo->get($deployment, $loginSession->getEmail());
+	if(!$user) {
+		$loginSession->clearDataForLogout($deployment);
+		$response->redirect("/login/");
+		return;
+	}
+	$isAdmin = $adminAccess->allows($user);
+	if($loginSession->isAdminRequested() || !$loginSession->getDataKey("secretIv")) {
+		$loginSession->clearAdminRequest();
+		$audit->create(Action::LOGIN_COMPLETED, ["deploymentId" => $deployment->id], $user);
+		$response->redirect("/admin/");
+		return;
+	}
+	$binder->bindKeyValue("isAdmin", $isAdmin);
 
 	$secretIvB64 = $loginSession->getDataKey("secretIv");
 	$secretIvB64 = strtr($secretIvB64, " ", "+");
 	$secretIvBytes = base64_decode($secretIvB64);
 	$secretIv = (new InitVector())->withBytes($secretIvBytes);
 
-	$deployment = $loginSession->getDeployment();
-	$user = $userRepo->get($deployment, $loginSession->getEmail());
 	$userDataMessage = new PlainTextMessage(
 		json_encode([
 			"id" => $user->id,
@@ -58,9 +75,11 @@ function go(
 	$audit->create(Action::LOGIN_COMPLETED, [
 		"deploymentId" => $deployment->id,
 	], $user);
-	$session->kill();
+	if(!$isAdmin) {
+		$session->kill();
+	}
 
-	if(!$input->contains("debug")) {
+	if(!$isAdmin && !$input->contains("debug")) {
 		$response->redirect($returnUri);
 	}
 }

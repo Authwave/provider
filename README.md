@@ -39,8 +39,15 @@ Application administration
 
 As well as authentication and user profile management, the provider handles application and user administration. This is done by visiting the `/admin` path of the base provider URI. This will trigger an authentication flow, but will remain on the provider server rather than returning to the client application.
 
-Only administrators' email addresses can be used to authenticate to the administration section. Non-administrators will receive an email explaining how to correctly authenticate to the client application.
+Visiting `/admin` uses the normal login screens and returns to `/admin` after authentication. Non-administrators receive HTTP 403. All pages in `page/admin` require an authenticated administrator.
 
-To create an administrator account, sign into the Authwave provider application (either at account.authwave.com/admin or self-hosted) and configure a new client application. Administrators will be able to manage the application and user details once the application is hosted under the client application's domain.
+Administrators logging in from a client application see “Continue to ApplicationName” and “User Administration” on the success page. Other users continue to the application automatically. Administrator sessions remain available on the provider so the dashboard can be opened after login.
   
-When self-hosting a provider, it is necessary to create the first administrative user manually. This is done by adding the email address to the project configuration. The email address should be added to the `admin_email` key of the `authwave` section of the provider's config.ini.
+Application administrators are recorded in the `user_admin` table. Access is checked against the authenticated user's current application, meaning that one provider instance can serve multiple applications across multiple organisations. The `admin_email` key in the `authwave` config file is a global override: each listed email address has administrator access across applications. Separate multiple addresses with commas; surrounding whitespace is ignored and matching is case-insensitive. Each email address must authenticate normally. Leaving the setting empty disables only the global override.
+
+For example:
+
+```ini
+[authwave]
+admin_email="admin@example.com, second@example.com, third@example.com"
+```

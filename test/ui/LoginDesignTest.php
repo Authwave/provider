@@ -5,6 +5,7 @@ require_once __DIR__ . "/View.php";
 
 use Authwave\Model\{Application, ApplicationDeployment, ApplicationTheme};
 use Authwave\Security\{AnonUser, Audit};
+use Authwave\Security\AdminAccess;
 use Authwave\Session\{FlashSession, LoginSession};
 use Authwave\User\{LoginState, User, UserRepository};
 use GT\Cipher\{InitVector, Key};
@@ -56,6 +57,10 @@ class LoginDesignTest extends TestCase {
 
 	private function call(string $page, string $action, mixed ...$args):void {
 		$file = "page/login/$page.php";
+		$this->callFile($file, $action, ...$args);
+	}
+
+	private function callFile(string $file, string $action, mixed ...$args):void {
 		require_once LogicStreamWrapper::STREAM_NAME . "://$file";
 		$function = LogicStreamWrapper::NAMESPACE_PREFIX . new LogicStreamNamespace($file) . "\\$action";
 		$function(...$args);
@@ -212,7 +217,7 @@ class LoginDesignTest extends TestCase {
 		$this->users->method("get")->willReturn($this->user);
 		$this->session->expects(self::once())->method("kill");
 		$this->call("_common", "go", $view->document, $view->binder, $this->login);
-		$this->call("success", "go", new Input(["debug" => "1"]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit);
+		$this->call("success", "go", new Input(["debug" => "1"]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), null));
 		$uri = $view->document->querySelector("main p a")->getAttribute("href");
 		self::assertStringStartsWith("https://client.example.test/callback?", $uri);
 		parse_str(parse_url($uri, PHP_URL_QUERY), $query);
@@ -220,4 +225,87 @@ class LoginDesignTest extends TestCase {
 		$data = (new EncryptedMessage($query["AUTHWAVE_RESPONSE_DATA"], $iv))->decrypt(new Key($this->deployment->secret));
 		self::assertSame(["id" => "test-user", "email" => "test@example.test"], json_decode((string)$data, true));
 	}
+	public function testAdminSuccessOffersBothDestinationsAndRetainsSession():void {
+		$view = new View("login/success");
+		$this->login->setState(LoginState::LOGGED_IN);
+		$this->login->setData(["secretIv" => (string)new InitVector()]);
+		$this->users->method("get")->willReturn($this->user);
+		$this->session->expects(self::never())->method("kill");
+		$this->response->expects(self::never())->method("redirect");
+		$this->call("_common", "go", $view->document, $view->binder, $this->login);
+		$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), $this->user->email));
+		$link = $view->document->querySelector('a[href="/admin/"]');
+		self::assertNotNull($link);
+		self::assertFalse($link->parentElement->hasAttribute("hidden"));
+		self::assertStringContainsString("AUTHWAVE_RESPONSE_DATA=", $view->document->querySelector("main p a")->getAttribute("href"));
+	}
+
+	public function testOrdinaryUserStillRedirectsAutomatically():void {
+		$view = new View("login/success");
+		$this->login->setState(LoginState::LOGGED_IN);
+		$this->login->setData(["secretIv" => (string)new InitVector()]);
+		$this->users->method("get")->willReturn($this->user);
+		$this->session->expects(self::once())->method("kill");
+		try {
+			$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), "someone-else@example.test"));
+			self::fail("Expected client redirect");
+		}
+		catch(Redirect $redirect) {
+			self::assertStringStartsWith("https://client.example.test/callback?AUTHWAVE_RESPONSE_DATA=", $redirect->getMessage());
+		}
+		self::assertTrue($view->document->querySelector('a[href="/admin/"]')->parentElement->hasAttribute("hidden"));
+	}
+
+	public function testDirectAdminVisitInitialisesDeploymentWithoutClientRedirect():void {
+		$login = new LoginSession(new SessionStore("fresh", $this->session), $this->audit, $this->anonymous);
+		$apps = $this->createMock(\Authwave\Model\ApplicationRepository::class);
+		$apps->expects(self::once())->method("getDeploymentByProviderHost")->with("login.example.test")->willReturn($this->deployment);
+		$apps->expects(self::never())->method("redirectToDeployment");
+		$this->callFile("page/_common.php", "go", $apps, new \Gt\Http\Uri("https://login.example.test/admin"), $login, $this->session, $this->response);
+		self::assertSame($this->deployment, $login->getDeployment());
+		$view = new View("admin/index");
+		$this->redirects("/login/", fn() => $this->callFile("page/admin/_common.php", "go", $login, $this->users, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), $this->user->email), $this->response, $view->binder));
+		self::assertTrue($login->isAdminRequested());
+	}
+
+	public function testAdminDestinationSurvivesAuthenticationWithoutClientCipher():void {
+		$this->login->requestAdmin();
+		$this->login->setState(LoginState::LOGGED_IN);
+		$this->users->method("get")->willReturn($this->user);
+		$this->session->expects(self::never())->method("kill");
+		$view = new View("login/success");
+		$this->redirects("/admin/", fn() => $this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), $this->user->email)));
+		$admin = new View("admin/index");
+		$this->callFile("page/admin/_common.php", "go", $this->login, $this->users, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), $this->user->email), $this->response, $admin->binder);
+		self::assertStringContainsString("ADMIN AREA", $admin->document->body->textContent);
+		self::assertFalse($this->login->isAdminRequested());
+	}
+
+	public function testAuthenticatedNonAdminCannotAccessDashboard():void {
+		$this->login->setState(LoginState::LOGGED_IN);
+		$this->users->method("get")->willReturn($this->user);
+		$view = new View("admin/index");
+		$this->expectException(\Authwave\Security\AdminAccessDenied::class);
+		$this->callFile("page/admin/_common.php", "go", $this->login, $this->users, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), "someone-else@example.test"), $this->response, $view->binder);
+	}
+
+	public function testChangingEmailOrDeploymentRequiresAuthenticationAgain():void {
+		$this->login->setState(LoginState::LOGGED_IN);
+		$this->login->setEmail("admin@example.test");
+		self::assertSame(LoginState::NOT_LOGGED_IN, $this->login->getState());
+		$this->login->setState(LoginState::LOGGED_IN);
+		$this->login->requestAdmin();
+		$this->login->setDeploymentForLogin($this->deployment);
+		self::assertSame(LoginState::NOT_LOGGED_IN, $this->login->getState());
+		self::assertNull($this->login->getEmail());
+		self::assertFalse($this->login->isAdminRequested());
+	}
+
+	public function testAdminAccessIsDeniedWithoutGrantOrConfiguredEmail():void {
+		self::assertFalse((new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), null))->allows($this->user));
+		self::assertFalse((new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), ""))->allows($this->user));
+		self::assertFalse((new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), $this->user->email))->allows(null));
+		self::assertTrue((new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), strtoupper($this->user->email)))->allows($this->user));
+	}
+
 }

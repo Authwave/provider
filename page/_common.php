@@ -65,6 +65,10 @@ function go(
 		}
 
 		$deployment = $appRepo->getDeploymentByProviderHost($host);
+		if($uri->getPath() === "/admin" || str_starts_with($uri->getPath(), "/admin/")) {
+			$loginSession->setDeploymentForLogin($deployment);
+			return;
+		}
 		$appRepo->redirectToDeployment($deployment, $host, $response);
 	}
 }

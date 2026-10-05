@@ -7,6 +7,7 @@ use Authwave\Session\FlashSession;
 use Authwave\Session\LoginSession;
 use Authwave\Model\ApplicationRepository;
 use Authwave\Security\AnonUser;
+use Authwave\Security\AdminAccess;
 use Authwave\Security\Audit;
 use Authwave\User\UserRepository;
 use Gt\Database\Database;
@@ -14,6 +15,13 @@ use Gt\Session\Session;
 use GT\WebEngine\Service\DefaultServiceLoader;
 
 class ServiceLoader extends DefaultServiceLoader {
+	public function loadAdminAccess():AdminAccess {
+		return new AdminAccess(
+			$this->container->get(Database::class)->queryCollection("user_admin"),
+			$this->config->getString("authwave.admin_email"),
+		);
+	}
+
 	public function loadAnonUser():AnonUser {
 		$sessionId = $this->container->get(Session::class)->getId();
 		return new AnonUser($sessionId);
