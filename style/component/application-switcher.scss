@@ -1,0 +1,25 @@
+application-switcher {
+	display: block;
+	margin-block-start: 1rem;
+
+	label {
+		display: block;
+		position: relative;
+		--space--icon--gap: 0;
+		&::before {
+			position: absolute;
+			inset-block-start: 50%;
+			inset-inline-end: var(--space--control--padding);
+			transform: translateY(-50%);
+			pointer-events: none;
+		}
+	}
+	select {
+		appearance: none;
+		inline-size: 100%;
+		padding-inline-end: calc(2 * var(--space--control--padding) + var(--size--icon));
+		font-size: .85rem;
+		font-weight: 600;
+		cursor: pointer;
+	}
+}

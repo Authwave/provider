@@ -1,0 +1,25 @@
+@use "../variable/break";
+
+%p-data-table {
+	inline-size: 100%;
+	border-collapse: collapse;
+	text-align: start;
+	font-size: .85rem;
+
+	th, td {
+		padding: 1rem var(--space--table-cell);
+		border-block-end: 1px solid var(--pal--panel--border);
+		text-align: start;
+	}
+	th { font-weight: 600; }
+	thead th { font-size: .75rem; color: var(--pal--body--text); }
+	tbody th { color: var(--pal--heading--text); white-space: nowrap; }
+	[data-priority="secondary"], .full-label { display: none; }
+
+	@container(min-width: #{break.$small}) {
+		[data-priority="secondary"] { display: table-cell; }
+		[data-priority="disclosure"] { display: none; }
+		.full-label { display: inline; }
+		.compact-label { display: none; }
+	}
+}

@@ -1,1 +1,72 @@
-ADMIN AREA
+<script src="/admin.js" defer></script>
+<aside aria-label="Application sidebar"><admin-sidebar /></aside>
+<main id="main-content" class="stack">
+	<header class="toolbar dashboard-header">
+		<a data-bind:href="clientUri">Go to <span data-bind:text="applicationName">your application</span></a>
+		<div class="toolbar header-actions">
+			<label class="search-field"><span>Search administration</span><input type="search" placeholder="Search" /></label>
+			<div class="toolbar quick-actions" aria-label="Quick actions">
+				<button type="button" class="primary icon-button" data-icon="plus" title="Add user"><span>Add user</span></button>
+				<button type="button" class="accent icon-button" data-icon="bell" title="Notifications"><span>Notifications</span></button>
+				<button type="button" class="muted-accent icon-button" data-icon="download" title="Export report"><span>Export report</span></button>
+			</div>
+		</div>
+	</header>
+	<div class="toolbar dashboard-controls">
+		<form action="/admin/" method="get" class="segmented-control" aria-label="Reporting period">
+			<input type="hidden" name="status" data-bind:value="status" />
+			<input type="hidden" name="method" data-bind:value="method" />
+			<input type="hidden" name="activity" data-bind:value="activity" />
+			<input type="hidden" name="sort" data-bind:value="sort" />
+			<input type="hidden" name="search" data-bind:value="search" />
+			<button type="submit" name="period" value="12m" data-choice aria-pressed="true">12m</button>
+			<button type="submit" name="period" value="30d" data-choice aria-pressed="false">30d</button>
+			<button type="submit" name="period" value="7d" data-choice aria-pressed="false">7d</button>
+			<button type="submit" name="period" value="24h" data-choice aria-pressed="false">24h</button>
+		</form>
+		<div class="toolbar"><admin-date-range /><admin-filters /><admin-view /></div>
+	</div>
+	<section class="report" aria-labelledby="overview-title">
+		<div class="report-chart stack">
+			<header><p>An overview of your authentication activity <span class="badge">Sample data</span></p><div class="toolbar"><h2 id="overview-title" data-bind:text="periodTitle">This year</h2><span class="trend" data-icon="trending-up">7.4%</span></div></header>
+			<admin-chart />
+		</div>
+		<dl class="metrics">
+			<div><dt>Total log-ins</dt><dd><strong data-bind:text="loginTotal">4,862</strong><span class="trend" data-icon="trending-up">9.2%</span></dd></div>
+			<div><dt>Total new users</dt><dd><strong data-bind:text="userTotal">140</strong><span class="trend" data-icon="trending-up">6.6%</span></dd></div>
+			<div><dt>Email open rate</dt><dd><strong>82%</strong><span class="trend" data-icon="trending-up">8.1%</span></dd></div>
+		</dl>
+	</section>
+	<section id="activity" class="activity-panel" aria-labelledby="activity-title">
+		<header class="panel-heading"><h2 id="activity-title">Activity</h2></header>
+		<div class="toolbar panel-body activity-controls">
+			<div class="stack compact"><strong class="metric" data-bind:text="activityTotal">28</strong><p><span class="trend" data-icon="trending-up">8.6%</span> vs last 30 days</p></div>
+			<form action="/admin/#activity" method="get" class="segmented-control" aria-label="Activity view">
+				<input type="hidden" name="period" data-bind:value="period" />
+				<input type="hidden" name="status" data-bind:value="status" />
+				<input type="hidden" name="method" data-bind:value="method" />
+				<input type="hidden" name="sort" data-bind:value="sort" />
+				<input type="hidden" name="search" data-bind:value="search" />
+				<input type="hidden" name="from" data-bind:value="from" />
+				<input type="hidden" name="to" data-bind:value="to" />
+				<button type="submit" name="activity" value="all" data-choice aria-pressed="true">All authentications</button>
+				<button type="submit" name="activity" value="abandoned" data-choice aria-pressed="false">Abandoned</button>
+				<button type="submit" name="activity" value="top" data-choice aria-pressed="false">Top</button>
+			</form>
+		</div>
+		<div class="table-scroll"><table class="activity-table">
+			<caption class="visually-hidden">Sample authentication activity</caption>
+			<thead><tr><th scope="col" class="selection-cell"><input type="checkbox" aria-label="Select all authentications" /></th><th scope="col"><span class="compact-label">Auth ID</span><span class="full-label">Authentication ID</span></th><th scope="col">Date</th><th scope="col" data-priority="secondary">Status</th><th scope="col" data-priority="secondary">User</th><th scope="col" data-priority="disclosure"><span class="visually-hidden">Actions</span></th></tr></thead>
+			<tbody><tr data-list="activity">
+				<td class="selection-cell"><input type="checkbox" aria-label="Select authentication {{authId}}" /></td>
+				<th scope="row" data-bind:text="authId">#26678</th>
+				<td data-bind:text="activityDate">5 Oct 2026</td>
+				<td data-priority="secondary"><span class="status" data-bind:data-status="statusValue" data-bind:text="statusLabel">Success</span></td>
+				<td data-priority="secondary"><span class="identity"><span class="avatar" data-bind:text="userInitials">SH</span><span><strong data-bind:text="userName">Sienna Hewitt</strong><small data-bind:text="userEmail">sienna@example.com</small></span></span></td>
+				<td data-priority="disclosure"><details class="disclosure-menu row-menu"><summary data-icon="dots-vertical"><span class="visually-hidden">Authentication details</span></summary><div class="disclosure-content"><strong data-bind:text="authId">#26678</strong><p><span class="status" data-bind:data-status="statusValue" data-bind:text="statusLabel">Success</span></p><p data-bind:text="userName">Sienna Hewitt</p><p data-bind:text="userEmail">sienna@example.com</p><p>Method: <span data-bind:text="methodValue">email</span></p></div></details></td>
+			</tr></tbody>
+		</table></div>
+		<p class="panel-body" data-bind:hidden="?hasActivities">No activity matches these filters. Try another period or reset the filters.</p>
+		<footer class="toolbar panel-body"><span data-bind:text="paginationLabel">Page 1 of 4</span><nav class="toolbar" aria-label="Activity pages"><a class="control" data-bind:href="previousPage" data-bind:hidden="?!hasPrevious" data-icon="chevron-left">Previous</a><a class="control" data-bind:href="nextPage" data-bind:hidden="?!hasNext" data-icon="chevron-right">Next</a></nav></footer>
+	</section>
+</main>

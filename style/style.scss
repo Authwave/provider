@@ -24,6 +24,9 @@
 @use "element/label";
 
 @use "component/security-code";
+@use "component/admin-sidebar";
+@use "component/application-switcher";
+@use "component/admin-chart";
 
 @use "vendor/flux";
 
@@ -31,5 +34,6 @@
 @use "page/authenticate";
 @use "page/security-check";
 @use "page/information";
+@use "page/admin";
 
 @include icon.icon;

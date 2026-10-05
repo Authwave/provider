@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@phpgt/flux": "github:PhpGt/Flux",
+    "echarts": "^6.1.0",
     "esbuild": "^0.25.9",
     "sass": "^1.92.1"
   }

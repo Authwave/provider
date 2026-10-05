@@ -1,0 +1,9 @@
+%l-split {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space--split, var(--space--gap));
+	align-items: start;
+
+	> :first-child { flex: 999 1 var(--size--split-main, 32rem); min-inline-size: 0; }
+	> :last-child { flex: 1 1 var(--size--split-side, 12rem); min-inline-size: 0; }
+}

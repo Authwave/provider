@@ -1,0 +1,7 @@
+admin-chart {
+	display: block;
+	min-inline-size: 0;
+	.chart { inline-size: 100%; block-size: var(--size--chart); }
+	.chart-data { font-size: .8rem; }
+	.chart-data summary { cursor: pointer; padding-block: .5rem; }
+}

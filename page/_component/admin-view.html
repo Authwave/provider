@@ -1,0 +1,14 @@
+<details class="disclosure-menu">
+	<summary class="control" data-icon="adjustments-horizontal" aria-label="View"><span class="control-label">View</span></summary>
+	<form class="disclosure-content form-fields" action="/admin/#activity" method="get">
+		<input type="hidden" name="period" data-bind:value="period" />
+		<input type="hidden" name="status" data-bind:value="status" />
+		<input type="hidden" name="method" data-bind:value="method" />
+		<input type="hidden" name="activity" data-bind:value="activity" />
+		<input type="hidden" name="search" data-bind:value="search" />
+		<input type="hidden" name="from" data-bind:value="from" />
+		<input type="hidden" name="to" data-bind:value="to" />
+		<label><span>Sort activity by</span><select name="sort" data-state><option value="date">Newest first</option><option value="user">User name</option><option value="status">Status</option></select></label>
+		<button type="submit">Apply view</button>
+	</form>
+</details>

@@ -278,7 +278,8 @@ class LoginDesignTest extends TestCase {
 		$this->redirects("/admin/", fn() => $this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), $this->user->email), $this->createMock(Request::class)));
 		$admin = new View("admin/index");
 		$this->callFile("page/admin/_common.php", "go", $this->login, $this->users, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), $this->user->email), $this->response, $admin->binder);
-		self::assertStringContainsString("ADMIN AREA", $admin->document->body->textContent);
+		self::assertNotNull($admin->document->querySelector("admin-sidebar"));
+		self::assertSame("page", $admin->document->querySelector(".side-navigation a")->getAttribute("aria-current"));
 		self::assertFalse($this->login->isAdminRequested());
 	}
 

@@ -114,13 +114,23 @@ The logo URL is `https://{{providerHost}}{{logoPath}}`, using the deployment's p
 
 `EmailTemplate` selects `.html` before `.md` when given a name without an extension. HTML templates use `<title>` as the subject and bypass Markdown conversion; Markdown templates retain their first-line subject convention. Placeholder values are HTML-escaped. Plain-text content is generated from the rendered HTML, removing markup and head/style content while preserving paragraph boundaries.
 
+## Administration dashboard
+
+`page/admin/index.html` uses the existing admin access check. `AdminDashboard` binds the deployment logo/name, signed-in email and sample reporting data; replacing this data does not require changing the chart or controls. Periods, dates, status/method/search filters, activity views, sorting and pagination are ordinary GET requests. The application switcher uses a native select with the shared control styles and the selector icon, initially displaying the active application. Other destinations and quick actions are enabled placeholders. Administration uses the default provider palette in both light and dark mode; application colour overrides are reserved for login screens and authentication emails.
+
+The sidebar follows HexForm's single native disclosure: closed on mobile, with its content always displayed at the desktop breakpoint. Layout, stack, split, toolbar, navigation, identity, disclosure and table patterns live in their respective Sass directories. Table columns respond to their container's available width. Tabler SVGs retain their original names and license in `asset/icon`.
+
+ECharts is an npm dependency, imported by `script/component/admin-chart.es6` in the same manner as dhp-logging. PHP binds a JSON payload inside `admin-chart`; the script draws the two series, observes resizing and refreshes colours when the system theme changes. The admin page loads its own chart bundle so login pages do not download ECharts. The native chart-data disclosure provides the same numbers without JavaScript. No admin form uses Flux yet.
+
+Run `vendor/bin/phpunit --bootstrap vendor/autoload.php test/ui/AdminDashboardTest.php` and `node test/ui/admin-browser.mjs` for the isolated dashboard checks. Optional `UI_SCREENSHOT_DIR` saves desktop light/dark and mobile screenshots. The fixtures use mocked sessions and sample themes; they never query the application database or send email.
+
 ## Build and verification
 
-The existing `build.json` handles CSS, JavaScript and asset publishing. With the repository's dependencies installed, the equivalent bundle commands are:
+`build.ini` retains the framework’s CSS and asset tasks and builds separate shared and admin JavaScript entries. With the repository's dependencies installed, the equivalent bundle commands are:
 
 ```sh
 node_modules/.bin/sass style/style.scss www/style.css
-node_modules/.bin/esbuild script/script.es6 --bundle --sourcemap --outfile=www/script.js --loader:.es6=js --target=chrome105,firefox105,edge105,safari15
+node_modules/.bin/esbuild script/script.es6 script/admin.es6 --bundle --sourcemap --outdir=www --loader:.es6=js --target=chrome105,firefox105,edge105,safari15
 vendor/bin/sync ./asset ./www/asset --symlink
 ```
 

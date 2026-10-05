@@ -12,3 +12,8 @@
 		margin-top: var(--space--topper);
 	}
 }
+
+%d-panel-borderless {
+	@extend %d-panel;
+	border: 0;
+}

@@ -1,0 +1,11 @@
+<noscript><style>admin-chart .chart { display:none; }</style></noscript>
+<div class="chart" role="img" aria-label="Authentication activity for this and the previous period. Values are available in the chart data table below."></div>
+<script type="application/json" data-bind:text="chartData">{"labels":[],"current":[],"previous":[]}</script>
+<details class="chart-data">
+	<summary>View chart data</summary>
+	<div class="table-scroll"><table>
+		<caption>Sample authentication totals by period</caption>
+		<thead><tr><th scope="col">Period</th><th scope="col">This period</th><th scope="col">Previous period</th></tr></thead>
+		<tbody><tr data-list="chart-point"><th scope="row" data-bind:text="pointLabel">Jan</th><td data-bind:text="pointCurrent">280</td><td data-bind:text="pointPrevious">260</td></tr></tbody>
+	</table></div>
+</details>

@@ -1,0 +1,10 @@
+%p-identity {
+	display: flex;
+	align-items: center;
+	gap: .75rem;
+	min-inline-size: 0;
+
+	> :last-child { min-inline-size: 0; }
+	strong, small { display: block; overflow-wrap: anywhere; }
+	small { margin-block-start: .2rem; color: var(--pal--body--text); font-size: .8rem; }
+}

@@ -128,7 +128,7 @@ try {
 	for(const mode of ["light", "dark"]) {
 		await send("Emulation.setEmulatedMedia", {features: [{name: "prefers-color-scheme", value: mode}]});
 		for(let attempt = 0; attempt < 100; attempt++) {
-			if(await evaluate(`document.documentElement.dataset.colorScheme === '${mode}' && new URL(document.querySelector('.logo').currentSrc).search === '?${mode}'`)) break;
+			if(await evaluate(`document.documentElement.dataset.colorScheme === '${mode}' && document.querySelector('.logo').currentSrc && new URL(document.querySelector('.logo').currentSrc).search === '?${mode}'`)) break;
 			await delay(20);
 		}
 		assert.equal(await evaluate("document.documentElement.dataset.colorScheme"), mode);
