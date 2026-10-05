@@ -1,10 +1,8 @@
 <?php
 use Authwave\Session\LoginSession;
-use Gt\Dom\HTMLDocument;
 use Gt\DomTemplate\Binder;
 
 function go(
-	HTMLDocument $document,
 	Binder $binder,
 	LoginSession $loginSession,
 ):void {

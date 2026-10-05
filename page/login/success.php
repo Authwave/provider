@@ -6,12 +6,10 @@ use Authwave\User\LoginState;
 use Authwave\User\UserRepository;
 use Gt\Cipher\InitVector;
 use Gt\Cipher\Key;
-use Gt\Cipher\Message\EncryptedMessage;
 use Gt\Cipher\Message\PlainTextMessage;
 use Gt\DomTemplate\Binder;
 use Gt\Http\Response;
 use Gt\Input\Input;
-use Gt\Logger\Log;
 use Gt\Session\Session;
 
 function go(
