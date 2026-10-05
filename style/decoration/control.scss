@@ -1,0 +1,29 @@
+@use "focus";
+
+%d-control {
+	@extend %d-focus;
+
+	--pal--background: var(--pal--control--background);
+	--pal--border-hover: var(--pal--control--border-hover);
+	--pal--background-active: var(--pal--control--background-active);
+
+	border-radius: var(--radius--control);
+	padding: var(--space--control--padding);
+	border: var(--border--control);
+	box-shadow: var(--shadow--control);
+	font-size: var(--size--control--font);
+	background: var(--pal--background);
+	color: var(--pal--body--text);
+	transition:
+		box-shadow var(--motion--control--duration) var(--motion--control--easing),
+		border-color var(--motion--control--duration) var(--motion--control--easing),
+		var(--motion--focus--transition);
+
+	&:hover:not(:disabled, [aria-disabled="true"]) {
+		border-color: var(--pal--border-hover);
+	}
+
+	&:active:not(:disabled, [aria-disabled="true"]) {
+		background-color: var(--pal--background-active);
+	}
+}

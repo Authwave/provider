@@ -1,0 +1,17 @@
+@use "../decoration/focus";
+
+a {
+	color: var(--pal--link--text);
+
+	&[href] {
+		@extend %d-focus;
+	}
+
+	&[href]:hover:not([aria-disabled="true"]) {
+		color: var(--pal--link--text-hover);
+	}
+	&[href]:active:not([aria-disabled="true"]) {
+		color: var(--pal--link--text-active);
+		background-color: var(--pal--link--background-active);
+	}
+}

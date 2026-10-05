@@ -1,8 +1,12 @@
-<login-header />
+<main id="main-content">
+	<header class="auth-heading">
+		<picture>
+			<source media="(prefers-color-scheme: dark)" srcset="/asset/default-logo.svg" data-bind:srcset="darkLogoPath" />
+			<img class="logo" src="/asset/default-logo.svg" alt="{{applicationName}} logo" data-bind:src="logoPath" />
+		</picture>
 
-<form method="post">
-	<h1>You're now logged in</h1>
-	<p><a href="{{returnUri}}">Continue to the application</a>.</p>
-</form>
-
-<login-footer />
+		<h1 id="auth-title">You're logged in!</h1>
+		<p>You have logged in successfully.</p>
+		<p><a href="{{returnUri}}">Continue to <span data-bind:text="applicationName">Amazing App</span></a>.</p>
+	</header>
+</main>

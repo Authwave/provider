@@ -17,6 +17,7 @@ use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\Attributes\AttributesExtension;
 use League\CommonMark\Extension\Autolink\AutolinkExtension;
 use Symfony\Component\Mailer\Mailer;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
@@ -30,6 +31,7 @@ class EmailRepository {
 		private readonly EmailSettings $defaultEmailSettings,
 		private readonly Audit $audit,
 		private readonly ?Mailer $mailer = null,
+		private readonly bool $ignoreTransportErrors = false,
 	) {}
 
 	public function schedule(
@@ -147,6 +149,9 @@ class EmailRepository {
 				$row->getString("htmlContent"),
 				$emailSettings,
 			);
+			if($sentMessageId === null) {
+				continue;
+			}
 
 			$this->db->update("markAsSent", [
 				"id" => $row->getString("id"),
@@ -167,7 +172,7 @@ class EmailRepository {
 		string $markdown,
 		string $html,
 		EmailSettings $emailSettings,
-	):string {
+	):?string {
 		$transport = Transport::fromDsn(implode("", [
 			"smtp://",
 			$emailSettings->username,
@@ -194,7 +199,16 @@ class EmailRepository {
 		$authwaveVersion = trim($authwaveVersion);
 		$headers->addHeader("X-AUTHWAVE-VERSION", $authwaveVersion);
 
-		$mailer->send($email);
+		try {
+			$mailer->send($email);
+		}
+		catch(TransportExceptionInterface $exception) {
+			if(!$this->ignoreTransportErrors) {
+				throw $exception;
+			}
+
+			return null;
+		}
 		return $ulid;
 	}
 }

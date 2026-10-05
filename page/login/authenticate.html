@@ -1,32 +1,40 @@
-<login-header />
+<main id="main-content">
+	<header class="auth-heading">
+		<picture>
+			<source media="(prefers-color-scheme: dark)" srcset="/asset/default-logo.svg" data-bind:srcset="darkLogoPath" />
+			<img class="logo" src="/asset/default-logo.svg" alt="{{applicationName}} logo" data-bind:src="logoPath" />
+		</picture>
 
-<form method="post">
-	<p>Logging in as <a href="/login/?email={{email}}" data-bind:text="email">you@example.com</a>.</p>
-	<p>Enter your password, or choose a new one to receive a security code by email.</p>
+		<p>Logging in as <a href="/login/?email={{email}}" data-bind:text="email">example@example.com</a>.</p>
+	</header>
 
-	<div class="login-options">
-		<div class="thingy-button">
+	<form method="post">
+		<p>Enter your password to continue. If you don't have one yet, or you've forgotten it, enter the password you'd like to use.</p>
+		<div class="field-action">
 			<label>
-				<span>Your password</span>
-				<input type="password" name="password" minlength="12" autofocus />
+				<span>Password</span>
+				<input type="password" name="password" autocomplete="current-password" placeholder="e.g. •••••••••••••••" minlength="12" data-autofocus />
 			</label>
-			<button name="do" value="password" class="primary">
+
+			<button name="do" value="password" class="primary" type="submit" data-icon="login">
 				<span>Log in with password</span>
 			</button>
 		</div>
 
-		<p>Alternatively, send a login link to your email to login without a password.</p>
+		<p>Alternatively, receive a security code by email to log in without a password.</p>
 
 		<div class="actions">
-			<button name="do" value="link">
-				<span>Email login link</span>
-			</button>
+			<button name="do" value="link" type="submit" data-icon="mail">Email security code</button>
 		</div>
-	</div>
+	</form>
 
-<!--	<div class="help">-->
-<!--		<a href="/help#login-options" target="_blank">Need help?</a>-->
-<!--	</div>-->
-</form>
+	<footer>
+		<p>
+			<a href="/login/?do=cancel">Cancel</a> and return to <span data-bind:text="applicationName">Amazing App.</span>
+		</p>
+		<p>
+			<a href="/help/">Need help?</a>
+		</p>
+	</footer>
 
-<!--<login-footer />-->
+</main>

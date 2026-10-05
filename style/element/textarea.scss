@@ -1,0 +1,10 @@
+@use "../decoration/control";
+
+textarea {
+	@extend %d-control;
+
+	&::placeholder {
+		color: var(--pal--control--placeholder);
+		opacity: 1;
+	}
+}

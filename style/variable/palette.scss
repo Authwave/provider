@@ -1,0 +1,50 @@
+:root {
+	--pal--theme: #c328d1;
+	--pal--theme-secondary: #9e77ed;
+	--pal--code-input--border: var(--pal--theme-secondary);
+	--pal--positive: #66c61c;
+	--pal--negative: #f04438;
+	--pal--warning: #f79009;
+	--pal--interaction--shade: var(--pal--theme-secondary);
+	--pal--focus--outline: var(--pal--theme-secondary);
+
+	--pal--page--background: #fafaf9;
+	--pal--panel--background: white;
+	--pal--panel--border: #e8e4e3;
+	--pal--control--border: var(--pal--panel--border);
+	--pal--control--background: var(--pal--panel--background);
+	--pal--control--border-hover: color-mix(in srgb, var(--pal--control--border) 85%, var(--pal--interaction--shade));
+	--pal--control--background-active: color-mix(in srgb, var(--pal--control--background) 92%, var(--pal--interaction--shade));
+	--pal--control--highlight: rgb(255 255 255 / 40%);
+	--pal--control--shade: rgb(0 0 0 / 15%);
+	--pal--control--highlight-hover: rgb(255 255 255 / 55%);
+	--pal--control--shade-hover: rgb(0 0 0 / 22%);
+	--pal--button--background: var(--pal--control--background);
+	--pal--button--text: #453f3a;
+	--pal--button--text-primary: contrast-color(var(--pal--button--background-primary));
+	--pal--button--background-primary: var(--pal--theme);
+	--pal--button--border: var(--pal--control--border);
+	--pal--button--border-primary: color-mix(in srgb, var(--pal--button--background-primary) 80%, black);
+	--pal--button--border-hover: color-mix(in srgb, var(--pal--button--border) 85%, var(--pal--interaction--shade));
+	--pal--button--background-active: color-mix(in srgb, var(--pal--button--background) 92%, var(--pal--interaction--shade));
+	--pal--button--border-primary-hover: color-mix(in srgb, var(--pal--button--border-primary) 70%, var(--pal--interaction--shade));
+	--pal--button--background-primary-active: color-mix(in srgb, var(--pal--button--background-primary) 92%, var(--pal--interaction--shade));
+
+	--pal--body--text: #59514a;
+	--pal--control--placeholder: color-mix(in srgb, var(--pal--body--text) 60%, transparent);
+	--pal--heading--text: #1d1816;
+	--pal--link--text: var(--pal--body--text);
+	--pal--link--text-hover: var(--pal--heading--text);
+	--pal--link--text-active: var(--pal--link--text-hover);
+	--pal--link--background-active: color-mix(in srgb, var(--pal--interaction--shade) 8%, transparent);
+
+	&[data-color-scheme="dark"] {
+		--pal--page--background: #453f3a;
+		--pal--panel--background: #2b2524;
+		--pal--panel--border: #59514a;
+		--pal--button--text: #e8e4e3;
+
+		--pal--body--text: #d8d2d0;
+		--pal--heading--text: #f5f5f4;
+	}
+}

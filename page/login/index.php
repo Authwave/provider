@@ -1,6 +1,4 @@
 <?php
-use Authwave\Model\ApplicationDeployment;
-use Authwave\Model\ApplicationRepository;
 use Authwave\Session\LoginSession;
 use Authwave\Security\Action;
 use Authwave\Security\AnonUser;
@@ -8,7 +6,6 @@ use Authwave\Security\Audit;
 use Gt\DomTemplate\Binder;
 use Gt\Http\Request;
 use Gt\Http\Response;
-use Gt\Http\ServerInfo;
 use Gt\Input\Input;
 use Gt\Session\Session;
 
