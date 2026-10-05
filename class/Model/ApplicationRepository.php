@@ -117,6 +117,7 @@ class ApplicationRepository {
 			$row->getString("secret"),
 			$row->getString("clientHost"),
 			$row->getString("clientLoginPath"),
+			$row->getString("providerHost") ?? "",
 		);
 	}
 }

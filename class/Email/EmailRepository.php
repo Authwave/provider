@@ -12,10 +12,6 @@ use DateTimeInterface;
 use Gt\Database\Query\QueryCollection;
 use Gt\Logger\Log;
 use Gt\Ulid\Ulid;
-use League\CommonMark\CommonMarkConverter;
-use League\CommonMark\Environment\Environment;
-use League\CommonMark\Extension\Attributes\AttributesExtension;
-use League\CommonMark\Extension\Autolink\AutolinkExtension;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Transport;
@@ -44,39 +40,8 @@ class EmailRepository {
 		string $fromName = self::DEFAULT_EMAIL_FROM_NAME,
 		DateTimeInterface $when = null,
 	):string {
-		$filePath = "data/email/$templateName.md";
-		if(!is_file($filePath)) {
-			throw new EmailTemplateNotFoundException($templateName);
-		}
-
-		if(!$when) {
-			$when = new DateTime();
-		}
-
-		$markdown = file_get_contents($filePath);
-		$markdown = trim($markdown);
-
-		foreach($kvp as $key => $value) {
-			if(!is_scalar($value)) {
-				continue;
-			}
-
-			$markdown = str_replace(
-				"{{" . $key . "}}",
-				$value,
-				$markdown
-			);
-		}
-
-		$subject = trim(substr($markdown, 1, strpos($markdown, "\n")));
-		$markdown = substr($markdown, strpos($markdown, "\n") + 2);
-
-		$environment = new Environment();
-		$environment->addExtension(new AutolinkExtension());
-		$environment->addExtension(new AttributesExtension());
-
-		$converter = new CommonMarkConverter();
-		$html = $converter->convert($markdown);
+		$rendered = (new EmailTemplate())->render($templateName, $kvp);
+		$when ??= new DateTime();
 
 		$emailId = new Ulid();
 		$this->audit->create(Action::EMAIL_SCHEDULED, [
@@ -88,12 +53,12 @@ class EmailRepository {
 			"id" => $emailId,
 			"deploymentId" => $deployment->id,
 			"scheduledToSendAt" => $when,
-			"subject" => $subject,
+			"subject" => $rendered["subject"],
 			"toEmail" => $toAddress,
 			"senderName" => $fromName,
 			"senderAddress" => $fromAddress,
-			"textContent" => $markdown,
-			"htmlContent" => (string)$html,
+			"textContent" => $rendered["text"],
+			"htmlContent" => $rendered["html"],
 		]);
 
 // TODO: Move this to a background task.
@@ -118,7 +83,7 @@ class EmailRepository {
 			[
 				"code" => $code,
 				"siteName" => $siteName,
-			],
+			] + (new EmailBranding())->placeholders($deployment),
 			$fromEmail,
 			$siteName,
 		);

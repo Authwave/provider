@@ -14,6 +14,7 @@ class ApplicationDeployment {
 		public readonly string $clientHost,
 //		#[DefaultValue("/")]
 		public readonly string $clientLoginPath,
+		public readonly string $providerHost = "",
 	) {
 	}
 

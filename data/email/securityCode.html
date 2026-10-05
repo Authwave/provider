@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<meta name="supported-color-schemes" content="light dark" />
+<title>Your {{siteName}} security code is {{code}}</title>
+<style>
+:root { color-scheme: light dark; supported-color-schemes: light dark; }
+@media (prefers-color-scheme: dark) {
+ body, .email-page { background-color:{{darkPageColour}} !important; }
+ .email-panel { background-color:{{darkPanelColour}} !important; border-color:{{darkBorderColour}} !important; }
+ .email-title { color:{{darkTitleColour}} !important; }
+ .email-copy { color:{{darkBodyColour}} !important; }
+ .email-muted { color:{{darkMutedColour}} !important; }
+ .email-code-box { background-color:{{darkCodeBackgroundColour}} !important; border-color:{{darkCodeBorderColour}} !important; }
+ .email-code { color:{{darkCodeColour}} !important; }
+ .email-footer { border-color:{{darkBorderColour}} !important; }
+ .email-logo-panel { background-color:{{darkLogoBackgroundColour}} !important; }
+ .email-logo-light { display:none !important; }
+ .email-logo-dark { display:block !important; max-height:none !important; overflow:visible !important; }
+}
+</style>
+</head>
+<body style="margin:0; padding:0; background-color:{{pageColour}};">
+<table class="email-page" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="{{pageColour}}" style="width:100%; background-color:{{pageColour}}; font-family:Arial, Helvetica, sans-serif; color:{{titleColour}};">
+<tr>
+<td align="center" style="padding:32px 16px;">
+<table class="email-panel" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="{{panelColour}}" style="width:100%; max-width:560px; background-color:{{panelColour}}; border:1px solid {{borderColour}}; border-radius:8px;">
+<tr>
+<td style="padding:32px 24px 0;">
+<table class="email-logo-panel" role="presentation" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="background-color:#ffffff; border-radius:4px; margin-bottom:16px;">
+<tr><td style="padding:8px;">
+<div class="email-logo-light"><img src="https://{{providerHost}}{{logoPath}}" width="120" alt="{{siteName}} logo" style="display:block; width:120px; max-width:100%; height:auto; max-height:80px; object-fit:contain; border:0;" /></div>
+<!--[if !mso]><!-->
+<div class="email-logo-dark" style="display:none; max-height:0; overflow:hidden; mso-hide:all;"><img src="https://{{providerHost}}{{darkLogoPath}}" width="120" alt="{{siteName}} logo" style="display:block; width:120px; max-width:100%; height:auto; max-height:80px; object-fit:contain; border:0;" /></div>
+<!--<![endif]-->
+</td></tr>
+</table>
+<p class="email-title" style="margin:0 0 24px; font-size:14px; line-height:20px; font-weight:bold; color:{{titleColour}};">{{siteName}}</p>
+<h1 class="email-title" style="margin:0 0 12px; font-size:26px; line-height:34px; font-weight:bold; color:{{titleColour}};">Your sign-in code</h1>
+<p class="email-copy" style="margin:0; font-size:16px; line-height:26px; color:{{bodyColour}};">Enter the code below to finish signing in to your account.</p>
+</td>
+</tr>
+<tr>
+<td style="padding:24px;">
+<table class="email-code-box" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="{{codeBackgroundColour}}" style="width:100%; background-color:{{codeBackgroundColour}}; border:1px solid {{codeBorderColour}}; border-radius:6px;">
+<tr>
+<td class="email-copy" align="center" style="padding:20px 12px 8px; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:18px; font-weight:bold; color:{{bodyColour}};">SECURITY CODE</td>
+</tr>
+<tr>
+<td align="center" style="padding:0 12px 22px;">
+<strong class="email-code" style="font-family:'Courier New', Courier, monospace; font-size:40px; line-height:52px; letter-spacing:6px; font-weight:bold; color:{{codeColour}}; white-space:nowrap; user-select:all;">{{code}}</strong>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td style="padding:0 24px 32px;">
+<p class="email-copy" style="margin:0 0 20px; font-size:14px; line-height:22px; color:{{bodyColour}};">Keep this code private. Only enter it on the {{siteName}} sign-in page.</p>
+<p class="email-copy" style="margin:0; font-size:14px; line-height:22px; color:{{bodyColour}};">The {{siteName}} team</p>
+</td>
+</tr>
+<tr>
+<td class="email-footer" style="padding:20px 24px; border-top:1px solid {{borderColour}};">
+<p class="email-muted" style="margin:0; font-size:13px; line-height:21px; color:{{mutedColour}};">If you didn't request this code, you can ignore this email.</p>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body>
+</html>

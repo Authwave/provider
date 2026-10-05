@@ -10,6 +10,7 @@ select
 	application_deployment.title,
 	application_deployment.secret,
 	application_deployment.clientHost,
+	application_deployment.providerHost,
 	application_deployment.clientLoginPath
 
 from

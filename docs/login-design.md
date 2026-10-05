@@ -106,6 +106,14 @@ Flux requests carry `X-Authwave-Flux: 1`. For ordinary users, the success handle
 
 Social-provider demo buttons are omitted because this repository has no matching actions. “Didn't receive the code?” returns to authentication to request another code using the existing handler. Re-enter a proposed password there if setting or changing it.
 
+## Security-code emails
+
+`data/email/securityCode.html` resolves the same theme roles as the login screen: `pageBackground`, `panelBackground`, `panelBorder`, `bodyText` and `headingText` are used directly. The code box follows the web security-code inputs: `controlBackground` falls back to `panelBackground`, its text uses `bodyText`, and `codeInputBorder` falls back to `secondary`. Primary does not tint unrelated surfaces. Light and dark themes are independent; missing or invalid values use the corresponding defaults from `style/variable/palette.scss`, mirrored in `EmailBranding::DEFAULTS`. Its constructor accepts an associative array of default overrides. Transparent colours are composited over their actual underlying surface to produce email-compatible hex colours. Inline styles provide the light layout, with `prefers-color-scheme` overrides for email clients supporting dark mode.
+
+The logo URL is `https://{{providerHost}}{{logoPath}}`, using the deployment's provider host and uploaded application logo. Email prefers a raster logo when multiple formats are present. Clients supporting the dark-mode media query switch to `logo_dark` on the dark panel background. Without a dark logo, the standard logo remains on white for readability.
+
+`EmailTemplate` selects `.html` before `.md` when given a name without an extension. HTML templates use `<title>` as the subject and bypass Markdown conversion; Markdown templates retain their first-line subject convention. Placeholder values are HTML-escaped. Plain-text content is generated from the rendered HTML, removing markup and head/style content while preserving paragraph boundaries.
+
 ## Build and verification
 
 The existing `build.json` handles CSS, JavaScript and asset publishing. With the repository's dependencies installed, the equivalent bundle commands are:

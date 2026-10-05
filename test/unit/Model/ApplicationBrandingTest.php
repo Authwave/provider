@@ -34,6 +34,9 @@ class ApplicationBrandingTest extends TestCase {
 			return new Row($statement->fetch(PDO::FETCH_ASSOC));
 		});
 		$repository = new ApplicationRepository($db, $this->createMock(Audit::class), $this->createMock(AnonUser::class));
+		self::assertSame("provider.example.test", $repository->getDeploymentById("deployment")->providerHost);
+		self::assertSame("provider.example.test", $repository->getDeploymentByProviderHost("provider.example.test")->providerHost);
+		self::assertSame("provider.example.test", $repository->getDeploymentByClientHost("client.example.test")->providerHost);
 		foreach([
 			$repository->getById("app"),
 			$repository->getDeploymentById("deployment")->application,

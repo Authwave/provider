@@ -2,15 +2,15 @@
 namespace Authwave\View;
 
 use Authwave\Model\ApplicationDeployment;
+use Authwave\Model\ApplicationLogo;
 use Gt\Dom\HTMLDocument;
 use Gt\DomTemplate\Binder;
 
 class LoginBranding {
 	public function apply(HTMLDocument $document, Binder $binder, ApplicationDeployment $deployment):void {
 		$application = $deployment->application;
-		$logoDirectory = "data/upload/{$application->id}";
-		$logoPath = $this->getLogoPath($logoDirectory, "logo") ?? "/asset/default-logo.svg";
-		$darkLogoPath = $this->getLogoPath($logoDirectory, "logo_dark") ?? $logoPath;
+		$logoPath = ApplicationLogo::getPath($application) ?? "/asset/default-logo.svg";
+		$darkLogoPath = ApplicationLogo::getPath($application, "logo_dark") ?? $logoPath;
 
 		$binder->bindKeyValue("title", "$deployment->title - Login");
 		$binder->bindKeyValue("applicationName", $deployment->title);
@@ -32,14 +32,4 @@ class LoginBranding {
 		}
 	}
 
-	private function getLogoPath(string $directory, string $name):?string {
-		foreach(glob("$directory/$name.*") ?: [] as $path) {
-			$extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-			if(is_file($path) && in_array($extension, ["svg", "png", "jpg", "jpeg", "gif", "webp", "avif"], true)) {
-				return "/$path";
-			}
-		}
-
-		return null;
-	}
 }

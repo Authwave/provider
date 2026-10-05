@@ -14,6 +14,31 @@ use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\Transport\TransportInterface;
 
 class EmailRepositoryTest extends TestCase {
+	public function testSecurityCodeTemplateHasReadableHtmlAndPlainText():void {
+		chdir(dirname(__DIR__, 3));
+		$db = $this->createMock(QueryCollection::class);
+		$db->expects(self::once())->method("insert")->with("schedule", self::callback(function(array $data):bool {
+			self::assertSame("Your Example App security code is 01234", $data["subject"]);
+			self::assertStringContainsString(">01234</strong>", $data["htmlContent"]);
+			self::assertStringContainsString("font-size:40px", $data["htmlContent"]);
+			self::assertStringContainsString('src="https://login.example.test/asset/default-logo.svg"', $data["htmlContent"]);
+			self::assertStringContainsString("01234", $data["textContent"]);
+			self::assertStringContainsString("If you didn't request this code", $data["textContent"]);
+			self::assertStringNotContainsString("<", $data["textContent"]);
+			self::assertStringNotContainsString("{{", $data["htmlContent"]);
+			self::assertStringNotContainsString("style=", $data["textContent"]);
+			return true;
+		}));
+		$repository = $this->getMockBuilder(EmailRepository::class)
+			->setConstructorArgs([$db, new EmailSettings("localhost", 1025, "", ""), $this->createMock(Audit::class)])
+			->onlyMethods(["sendScheduled"])->getMock();
+		$repository->method("sendScheduled")->willReturn([]);
+		$app = new \Authwave\Model\Application("app", "Example App", "sender@example.test");
+		$deployment = new \Authwave\Model\ApplicationDeployment("deployment", $app, "Example App", "secret", "client.example.test", "/", "login.example.test");
+		$user = new \Authwave\User\User("user", $deployment, "recipient@example.test");
+		$repository->scheduleAuthCode($user, $deployment, $user->email, $app->name, "01234", $app->emailSendFrom);
+	}
+
 	private function repository(bool $ignoreErrors, ?RuntimeException $error = null):EmailRepository {
 		$transport = $this->createMock(TransportInterface::class);
 		$send = $transport->expects(self::once())->method("send");
