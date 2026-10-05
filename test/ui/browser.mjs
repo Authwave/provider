@@ -70,6 +70,7 @@ try {
 	await send("Page.enable");
 	await send("Runtime.enable");
 	await send("Network.enable");
+	await send("Emulation.setFocusEmulationEnabled", {enabled: true});
 	for(const width of [390, 1280]) {
 		await send("Emulation.setDeviceMetricsOverride", {width, height: 844, deviceScaleFactor: 1, mobile: width < 600});
 		for(const mode of ["light", "dark"]) {
@@ -77,8 +78,11 @@ try {
 			for(const page of ["index", "authenticate", "security-check", "success"]) {
 				await navigate(page);
 				assert.equal(await evaluate("document.documentElement.dataset.colorScheme"), mode);
+				assert.equal(await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--pal--theme').trim()"), mode === "light" ? "#123456" : "#abcdef");
+				assert.equal(await evaluate("getComputedStyle(document.documentElement).backgroundColor"), mode === "light" ? "rgb(240, 241, 242)" : "rgb(16, 17, 18)");
 				assert.equal(await evaluate("document.documentElement.scrollWidth <= innerWidth"), true, `${page} ${width}: overflow`);
 				assert.equal(await evaluate("document.querySelector('.logo').naturalWidth > 0"), true);
+				assert.equal(await evaluate("new URL(document.querySelector('.logo').currentSrc).search"), `?${mode}`, `${page}: ${mode} logo`);
 				const dimensions = await evaluate("({main:document.querySelector('main').getBoundingClientRect().width, viewport:innerWidth})");
 				assert.ok(width < 600 ? dimensions.main === dimensions.viewport : dimensions.main < dimensions.viewport, `${page}: panel width`);
 				if(process.env.UI_SCREENSHOT_DIR) {
@@ -88,6 +92,45 @@ try {
 				}
 			}
 		}
+	}
+	// Change the system preference on the same page: palette and picture must agree.
+	await navigate("index");
+	for(const mode of ["light", "dark"]) {
+		await send("Emulation.setEmulatedMedia", {features: [{name: "prefers-color-scheme", value: mode}]});
+		for(let attempt = 0; attempt < 100; attempt++) {
+			if(await evaluate(`document.documentElement.dataset.colorScheme === '${mode}' && new URL(document.querySelector('.logo').currentSrc).search === '?${mode}'`)) break;
+			await delay(20);
+		}
+		assert.equal(await evaluate("document.documentElement.dataset.colorScheme"), mode);
+		assert.equal(await evaluate("new URL(document.querySelector('.logo').currentSrc).search"), `?${mode}`);
+		assert.equal(await evaluate("getComputedStyle(document.querySelector('button.primary')).backgroundColor"), mode === "light" ? "rgb(18, 52, 86)" : "rgb(171, 205, 239)");
+		assert.equal(await evaluate("getComputedStyle(document.querySelector('button.primary')).color"), mode === "light" ? "rgb(255, 255, 255)" : "rgb(0, 0, 0)");
+	}
+	for(const mode of ["light", "dark"]) {
+		await send("Emulation.setEmulatedMedia", {features: [{name: "prefers-color-scheme", value: mode}]});
+		await navigate("security-check");
+		const branding = await evaluate(`(() => {
+			const root = document.documentElement;
+			root.style.setProperty('--pal--theme', '#123456');
+			root.style.setProperty('--pal--theme-secondary', '#abcdef');
+			const button = document.querySelector('button.primary');
+			const code = document.querySelector('.security-code-digits input');
+			code.style.transition = 'none';
+			code.focus();
+			const style = getComputedStyle(button);
+			const background = style.backgroundColor;
+			const outline = getComputedStyle(code).outlineColor;
+			const codeBorder = getComputedStyle(code).borderTopColor;
+			const tint = style.getPropertyValue('--pal--background-active');
+			root.style.setProperty('--pal--theme-secondary', '#fedcba');
+			return {background, outline, codeBorder,
+				primaryUnchanged: background === style.backgroundColor,
+				tintChanged: tint !== style.getPropertyValue('--pal--background-active')};
+		})()`);
+		assert.deepEqual(branding, {
+			background: "rgb(18, 52, 86)", outline: "rgb(171, 205, 239)",
+			codeBorder: "rgb(171, 205, 239)", primaryUnchanged: true, tintChanged: true,
+		}, `${mode}: independent primary and secondary colours`);
 	}
 	await navigate("security-check");
 	assert.equal(await evaluate("document.querySelectorAll('.security-code-digits input').length"), 5);

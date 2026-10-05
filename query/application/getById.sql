@@ -4,22 +4,10 @@ select
 	application.emailSendFrom,
 	application.emailSettings,
 	light_theme.colours as lightThemeColours,
-	dark_theme.colours as darkThemeColours,
-
-	application_deployment.id as applicationDeploymentId,
-	application_deployment.title,
-	application_deployment.secret,
-	application_deployment.providerHost,
-	application_deployment.clientHost,
-	application_deployment.clientLoginPath
+	dark_theme.colours as darkThemeColours
 
 from
 	application
-
-inner join
-	application_deployment
-on
-	application_deployment.applicationId = application.id
 
 left join
 	application_theme as light_theme
@@ -34,4 +22,4 @@ on
 	and dark_theme.colourScheme = 'dark'
 
 where
-	application_deployment.id = ?
+	application.id = ?

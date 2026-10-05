@@ -85,11 +85,19 @@ class ApplicationRepository {
 			);
 		}
 
+		$themes = [];
+		foreach(["light", "dark"] as $scheme) {
+			if($json = $row->getString("{$scheme}ThemeColours")) {
+				$themes []= ApplicationTheme::fromJson($scheme, $json);
+			}
+		}
+
 		return new Application(
 			$row->getString("applicationId"),
 			$row->getString("name"),
 			$row->getString("emailSendFrom"),
 			$emailSettings,
+			$themes,
 		);
 	}
 

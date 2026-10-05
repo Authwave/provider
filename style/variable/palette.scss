@@ -1,11 +1,12 @@
 :root {
 	--pal--theme: #c328d1;
-	--pal--code-input--border: var(--pal--theme);
+	--pal--theme-secondary: #9e77ed;
+	--pal--code-input--border: var(--pal--theme-secondary);
 	--pal--positive: #66c61c;
 	--pal--negative: #f04438;
 	--pal--warning: #f79009;
-	--pal--interaction--shade: black;
-	--pal--focus--outline: #9e77ed;
+	--pal--interaction--shade: var(--pal--theme-secondary);
+	--pal--focus--outline: var(--pal--theme-secondary);
 
 	--pal--page--background: #fafaf9;
 	--pal--panel--background: white;
@@ -38,7 +39,6 @@
 	--pal--link--background-active: color-mix(in srgb, var(--pal--interaction--shade) 8%, transparent);
 
 	&[data-color-scheme="dark"] {
-		--pal--interaction--shade: white;
 		--pal--page--background: #453f3a;
 		--pal--panel--background: #2b2524;
 		--pal--panel--border: #59514a;

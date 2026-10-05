@@ -3,7 +3,7 @@ namespace Authwave\Test\UI;
 
 require_once __DIR__ . "/View.php";
 
-use Authwave\Model\{Application, ApplicationDeployment};
+use Authwave\Model\{Application, ApplicationDeployment, ApplicationTheme};
 use Authwave\Security\{AnonUser, Audit};
 use Authwave\Session\{FlashSession, LoginSession};
 use Authwave\User\{LoginState, User, UserRepository};
@@ -83,6 +83,68 @@ class LoginDesignTest extends TestCase {
 		self::assertNull($this->login->getEmail());
 		$this->redirects("/login/authenticate/", fn() => $this->call("index", "do_continue", new Input([], ["email" => "edit@example.test"]), $this->response, $this->login, $this->audit, $this->anonymous));
 		self::assertSame("edit@example.test", $this->login->getEmail());
+	}
+
+	/** @dataProvider brandingCases */
+	public function testApplicationBranding(string $page, array $files, ?string $colour, string $light, string $dark, ?string $style, ?string $secondaryColour = null):void {
+		$id = "ui-branding-" . bin2hex(random_bytes(8));
+		$directory = "data/upload/$id";
+		mkdir($directory, 0777, true);
+		try {
+			foreach($files as $file) {
+				file_put_contents("$directory/$file", "test image");
+			}
+			$deployment = new ApplicationDeployment("test-deployment",
+				new Application($id, "Branded app", "test@example.test", themes: [new ApplicationTheme("light", ["primary" => $colour, "secondary" => $secondaryColour])]),
+				"Branded application", random_bytes(32), "client.example.test", "/callback");
+			$this->login->setDeploymentForLogin($deployment);
+			$view = new View("login/$page");
+			$this->call("_common", "go", $view->document, $view->binder, $this->login);
+			$picture = $view->document->querySelector("picture");
+			$source = $picture->querySelector("source");
+			self::assertSame("(prefers-color-scheme: dark)", $source->getAttribute("media"));
+			self::assertSame($dark ? "/$directory/$dark" : "/asset/default-logo.svg", $source->getAttribute("srcset"));
+			self::assertSame($light ? "/$directory/$light" : "/asset/default-logo.svg", $picture->querySelector("img")->getAttribute("src"));
+			self::assertSame("Branded application logo", $picture->querySelector("img")->getAttribute("alt"));
+			self::assertNull($view->document->documentElement->getAttribute("style"));
+			self::assertSame($style ? ':root[data-color-scheme="light"] { ' . $style . ' }' : null,
+				$view->document->querySelector("#application-theme")?->textContent);
+		}
+		finally {
+			foreach($files as $file) {
+				unlink("$directory/$file");
+			}
+			rmdir($directory);
+		}
+	}
+
+	public function brandingCases():array {
+		return [
+			"default branding" => ["index", [], null, "", "", null],
+			"SVG pair" => ["index", ["logo.svg", "logo_dark.svg"], "#123456", "logo.svg", "logo_dark.svg", "--pal--theme: #123456;"],
+			"mixed formats" => ["authenticate", ["logo.png", "logo_dark.jpeg"], "#abc", "logo.png", "logo_dark.jpeg", "--pal--theme: #abc;"],
+			"light only" => ["security-check", ["logo.jpg"], null, "logo.jpg", "logo.jpg", null],
+			"dark only" => ["success", ["logo_dark.PNG"], "#11223344", "", "logo_dark.PNG", "--pal--theme: #11223344;"],
+			"invalid colour and unrelated files" => ["index", ["logo.txt", "logo_old.svg"], "red; display: none", "", "", null],
+			"both colours" => ["index", [], "#123456", "", "", "--pal--theme: #123456; --pal--theme-secondary: #abcdef;", "#abcdef"],
+			"secondary only" => ["authenticate", [], null, "", "", "--pal--theme-secondary: #abcd;", "#abcd"],
+			"invalid secondary" => ["security-check", [], "#abc", "", "", "--pal--theme: #abc;", "red; display: none"],
+			"invalid primary with secondary" => ["success", [], "invalid", "", "", "--pal--theme-secondary: #12345678;", "#12345678"],
+		];
+	}
+
+	public function testLightAndDarkThemesRenderAfterTheDefaultStylesheet():void {
+		$this->login->setDeploymentForLogin(new ApplicationDeployment("test-deployment",
+			new Application("ui-test-no-logo", "Test app", "test@example.test", themes: [
+				new ApplicationTheme("light", ["primary" => "#123456"]),
+				new ApplicationTheme("dark", ["primary" => "#abcdef", "pageBackground" => "#111"]),
+			]), "Test application", random_bytes(32), "client.example.test", "/callback"));
+		$view = new View("login/index");
+		$this->call("_common", "go", $view->document, $view->binder, $this->login);
+		self::assertSame(":root[data-color-scheme=\"light\"] { --pal--theme: #123456; }\n:root[data-color-scheme=\"dark\"] { --pal--theme: #abcdef; --pal--page--background: #111; }",
+			$view->document->querySelector("#application-theme")->textContent);
+		$html = (string)$view->document;
+		self::assertGreaterThan(strpos($html, '/style.css'), strpos($html, 'id="application-theme"'));
 	}
 
 	/** @dataProvider authenticationCases */

@@ -1,6 +1,9 @@
 <main id="main-content">
 	<header class="auth-heading">
-		<img class="logo" src="/asset/default-logo.svg" alt="{{applicationName}} logo" data-bind:src="logoPath" />
+		<picture>
+			<source media="(prefers-color-scheme: dark)" srcset="/asset/default-logo.svg" data-bind:srcset="darkLogoPath" />
+			<img class="logo" src="/asset/default-logo.svg" alt="{{applicationName}} logo" data-bind:src="logoPath" />
+		</picture>
 
 		<h1 id="auth-title">You're logged in!</h1>
 		<p>You have logged in successfully.</p>
