@@ -16,6 +16,7 @@ function go(
 	Session $session,
 	Response $response,
 ):void {
+	if(rtrim($uri->getPath(), "/") === "/logged-out") return;
 	$providerUri = new ProviderUri($uri);
 	if($deploymentId = $providerUri->getDeploymentId()) {
 		$deployment = $appRepo->getDeploymentById($deploymentId);

@@ -369,4 +369,79 @@ class LoginDesignTest extends TestCase {
 		self::assertStringStartsWith("https://client.example.test/callback?AUTHWAVE_RESPONSE_DATA=", $link->getAttribute("href"));
 	}
 
+	public function testAdminLogoutClearsSessionAndUsesConfiguredDestination():void {
+		$this->login->setState(LoginState::LOGGED_IN);
+		$this->users->method("get")->willReturn($this->user);
+		$this->session->expects(self::once())->method("kill");
+		$request = $this->createMock(Request::class);
+		$request->method("getMethod")->willReturn("POST");
+		$request->method("getUri")->willReturn(new \Gt\Http\Uri("https://login.example.test/admin/logout/"));
+		$config = $this->createMock(\Gt\Config\Config::class);
+		$config->method("getString")->with("authwave.logout_redirect")->willReturn("https://public.example.test/");
+		$this->redirects("https://public.example.test/", fn() => $this->callFile("page/admin/logout.php", "do_logout", $request, $this->response, $this->session, $config, $this->login, $this->users, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), $this->user->email)));
+		self::assertNull($this->login->getEmail());
+		self::assertSame(LoginState::NOT_LOGGED_IN, $this->login->getState());
+	}
+
+	public function testAdminLogoutNeverRunsFromGetOrAnotherRoute():void {
+		$this->login->setState(LoginState::LOGGED_IN);
+		$this->session->expects(self::never())->method("kill");
+		$this->response->expects(self::never())->method("redirect");
+		foreach([["GET", "/admin/logout/"], ["POST", "/admin/security/"]] as [$method, $path]) {
+			$request = $this->createMock(Request::class);
+			$request->method("getMethod")->willReturn($method);
+			$request->method("getUri")->willReturn(new \Gt\Http\Uri("https://login.example.test$path"));
+			$this->callFile("page/admin/logout.php", "do_logout", $request, $this->response, $this->session, new \Gt\Config\Config(), $this->login, $this->users, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), $this->user->email));
+			self::assertSame(LoginState::LOGGED_IN, $this->login->getState());
+		}
+	}
+
+	public function demoPostHandlers():array {
+		return [["page/admin/_common.php"]];
+	}
+
+	/** @dataProvider demoPostHandlers */
+	public function testDemoPostCannotMutateBeforeAdminAccessIsChecked(string $handler):void {
+		$this->login->setState(LoginState::LOGGED_IN);
+		$this->users->method("get")->willReturn($this->user);
+		$store = new SessionStore("demo", $this->session);
+		$this->session->method("getStore")->willReturn($store);
+		$input = new Input(["operation" => "sessions", "sessionTimeout" => "5", "idleTimeout" => "5"]);
+		$workspace = new \Authwave\Admin\DemoWorkspace($this->session, $this->login, $input);
+		$request = $this->createMock(Request::class);
+		$request->method("getMethod")->willReturn("POST");
+		$request->method("getUri")->willReturn(new \Gt\Http\Uri("https://login.example.test/admin/security/"));
+		try {
+			$this->callFile($handler, "do_demo", $request, $input, $this->login, $this->users, new AdminAccess($this->createMock(\Gt\Database\Query\QueryCollection::class), "someone-else@example.test"), $workspace, $this->response);
+			self::fail("Expected administrator access to be checked before mutation.");
+		}
+		catch(\Authwave\Security\AdminAccessDenied) {
+			self::assertSame("1440", $workspace->settings()["sessionTimeout"]);
+		}
+	}
+
+	public function testFreshAdminSessionEstablishesDeploymentBeforeComponentBindings():void {
+		$login = new LoginSession(new SessionStore("fresh-admin", $this->session), $this->audit, $this->anonymous);
+		$applications = $this->createMock(\Authwave\Model\ApplicationRepository::class);
+		$applications->expects(self::once())->method("getDeploymentByProviderHost")
+			->with("localhost:8080")->willReturn($this->deployment);
+		try {
+			$this->callFile("page/_component/admin-sidebar.php", "go_before", $login, $applications,
+				new \Gt\Http\Uri("http://localhost:8080/admin/"), $this->response);
+			self::fail("Expected authentication before component bindings.");
+		}
+		catch(Redirect $redirect) {
+			self::assertSame("/login/", $redirect->getMessage());
+			self::assertSame($this->deployment, $login->getDeployment());
+			self::assertTrue($login->isAdminRequested());
+		}
+	}
+
+	public function testLoggedOutLandingDoesNotReinitialiseOrRedirectToClient():void {
+		$apps = $this->createMock(\Authwave\Model\ApplicationRepository::class);
+		$apps->expects(self::never())->method("getDeploymentByProviderHost");
+		$this->response->expects(self::never())->method("redirect");
+		$this->callFile("page/_common.php", "go", $apps, new \Gt\Http\Uri("https://login.example.test/logged-out/"), new LoginSession(new SessionStore("empty", $this->session), $this->audit, $this->anonymous), $this->session, $this->response);
+	}
+
 }

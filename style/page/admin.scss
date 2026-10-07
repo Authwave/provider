@@ -2,7 +2,9 @@
 @use "../layout/sidebar";
 @use "../layout/stack";
 @use "../layout/split";
+@use "../layout/metric-grid";
 @use "../pattern/toolbar";
+@use "../pattern/badge";
 @use "../pattern/side-navigation";
 @use "../pattern/disclosure-menu";
 @use "../pattern/segmented-control";
@@ -24,8 +26,6 @@ body.dir--admin {
 	--space--stack: 1.75rem;
 	--size--sidebar: 20rem;
 	--size--sidebar-header: 4.5rem;
-	--size--sidebar-logo: 10rem;
-	--size--sidebar-logo-height: 3rem;
 	--size--disclosure: 20rem;
 	--size--chart: 17rem;
 	--pal--navigation--selected: color-mix(in srgb, var(--pal--panel--background) 94%, var(--pal--theme-secondary));
@@ -35,8 +35,10 @@ body.dir--admin {
 
 	> main {
 		@extend %d-panel-borderless;
+		border-radius: 0;
 		margin-block: 0;
-		padding-block: 0;
+		padding-block-start: 0;
+		padding-block-end: var(--space--workspace);
 
 		// Dashboard controls use their own spacing rather than login form spacing.
 		form { margin-block-start: 0; }
@@ -55,6 +57,7 @@ body.dir--admin {
 	.icon-button { @extend %o-icon-button; }
 	.visually-hidden, .search-field > span { @extend %d-visually-hidden; }
 	.control { @extend %d-control; display: inline-flex; align-items: center; text-decoration: none; font-weight: 600; font-size: .85rem; }
+	.control.icon-button { display: inline-grid; padding: 0; }
 	button:disabled { cursor: default; }
 	button.accent { background: var(--pal--accent--background); }
 	button.muted-accent { background: var(--pal--muted-accent--background); }
@@ -72,17 +75,16 @@ body.dir--admin {
 		font-size: .85rem;
 		font-weight: 600;
 	}
-	.notification, .badge {
-		padding: .15rem .45rem;
-		border: 1px solid var(--pal--panel--border);
-		border-radius: 1rem;
-		background: var(--pal--navigation--selected);
-		font-size: .75rem;
-		font-weight: 500;
-		white-space: nowrap;
-	}
+	.notification, .badge { @extend %p-badge; }
+	.toggle-badge { @extend %p-toggle-badge; }
 	.notification { margin-inline-start: auto; }
 	.search-field input { display: block; inline-size: 100%; min-inline-size: 0; block-size: var(--size--icon-button); font-size: .9rem; }
+	.search-field label {
+		display: block;
+		position: relative;
+		&::before { position: absolute; inset-inline-start: var(--space--control--padding); inset-block-start: 50%; transform: translateY(-50%); pointer-events: none; }
+		input { padding-inline-start: calc(var(--space--control--padding) + var(--size--icon) + var(--space--icon--gap)); }
+	}
 	.setup-card {
 		margin-block-start: 1rem;
 		padding: 1rem;
@@ -92,7 +94,7 @@ body.dir--admin {
 		h2 { font-size: .85rem; margin: 0; }
 		.toolbar { justify-content: space-between; gap: .25rem; }
 		progress { inline-size: 100%; block-size: .5rem; margin-block: 1rem; accent-color: var(--pal--theme); }
-		button { inline-size: 100%; font-size: .85rem; }
+		button, .control { inline-size: 100%; font-size: .85rem; justify-content: center; }
 	}
 	.checklist {
 		list-style: none;
@@ -118,35 +120,41 @@ body.dir--admin {
 		.search-field { display: block; flex: 1; min-inline-size: 0; }
 	}
 	.quick-actions { display: none; }
-	.dashboard-controls {
-		--space--toolbar: .5rem;
-		--size--segmented-control: var(--size--icon-button);
+	.report-controls {
 		position: relative;
-		.disclosure-menu { position: static; }
-		align-items: start;
-		justify-content: space-between;
-		summary.control { @extend %o-icon-button; }
-		.control-label { @extend %d-visually-hidden; }
+		inline-size: 100%;
+		justify-content: flex-end;
+		> admin-comparison {
+			.disclosure-menu { position: static; }
+			summary { block-size: var(--size--icon-button); }
+			.disclosure-content { inset-inline-start: 0; inset-inline-end: auto; max-inline-size: 100%; }
+		}
 	}
-	.report { @extend %l-split; --space--split: 2rem; }
+
+	.report-layout { @extend %l-split; --align--split: end; --space--split: 2rem; --size--split-side: 21rem; --size--split-main-max: var(--size--report-chart-max); }
+	.report-layout[data-metrics-beside-chart] > .metrics { margin-block-end: var(--space--chart-labels, 0px); }
 	.report-chart {
+		header .toolbar { --size--segmented-control: var(--size--icon-button); }
 		p { margin: 0 0 .75rem; line-height: 1.6; font-size: .9rem; }
 		h2 { margin: 0; font-size: 2.25rem; }
 	}
 	.metrics {
-		@extend %l-stack;
+		@extend %l-metric-grid;
 		margin: 0;
+		> div { @extend %d-panel; border-radius: var(--radius--panel); padding: .75rem; }
 		dd { @extend %p-toolbar; margin: .5rem 0 0; align-items: baseline; }
 		dt { font-size: .9rem; }
+		strong { font-size: clamp(1.25rem, 8cqi, 2rem); }
+		small { font-size: .8rem; }
 	}
-	.metric, .metrics strong { font-size: 2rem; font-weight: 600; color: var(--pal--heading--text); }
+	.metric, .metrics strong { font-weight: 600; color: var(--pal--heading--text); }
+	.metric { font-size: 2rem; }
 	.trend { color: var(--pal--positive); font-size: .85rem; font-weight: 600; white-space: nowrap; --size--icon: 1rem; --space--icon--gap: .25rem; }
+	.trend[data-trend="down"] { color: var(--pal--negative); }
 	.activity-panel { position: relative; border: var(--border--panel); border-radius: var(--radius--panel); background: var(--pal--panel--background); min-inline-size: 0; }
 	.panel-heading { padding: 1rem var(--space--table-cell); background: var(--pal--navigation--selected); border-start-start-radius: var(--radius--panel); border-start-end-radius: var(--radius--panel); border-block-end: 1px solid var(--pal--panel--border); h2 { margin: 0; font-size: .9rem; } }
 	.panel-body { padding: 1.25rem var(--space--table-cell); }
 	.activity-controls, .activity-panel > footer { justify-content: space-between; }
-	.activity-controls p { font-size: .8rem; }
-	.activity-controls .segmented-control > button { padding: .65rem .55rem; font-size: .75rem; }
 	.selection-cell { inline-size: 2rem; padding-inline: .65rem; input { margin: 0; inline-size: 1rem; block-size: 1rem; } }
 	.status {
 		display: inline-flex;
@@ -181,16 +189,17 @@ body.dir--admin {
 			margin-inline-start: auto;
 			.search-field { inline-size: 16rem; }
 		}
-		.dashboard-controls {
-			summary.control { display: inline-flex; inline-size: auto; padding-inline: var(--space--control--padding); --space--icon--gap: .5rem; }
-			summary.control > .control-label { margin: 0; position: static; inline-size: auto; block-size: auto; clip: auto; clip-path: none; overflow: visible; white-space: normal; }
+		.report-controls {
+			inline-size: auto;
+			> admin-comparison {
+				.disclosure-menu { position: relative; }
+				.disclosure-content { max-inline-size: none; }
+			}
 		}
 	}
 
 	@media(min-width: break.$medium) {
 		--size--dashboard-header: calc(var(--size--icon-button) + var(--space--toolbar, .75rem) + 1rem + 1px);
 		--size--sidebar-header: var(--size--dashboard-header);
-		--size--sidebar-logo: 12rem;
-		--size--sidebar-logo-height: 4rem;
 	}
 }

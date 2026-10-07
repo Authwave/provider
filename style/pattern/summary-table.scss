@@ -1,0 +1,6 @@
+// Compact two-column summaries stay tabular even in small dashboard cards.
+%p-summary-table {
+	table-layout: fixed;
+	th, td { padding: .75rem 0; overflow-wrap: anywhere; white-space: normal; }
+	th:last-child, td:last-child { inline-size: 4rem; text-align: end; }
+}

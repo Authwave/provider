@@ -1,0 +1,14 @@
+<section class="settings-panel stack" aria-labelledby="top-usage-title">
+	<h2 id="top-usage-title">Top usage</h2>
+	<form method="get" action="/admin/" class="segmented-control" aria-label="Top usage grouping">
+		<button name="topUsage" value="users" aria-pressed="true">Users</button>
+		<button name="topUsage" value="countries" aria-pressed="false">Countries</button>
+		<button name="topUsage" value="devices" aria-pressed="false">Devices</button>
+	</form>
+	<table class="summary-table">
+		<thead><tr><th scope="col" data-bind:text="usageGroupTitle">User</th><th scope="col">Logins</th></tr></thead>
+		<tbody><tr data-list="top-usage"><th scope="row" data-bind:text="usageName">s••••@example.test</th><td data-bind:text="usageCount">143</td></tr></tbody>
+	</table>
+	<p class="muted" data-bind:hidden="?hasTopUsage">No usage yet.</p>
+	<footer><a class="card-link" data-bind:href="topUsersUrl"><span>See all users</span><span data-icon="arrow-right" aria-hidden="true"></span></a></footer>
+</section>

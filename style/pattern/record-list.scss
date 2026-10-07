@@ -1,0 +1,18 @@
+%p-record-list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	> li {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space--gap);
+		padding-block: .75rem;
+		border-block-end: 1px solid var(--pal--panel--border);
+		> * { min-inline-size: 0; overflow-wrap: anywhere; }
+		> details { inline-size: 100%; }
+		small { display: block; }
+		p { margin: .25rem 0 0; }
+	}
+}

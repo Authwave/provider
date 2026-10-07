@@ -1,0 +1,16 @@
+%p-settings-panel {
+	min-inline-size: 0;
+	padding: var(--space--gap);
+	border: var(--border--panel);
+	border-radius: var(--radius--panel);
+	background: var(--pal--panel--background);
+	> h2, > h3 { margin: 0; }
+}
+%p-settings-disclosure {
+	min-inline-size: 0;
+	border: var(--border--panel);
+	border-radius: var(--radius--panel);
+	background: var(--pal--panel--background);
+	> summary { cursor: pointer; padding: var(--space--gap); overflow-wrap: anywhere; }
+	> .settings-content { padding: 0 var(--space--gap) var(--space--gap); min-inline-size: 0; }
+}

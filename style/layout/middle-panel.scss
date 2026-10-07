@@ -3,6 +3,7 @@
 %l-middle-panel {
 	box-sizing: border-box;
 	display: grid;
+	grid-template-rows: minmax(0, 1fr) auto;
 	place-items: start center;
 	min-block-size: 100svh;
 
@@ -10,7 +11,8 @@
 		box-sizing: border-box;
 		inline-size: 100%;
 		min-inline-size: 0;
-		min-block-size: 100svh;
+		min-block-size: 0;
+		align-self: stretch;
 		padding: var(--space--topper) var(--space--gap) var(--space--gap);
 	}
 
@@ -20,6 +22,7 @@
 		> main {
 			max-inline-size: var(--size--middle-panel--max-inline);
 			min-block-size: auto;
+			align-self: start;
 			padding: calc(var(--space--gap) * 2);
 		}
 	}

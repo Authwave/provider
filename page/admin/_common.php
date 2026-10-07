@@ -28,3 +28,21 @@ function go(
 	$loginSession->clearAdminRequest();
 	$binder->bindKeyValue("title", "User Administration");
 }
+
+function do_demo(
+	\Gt\Http\Request $request,
+	\Gt\Input\Input $input,
+	LoginSession $loginSession,
+	UserRepository $userRepo,
+	AdminAccess $adminAccess,
+	\Authwave\Admin\DemoWorkspace $workspace,
+	Response $response,
+):void {
+	\Authwave\Admin\DemoAction::submit($request, $input, $loginSession, $userRepo, $adminAccess, $workspace, $response);
+}
+
+function go_after(Binder $binder, \Gt\Http\Uri $uri):void {
+	$page = basename(rtrim($uri->getPath(), "/"));
+	$title = $page === "admin" ? "Dashboard" : ucfirst($page);
+	$binder->bindKeyValue("title", "$title - Administration");
+}

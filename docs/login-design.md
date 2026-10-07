@@ -114,32 +114,39 @@ The logo URL is `https://{{providerHost}}{{logoPath}}`, using the deployment's p
 
 `EmailTemplate` selects `.html` before `.md` when given a name without an extension. HTML templates use `<title>` as the subject and bypass Markdown conversion; Markdown templates retain their first-line subject convention. Placeholder values are HTML-escaped. Plain-text content is generated from the rendered HTML, removing markup and head/style content while preserving paragraph boundaries.
 
-## Administration dashboard
+## Administration pages
 
-`page/admin/index.html` uses the existing admin access check. `AdminDashboard` binds the deployment logo/name, signed-in email and sample reporting data; replacing this data does not require changing the chart or controls. Periods, dates, status/method/search filters, activity views, sorting and pagination are ordinary GET requests. The application switcher uses a native select with the shared control styles and the selector icon, initially displaying the active application. Other destinations and quick actions are enabled placeholders. Administration uses the default provider palette in both light and dark mode; application colour overrides are reserved for login screens and authentication emails.
+The admin section keeps the provider palette. The sidebar starts with the application selector, and account setup progress remains at the bottom. Its shared sidebar and sticky header appear on Dashboard, Security, Emails, Applications, Customisation, Users, Integrations and Billing. A single native application select submits a GET form, with one option per application. Switching applications resets the deployment context; deployment selection belongs to the individual page. Views always belong to a single application; the first available application is selected by default. Sample applications from every demo organisation are available. Scoped links and forms retain the chosen organisation, application and deployment. The desktop sidebar scrolls independently, and the same native details menu opens it on mobile. Account setup appears only in the sidebar; Continue setup links to the next incomplete step.
 
-The sidebar follows HexForm's single native disclosure: closed on mobile, with its content always displayed at the desktop breakpoint. Layout, stack, split, toolbar, navigation, identity, disclosure and table patterns live in their respective Sass directories. Table columns respond to their container's available width. Tabler SVGs retain their original names and license in `asset/icon`.
+`DemoWorkspace` provides sample organisations, applications/deployments, users and settings in the `AUTHWAVE_ADMIN_DEMO` session store. Settings forms use POST, validate the submitted values and redirect back to the scoped page. They never write application, user, security, email or billing database records. Creating an organisation starts the seven-step setup checklist; creating an application updates both the list and scope selector. Application settings inherit organisation defaults unless overridden. SMTP credentials, API keys and security actions on these pages are demo values/actions. No test email or invitation is sent and no real user session is revoked.
 
-ECharts is an npm dependency, imported by `script/component/admin-chart.es6` in the same manner as dhp-logging. PHP binds a JSON payload inside `admin-chart`; the script draws the two series, observes resizing and refreshes colours when the system theme changes. The admin page loads its own chart bundle so login pages do not download ECharts. The native chart-data disclosure provides the same numbers without JavaScript. No admin form uses Flux yet.
+Each admin page owns its bindings in its sibling PHP file. Each dynamic component has a matching `page/_component/*.php` file using WebEngine’s scoped `Element` and `Binder`. For example, application-switcher owns the application options, admin-header owns search/export links, admin-top-usage owns the Users/Countries/Devices tabs, and admin-new-users and admin-abandoned-users own their timestamped lists. `DemoReport` supplies shared sample report calculations; `AdminView` provides reusable binding/form helpers. The test renderer invokes these files through WebEngine’s LogicExecutor and ComponentBinder, in component-before-page order. Email addresses are masked by default; the user reveal controls are ordinary GET forms. Template previews use sandboxed iframes and saved HTML/CSS overrides never style the admin section. Quick actions open Add user/Security or download a CSV of masked sample users.
 
-Run `vendor/bin/phpunit --bootstrap vendor/autoload.php test/ui/AdminDashboardTest.php` and `node test/ui/admin-browser.mjs` for the isolated dashboard checks. Optional `UI_SCREENSHOT_DIR` saves desktop light/dark and mobile screenshots. The fixtures use mocked sessions and sample themes; they never query the application database or send email.
+The actual admin authentication/access check remains required for every page and POST action. Logout is a real POST action: it clears the login session and destroys the provider session. It defaults to the public `/logged-out/` landing page. Self-hosted instances may set `authwave.logout_redirect` in config.ini to a customised destination. The header link points to the client root, without its login callback path.
+
+Charts use Apache ECharts through modular npm imports in the single `/script.js` bundle. Component initialisers select their own elements and run again after Flux renders; charts resize through ResizeObserver. PHP binds escaped JSON to chart data attributes and native chart-data tables provide the same sample series without JavaScript. The chart plot spans the container width; space for its legend and labels is kept.
+
+Reusable Sass layouts/patterns cover the sidebar, stacks/splits, card grids, toolbars, segmented controls, settings panels/disclosures, record lists and responsive tables. Record tables stack all fields into labelled rows on mobile; the authentication table retains its conditional details column. The admin font stays at 16px to keep native controls and breakpoints consistent.
+
+Run `vendor/bin/phpunit test/ui` and `node test/ui/admin-browser.mjs` for isolated checks. Optional `UI_SCREENSHOT_DIR` saves screenshots of each section. Browser fixtures exercise scope changes and demo POST forms through a temporary server; the PHP handler tests cover administrator checks and logout. The fixtures never query the configured database or send email.
 
 ## Build and verification
 
-`build.ini` retains the framework’s CSS and asset tasks and builds separate shared and admin JavaScript entries. With the repository's dependencies installed, the equivalent bundle commands are:
+WebEngine’s default build configuration handles CSS, assets and the shared JavaScript bundle. To run it directly, use `vendor/bin/build --default vendor/phpgt/webengine/build.default.ini`. With the repository’s dependencies installed, the equivalent commands are:
 
 ```sh
 node_modules/.bin/sass style/style.scss www/style.css
-node_modules/.bin/esbuild script/script.es6 script/admin.es6 --bundle --sourcemap --outdir=www --loader:.es6=js --target=chrome105,firefox105,edge105,safari15
+node_modules/.bin/esbuild script/script.es6 --bundle --sourcemap --outfile=www/script.js --loader:.es6=js --target=chrome105,firefox105,edge105,safari15
 vendor/bin/sync ./asset ./www/asset --symlink
 ```
 
 Run the isolated integration checks:
 
 ```sh
-vendor/bin/phpunit --bootstrap vendor/autoload.php test/ui/LoginDesignTest.php
-node test/ui/browser.mjs
+npm run test:ui
 ```
+
+This command builds the assets, runs the PHP UI tests and exercises the login and admin pages in Chromium. Shared layout checks detect overflowing visible content even when the page edge is clipped, verify that the page cannot scroll sideways, and check footer spacing and desktop alignment. Admin checks include open disclosures and sticky headers across widths from 280 to 2560 pixels.
 
 The browser test needs Node 22+ and Chromium (`CHROMIUM` may specify its executable). Optional `UI_SCREENSHOT_DIR` saves screenshots. It renders the actual templates using the framework's component expansion, route classes and binding, then serves temporary fixtures. PHP tests call actual page handlers with in-memory sessions and mocked repositories. Neither suite connects to the configured database or sends email.
 

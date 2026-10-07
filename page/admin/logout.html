@@ -1,0 +1,13 @@
+<aside aria-label="Application sidebar"><admin-sidebar /></aside>
+<main id="main-content" class="stack">
+	<admin-header />
+	<admin-page-heading />
+	<section class="settings-panel stack">
+		<h2>Log out</h2>
+		<p>End your administrator session on this provider.</p>
+		<form method="post" class="toolbar">
+			<button type="submit" name="do" value="logout" class="primary">Log out</button>
+			<a class="control" data-bind:href="dashboardUrl">Stay signed in</a>
+		</form>
+	</section>
+</main>

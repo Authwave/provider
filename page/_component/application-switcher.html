@@ -1,6 +1,9 @@
-<label data-icon="selector">
-	<span class="visually-hidden">Application</span>
-	<select name="application" aria-label="Application">
-		<option data-bind:value="applicationId" data-bind:text="applicationName" selected>Your application</option>
-	</select>
+<label>
+	<span>Application</span>
+	<span class="select-control" data-icon="selector">
+		<select name="scope">
+			<option value="" disabled data-bind:hidden="?hasApplications" data-bind:selected="?!hasApplications">No applications</option>
+			<option data-list="scope-applications" data-bind:value="scopeValue" data-bind:text="scopeTitle" data-bind:selected="?scopeSelected"></option>
+		</select>
+	</span>
 </label>

@@ -1,5 +1,6 @@
 @use "../variable/break";
 @use "../decoration/focus";
+@use "../decoration/visually-hidden";
 
 admin-sidebar {
 	display: block;
@@ -7,15 +8,13 @@ admin-sidebar {
 	border-block-end: 1px solid var(--pal--panel--border);
 	background: var(--pal--panel--background);
 
-	.brand {
-		display: flex;
-		align-items: center;
+	.sidebar-header {
 		justify-content: center;
 		min-block-size: var(--size--sidebar-header);
-		padding-inline: 4rem;
-		box-sizing: border-box;
-		picture { display: block; min-inline-size: 0; max-inline-size: 100%; }
-		img { display: block; inline-size: var(--size--sidebar-logo); max-inline-size: 100%; max-block-size: var(--size--sidebar-logo-height); object-fit: contain; }
+		margin: 0;
+		padding: .75rem 4rem .75rem var(--space--gap);
+		label > span:not(.select-control) { @extend %d-visually-hidden; }
+		select { block-size: var(--size--icon-button); }
 	}
 
 	.sidebar-menu > summary {
@@ -40,7 +39,7 @@ admin-sidebar {
 		min-block-size: 100svh;
 		border-block-end: 0;
 		border-inline-end: 1px solid var(--pal--panel--border);
-		.brand { padding-inline: var(--space--gap); }
+		.sidebar-header { padding-inline: var(--space--gap); }
 		.sidebar-menu {
 			> summary { display: none; }
 			// Keep the same disclosure visible on desktop without JS or an open attribute.

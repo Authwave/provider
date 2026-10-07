@@ -1,0 +1,11 @@
+<form action="/admin/#activity" method="get" class="toolbar" aria-label="Activity filters">
+	<input type="hidden" name="activity" value="all" />
+	<input type="hidden" name="status" value="all" />
+	<input type="hidden" name="activitySuccess" value="no" />
+	<input type="hidden" name="activityFailed" value="no" />
+	<input type="hidden" name="activityAbandoned" value="no" />
+	<label class="toggle-badge"><input type="checkbox" name="activitySuccess" value="yes" data-bind:checked="?includeSuccessful" /><span>Successful</span></label>
+	<label class="toggle-badge"><input type="checkbox" name="activityFailed" value="yes" data-bind:checked="?includeFailed" /><span>Failed</span></label>
+	<label class="toggle-badge"><input type="checkbox" name="activityAbandoned" value="yes" data-bind:checked="?includeAbandoned" /><span>Abandoned</span></label>
+	<button type="submit" data-flux="autosave">Apply filters</button>
+</form>

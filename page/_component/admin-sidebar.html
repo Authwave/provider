@@ -1,43 +1,37 @@
-<a class="brand" href="/admin/" aria-label="{{applicationName}} administration">
-	<picture>
-		<source media="(prefers-color-scheme: dark)" srcset="/asset/default-logo.svg" data-bind:srcset="darkLogoPath" />
-		<img src="/asset/default-logo.svg" alt="{{applicationName}}" data-bind:src="logoPath" />
-	</picture>
-</a>
+<form class="sidebar-header scope-switcher stack compact" data-scope-form method="get" aria-label="Application">
+	<application-switcher />
+	<button type="submit" data-flux="autosave">Apply scope</button>
+</form>
 <details class="sidebar-menu">
 	<summary data-icon="menu-2"><span>Menu</span></summary>
 	<div class="sidebar-content">
 		<nav class="side-navigation" aria-label="Administration">
 			<ul>
-				<li><button type="button" data-icon="home">Home</button></li>
-				<li><a href="/admin/" data-icon="chart-bar" aria-current="page">Dashboard</a></li>
-				<li><button type="button" data-icon="shield">Security</button></li>
-				<li><button type="button" data-icon="mail">Emails <span class="notification" aria-label="8 notifications">8</span></button></li>
-				<li><button type="button" data-icon="apps">Integrations</button></li>
-				<li><button type="button" data-icon="chart-pie">Reporting</button></li>
-				<li><button type="button" data-icon="users">Users</button></li>
+				<li><a data-nav="dashboard" aria-current="page" href="/admin/" data-bind:href="dashboardUrl" data-icon="chart-bar">Dashboard</a></li>
+				<li><a data-nav="security" href="/admin/security/" data-bind:href="securityUrl" data-icon="shield">Security</a></li>
+				<li><a data-nav="emails" href="/admin/emails/" data-bind:href="emailsUrl" data-icon="mail">Emails</a></li>
+				<li><a data-nav="applications" href="/admin/applications/" data-bind:href="applicationsUrl" data-icon="apps">Applications</a></li>
+				<li><a data-nav="customisation" href="/admin/customisation/" data-bind:href="customisationUrl" data-icon="settings">Customisation</a></li>
+				<li><a data-nav="users" href="/admin/users/" data-bind:href="usersUrl" data-icon="users">Users</a></li>
+				<li><a data-nav="integrations" href="/admin/integrations/" data-bind:href="integrationsUrl" data-icon="lifebuoy">Integrations</a></li>
+				<li><a data-nav="billing" href="/admin/billing/" data-bind:href="billingUrl" data-icon="credit-card">Billing</a></li>
 			</ul>
 		</nav>
-		<div class="sidebar-bottom">
-			<nav class="side-navigation" aria-label="Application controls">
+		<div class="sidebar-bottom stack">
+			<section class="setup-card" aria-labelledby="sidebar-setup-title">
+				<div class="toolbar"><h2 id="sidebar-setup-title">Complete account</h2><span data-bind:text="setupProgress"></span></div>
+				<progress max="7" data-bind:value="setupCount" aria-label="Account setup progress"></progress>
+				<ul class="checklist">
+					<li data-list="sidebar-setup-steps" data-bind:data-icon="stepIcon" data-bind:text="stepTitle"></li>
+				</ul>
+				<a class="control" data-bind:href="setupUrl">Continue setup</a>
+			</section>
+
+			<nav class="side-navigation" aria-label="Account">
 				<ul>
-					<li><button type="button" data-icon="lifebuoy">Support</button></li>
-					<li><button type="button" data-icon="settings">Settings</button></li>
-					<li><button type="button" data-icon="credit-card">Billing</button></li>
+					<li><a data-nav="logout" href="/admin/logout/" data-bind:href="logoutUrl" data-icon="logout">Log out</a></li>
 				</ul>
 			</nav>
-			<section class="setup-card" aria-labelledby="setup-title">
-				<div class="toolbar"><h2 id="setup-title">Complete account</h2><span>Step 3 of 4</span></div>
-				<progress value="3" max="4" aria-label="Account setup: 3 of 4 steps complete">75%</progress>
-				<ul class="checklist">
-					<li data-icon="circle-check">Complete your profile</li>
-					<li data-icon="circle-check">Verify your email</li>
-					<li data-icon="circle-check">Configure your application</li>
-					<li data-icon="shield">Review security settings</li>
-				</ul>
-				<button type="button">Continue setup</button>
-			</section>
-			<application-switcher />
 		</div>
 	</div>
 </details>

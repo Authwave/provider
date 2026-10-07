@@ -11,6 +11,10 @@ input {
 		accent-color: var(--pal--theme);
 	}
 
+	&[type="date"] {
+		font-family: inherit;
+	}
+
 	&::placeholder {
 		color: var(--pal--control--placeholder);
 		opacity: 1;

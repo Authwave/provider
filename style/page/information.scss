@@ -3,6 +3,7 @@
 @use "../variable/break";
 
 body.dir--help,
+body.dir--legal,
 body.uri--privacy,
 body.uri--terms {
 	@extend %l-middle-panel;

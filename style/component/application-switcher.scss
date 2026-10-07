@@ -1,8 +1,6 @@
 application-switcher {
 	display: block;
-	margin-block-start: 1rem;
-
-	label {
+	.select-control {
 		display: block;
 		position: relative;
 		--space--icon--gap: 0;

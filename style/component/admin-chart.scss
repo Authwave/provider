@@ -1,7 +1,9 @@
-admin-chart {
+admin-chart, admin-chart-data {
 	display: block;
 	min-inline-size: 0;
-	.chart { inline-size: 100%; block-size: var(--size--chart); }
+	.chart { position: relative; overflow: clip; inline-size: 100%; block-size: var(--size--chart); }
 	.chart-data { font-size: .8rem; }
 	.chart-data summary { cursor: pointer; padding-block: .5rem; }
 }
+
+admin-chart-data { max-inline-size: var(--size--report-chart-max); }

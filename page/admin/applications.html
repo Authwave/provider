@@ -1,0 +1,53 @@
+<aside aria-label="Application sidebar"><admin-sidebar /></aside>
+<main id="main-content" class="stack">
+	<admin-header />
+	<admin-page-heading />
+	<section class="settings-panel stack">
+		<h2>Create an application</h2>
+		<form method="post" class="form-fields stack compact">
+			<input type="hidden" name="do" value="demo" />
+			<input type="hidden" name="operation" value="create-application" />
+			<label><span>Application name</span><input type="text" name="name" data-setting="name" required maxlength="100" /></label>
+			<button type="submit" class="primary">Create demo application</button>
+		</form>
+	</section>
+	<div class="card-grid">
+		<section class="settings-panel stack" data-list="applications">
+			<h2 data-bind:text="appName">Application</h2>
+			<details class="settings-disclosure">
+				<summary>Application settings</summary>
+				<div class="settings-content">
+					<form method="post" class="form-fields stack compact">
+						<input type="hidden" name="do" value="demo" />
+						<input type="hidden" name="operation" value="application" />
+						<input type="hidden" name="entity" data-bind:value="appId" />
+						<label><span>Name</span><input name="name" data-bind:value="appName" required /></label>
+						<label><span>Production deployment</span><select name="production"><option value="">Not enabled</option><option data-list="production-options" data-bind:value="productionValue" data-bind:text="productionLabel" data-bind:selected="?productionSelected">Production</option></select></label>
+						<button type="submit" class="primary">Save demo settings</button>
+					</form>
+				</div>
+			</details>
+			<h3>Deployments</h3>
+			<div class="stack compact">
+				<details class="settings-disclosure" data-list="deployments">
+					<summary data-bind:text="deploymentName">Production</summary>
+					<div class="settings-content">
+						<form method="post" class="form-fields stack compact">
+							<input type="hidden" name="do" value="demo" />
+							<input type="hidden" name="operation" value="deployment" />
+							<input type="hidden" name="entity" data-bind:value="appId" />
+							<input type="hidden" name="deployment" data-bind:value="deploymentId" />
+							<label><span>Name</span><input name="name" data-bind:value="deploymentName" required /></label>
+							<label><span>API key (demo)</span><input data-bind:value="apiKey" readonly /></label>
+							<label><span>Provider host</span><input name="host" data-bind:value="deploymentHost" required /></label>
+							<label><span>Client URL</span><input type="url" name="clientUrl" data-bind:value="deploymentClient" required /></label>
+							<label><span>Client login path</span><input name="loginPath" data-bind:value="deploymentPath" required /></label>
+							<button type="submit" class="primary">Save demo settings</button>
+						</form>
+					</div>
+				</details>
+			</div>
+		</section>
+	</div>
+	<p data-bind:hidden="?hasApplications">No applications yet. Create your first application above.</p>
+</main>

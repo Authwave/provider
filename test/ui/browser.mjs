@@ -1,5 +1,6 @@
 // Run after building the assets: node test/ui/browser.mjs (Node 22+ and Chromium).
 import assert from "node:assert/strict";
+import {assertPageLayout} from "./page-layout.mjs";
 import {spawn, execFileSync} from "node:child_process";
 import {mkdtemp, readFile, rm, mkdir, writeFile} from "node:fs/promises";
 import {createServer} from "node:http";
@@ -101,7 +102,7 @@ try {
 	await send("Runtime.enable");
 	await send("Network.enable");
 	await send("Emulation.setFocusEmulationEnabled", {enabled: true});
-	for(const width of [390, 1280]) {
+	for(const width of [280, 320, 390, 640, 1280]) {
 		await send("Emulation.setDeviceMetricsOverride", {width, height: 844, deviceScaleFactor: 1, mobile: width < 600});
 		for(const mode of ["light", "dark"]) {
 			await send("Emulation.setEmulatedMedia", {features: [{name: "prefers-color-scheme", value: mode}]});
@@ -111,6 +112,7 @@ try {
 				assert.equal(await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--pal--theme').trim()"), mode === "light" ? "#123456" : "#abcdef");
 				assert.equal(await evaluate("getComputedStyle(document.documentElement).backgroundColor"), mode === "light" ? "rgb(240, 241, 242)" : "rgb(16, 17, 18)");
 				assert.equal(await evaluate("document.documentElement.scrollWidth <= innerWidth"), true, `${page} ${width}: overflow`);
+				await assertPageLayout(evaluate, `${page}, ${width}px, ${mode}`, width >= 640);
 				assert.equal(await evaluate("document.querySelector('.logo').naturalWidth > 0"), true);
 				assert.equal(await evaluate("new URL(document.querySelector('.logo').currentSrc).search"), `?${mode}`, `${page}: ${mode} logo`);
 				const dimensions = await evaluate("({main:document.querySelector('main').getBoundingClientRect().width, viewport:innerWidth})");

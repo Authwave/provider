@@ -1,0 +1,36 @@
+<aside aria-label="Application sidebar"><admin-sidebar /></aside>
+<main id="main-content" class="stack">
+	<admin-header />
+	<admin-page-heading />
+	<section class="settings-panel stack">
+		<h2>Visual customisation</h2>
+		<p data-bind:text="customisationScope">Organisation default style</p>
+		<p>The provider admin theme stays unchanged. These demo settings describe your login screens and authentication emails.</p>
+		<form method="post" class="form-fields stack compact">
+			<input type="hidden" name="do" value="demo" />
+			<input type="hidden" name="operation" value="customisation" />
+			<label><span>Light logo URL</span><input type="text" name="logoUrl" data-setting="logoUrl"  /></label>
+			<label><span>Dark logo URL</span><input type="text" name="darkLogoUrl" data-setting="darkLogoUrl"  /></label>
+			<label><span>Primary colour</span><input type="color" name="primaryColour" data-setting="primaryColour"  /></label>
+			<label><span>Secondary colour</span><input type="color" name="secondaryColour" data-setting="secondaryColour"  /></label>
+			<label><span>CSS overrides</span><textarea name="cssOverrides" data-setting="cssOverrides" rows="8" placeholder=".auth-heading { ... }"></textarea></label>
+			<button type="submit" class="primary">Save demo settings</button>
+		</form>
+		<details class="settings-disclosure">
+			<summary>Preview colours</summary>
+			<div class="settings-content">
+				<div class="theme-preview" data-bind:style="previewColours">
+					<span>Primary colour</span>
+					<span>Secondary colour</span>
+				</div>
+				<p>Preview reflects the saved demo colours.</p>
+			</div>
+		</details>
+	</section>
+	<section class="settings-panel stack">
+		<h2>Application overrides</h2>
+		<ul class="record-list">
+			<li data-list="customisation-apps"><strong data-bind:text="appName"></strong><a class="control" data-bind:href="customiseUrl">Customise application</a></li>
+		</ul>
+	</section>
+</main>

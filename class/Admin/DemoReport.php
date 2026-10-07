@@ -1,19 +1,20 @@
 <?php
-namespace Authwave\View;
+namespace Authwave\Admin;
 
-use Authwave\Session\LoginSession;
 use DateTimeImmutable;
-use Gt\Dom\HTMLDocument;
-use Gt\DomTemplate\Binder;
 use Gt\Input\Input;
 
-/** Sample reporting data for the first dashboard; no authentication records are queried. */
-class AdminDashboard {
-	public function apply(HTMLDocument $document, Binder $binder, LoginSession $login, Input $input):void {
-		$deployment = $login->getDeployment();
-		(new LoginBranding())->bindIdentity($binder, $deployment);
+/** Normalised report filters and sample data, shared by the dashboard components. */
+class DemoReport {
+	public array $state;
+	public array $values;
+	public array $rows;
+	public array $points;
+	public function __construct(Input $input, DemoWorkspace $workspace) {
+		$comparisonOptions = ["previous", "previous-1", "month", "quarter", "year", "none"];
 		$state = [
-			"period" => $this->choice($input, "period", ["24h", "7d", "30d", "12m"], "12m"),
+			"reportComparison" => $this->choice($input, "reportComparison", $comparisonOptions, $this->choice($input, "comparison", $comparisonOptions, "previous")),
+			"period" => $this->choice($input, "period", ["24h", "7d", "30d", "12m"], "30d"),
 			"status" => $this->choice($input, "status", ["all", "success", "failed", "abandoned"], "all"),
 			"method" => $this->choice($input, "method", ["all", "password", "email"], "all"),
 			"activity" => $this->choice($input, "activity", ["all", "abandoned", "top"], "all"),
@@ -22,6 +23,11 @@ class AdminDashboard {
 			"from" => $this->date($input->getString("from")),
 			"to" => $this->date($input->getString("to")),
 		];
+		$activityFields = ["success" => "activitySuccess", "failed" => "activityFailed", "abandoned" => "activityAbandoned"];
+		foreach($activityFields as $status => $key) {
+			$default = $state["activity"] === "abandoned" ? $status === "abandoned" : ($state["activity"] === "top" ? $status === "success" : true);
+			$state[$key] = $this->choice($input, $key, ["yes", "no"], $default ? "yes" : "no");
+		}
 		if($state["from"] && $state["to"] && $state["from"] > $state["to"]) {
 			[$state["from"], $state["to"]] = [$state["to"], $state["from"]];
 		}
@@ -30,7 +36,7 @@ class AdminDashboard {
 		$from = $state["from"] ? new DateTimeImmutable($state["from"]) : $today->modify("-" . ($span - 1) . " days");
 		$to = $state["to"] ? new DateTimeImmutable($state["to"]) : $today;
 		$labels = $current = $previous = $points = [];
-		$factor = ($state["method"] === "all" ? 1 : 0.65) * ($state["status"] === "all" ? 1 : 0.4);
+		$factor = ($state["method"] === "all" ? 1 : 0.65) * ($state["status"] === "all" ? 1 : 0.4) * ($workspace ? count($workspace->applications()) : 1);
 		for($i = 0; $i < 12; $i++) {
 			$date = $state["period"] === "24h" && !$state["from"] && !$state["to"]
 				? $today->modify("+" . ($i * 2) . " hours")
@@ -41,8 +47,18 @@ class AdminDashboard {
 			$points[] = ["pointLabel" => $labels[$i], "pointCurrent" => $current[$i], "pointPrevious" => $previous[$i]];
 		}
 		$rows = $this->activities($today);
-		$rows = array_values(array_filter($rows, static function(array $row) use($state, $from, $to):bool {
+		if($workspace && !$workspace->applications()) $rows = [];
+		$comparison = $state["reportComparison"];
+		$comparisonTitle = ["previous" => "Last period", "previous-1" => "Last period - 1", "month" => "Same point last month", "quarter" => "Previous quarter", "year" => "Previous year", "none" => "No comparison"][$comparison];
+		$comparisonFactor = ["previous" => 1.074, "previous-1" => 1.14, "month" => 1.1, "quarter" => 1.19, "year" => 1.3, "none" => 1.074][$comparison];
+		$previous = array_map(static fn($value) => (int)round($value / $comparisonFactor), $current);
+		foreach($points as $i => &$point) $point["pointPrevious"] = $previous[$i];
+		unset($point);
+		if($workspace && $input->getString("reveal") !== "yes") foreach($rows as &$row) $row["userEmail"] = DemoWorkspace::email($row["userEmail"]);
+		unset($row);
+		$rows = array_values(array_filter($rows, static function(array $row) use($state, $from, $to, $activityFields):bool {
 			return $row["dateValue"] >= $from->format("Y-m-d") && $row["dateValue"] <= $to->format("Y-m-d")
+				&& $state[$activityFields[$row["statusValue"]]] === "yes"
 				&& ($state["status"] === "all" || $row["statusValue"] === $state["status"])
 				&& ($state["method"] === "all" || $row["methodValue"] === $state["method"])
 				&& ($state["activity"] !== "abandoned" || $row["statusValue"] === "abandoned")
@@ -59,41 +75,29 @@ class AdminDashboard {
 		$count = count($rows);
 		$pageCount = max(1, (int)ceil($count / 7));
 		$page = min($pageCount, max(1, (int)$input->getString("page")));
-		foreach($state as $key => $value) {
-			$binder->bindKeyValue($key, $value);
-		}
-		foreach([
-			"applicationId" => $deployment->application->id,
-			"title" => "$deployment->title - Administration",
-			"accountEmail" => $login->getEmail(),
-			"accountInitial" => strtoupper(substr($login->getEmail() ?? "A", 0, 1)),
-			"clientUri" => (string)$deployment->getClientReturnUri()->withPath("/"),
-			"periodTitle" => ["24h" => "Today", "7d" => "This week", "30d" => "This month", "12m" => "This year"][$state["period"]],
+		$this->state = $state;
+		$this->values = [
+			"periodText" => $state["from"] || $state["to"]
+				? "between " . $from->format("j M Y") . " and " . $to->format("j M Y")
+				: ["24h" => "today", "7d" => "for the last 7 days", "30d" => "for the last 30 days", "12m" => "for the last 12 months"][$state["period"]],
+			"comparisonTitle" => $comparisonTitle,
 			"dateLabel" => $from->format("j M Y") . " – " . $to->format("j M Y"),
-			"loginTotal" => number_format(array_sum($current)),
+			"usageTotal" => number_format(array_sum($current)),
 			"userTotal" => number_format((int)round(array_sum($current) / 35)),
-			"activityTotal" => $count,
+			"securityCodeTotal" => number_format((int)round(array_sum($current) * .52)),
+			"passwordChangeTotal" => number_format((int)round(array_sum($current) * .018)),
+			"successfulLoginRatio" => array_sum($current) > 0 ? "96%" : "0%",
+			"providerLoginTotal" => number_format((int)round(array_sum($current) * .28)),
 			"paginationLabel" => "Page $page of $pageCount",
 			"previousPage" => "/admin/?" . http_build_query($state + ["page" => max(1, $page - 1)]) . "#activity",
 			"nextPage" => "/admin/?" . http_build_query($state + ["page" => min($pageCount, $page + 1)]) . "#activity",
-			"chartData" => json_encode(["labels" => $labels, "current" => $current, "previous" => $previous], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS | JSON_THROW_ON_ERROR),
+			"chartData" => json_encode(["labels" => $labels, "current" => $current, "previous" => $previous, "comparison" => $comparison, "comparisonTitle" => $comparisonTitle], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS | JSON_THROW_ON_ERROR),
 			"hasActivities" => $count > 0,
 			"hasPrevious" => $page > 1,
 			"hasNext" => $page < $pageCount,
-		] as $key => $value) {
-			$binder->bindKeyValue($key, $value);
-		}
-		$binder->bindList(array_slice($rows, ($page - 1) * 7, 7), templateName: "activity");
-		$binder->bindList($points, templateName: "chart-point");
-		foreach($document->querySelectorAll("button[data-choice]") as $button) {
-			$key = $button->getAttribute("name");
-			$button->setAttribute("aria-pressed", ($state[$key] ?? null) === $button->getAttribute("value") ? "true" : "false");
-		}
-		foreach($document->querySelectorAll("select[data-state]") as $select) {
-			foreach($select->querySelectorAll("option") as $option) {
-				$option->toggleAttribute("selected", $option->getAttribute("value") === $state[$select->getAttribute("name")]);
-			}
-		}
+		];
+		$this->rows = array_slice($rows, ($page - 1) * 7, 7);
+		$this->points = $points;
 	}
 
 	private function choice(Input $input, string $key, array $choices, string $default):string {

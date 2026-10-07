@@ -27,6 +27,7 @@
 @use "component/admin-sidebar";
 @use "component/application-switcher";
 @use "component/admin-chart";
+@use "component/site-footer";
 
 @use "vendor/flux";
 
@@ -35,5 +36,6 @@
 @use "page/security-check";
 @use "page/information";
 @use "page/admin";
+@use "page/admin-console";
 
 @include icon.icon;

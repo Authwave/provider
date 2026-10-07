@@ -1,8 +1,26 @@
-import * as echarts from "echarts";
+import * as echarts from "echarts/core";
+import {LineChart} from "echarts/charts";
+import {GridComponent, LegendComponent, TooltipComponent, AriaComponent} from "echarts/components";
+import {SVGRenderer} from "echarts/renderers";
+
+echarts.use([LineChart, GridComponent, LegendComponent, TooltipComponent, AriaComponent, SVGRenderer]);
 
 const charts = new Map();
 const darkMode = window.matchMedia("(prefers-color-scheme: dark)");
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+function alignMetrics(element, chart) {
+	const layout = element.closest(".report-layout");
+	if(!layout) return;
+	const metrics = layout.querySelector(":scope > .metrics");
+	const container = element.querySelector(".chart");
+	const plotBottom = chart.convertToPixel({yAxisIndex: 0}, 0);
+	if(!Number.isFinite(plotBottom)) return;
+	// Count charts start at zero, so its pixel position is the plot's lower edge.
+	const labelSpace = Math.max(0, chart.getHeight() - plotBottom);
+	layout.style.setProperty("--space--chart-labels", `${labelSpace}px`);
+	layout.toggleAttribute("data-metrics-beside-chart", metrics.getBoundingClientRect().left >= container.getBoundingClientRect().right);
+}
 
 function draw(element, chart, payload) {
 	const palette = getComputedStyle(document.documentElement);
@@ -13,16 +31,22 @@ function draw(element, chart, payload) {
 		animation: !reducedMotion.matches,
 		textStyle: {fontFamily: palette.fontFamily, color: colour("--pal--body--text")},
 		aria: {enabled: true},
-		tooltip: {trigger: "axis"},
-		legend: {top: 0, right: 0, icon: "circle", itemWidth: 8, itemHeight: 8, textStyle: {color: colour("--pal--body--text")}},
+		tooltip: {trigger: "axis", confine: true, extraCssText: "max-width:100%;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere;"},
+		legend: {type: "scroll", top: 0, right: 0, icon: "circle", itemWidth: 8, itemHeight: 8, textStyle: {color: colour("--pal--body--text")}},
 		grid: {left: 0, right: 0, top: 42, bottom: 28, outerBoundsMode: "none"},
 		xAxis: {type: "category", data: payload.labels, boundaryGap: false, axisTick: {show: false}, axisLine: {lineStyle: {color: colour("--pal--panel--border")}}, axisLabel: {color: colour("--pal--body--text"), hideOverlap: true, alignMinLabel: "left", alignMaxLabel: "right"}},
-		yAxis: {type: "value", axisLabel: {show: false}, splitNumber: 4, splitLine: {lineStyle: {color: colour("--pal--panel--border"), opacity: .35}}},
-		series: [
-			{name: "Previous period", type: "line", data: payload.previous, smooth: .25, showSymbol: false, lineStyle: {width: 1, color: secondary, opacity: .45}, itemStyle: {color: secondary}, areaStyle: {color: secondary, opacity: .06}},
-			{name: "This period", type: "line", data: payload.current, smooth: .25, showSymbol: false, lineStyle: {width: 2, color: primary}, itemStyle: {color: primary}, areaStyle: {color: primary, opacity: .09}},
-		],
-	});
+		yAxis: {type: "value", min: 0, axisLabel: {show: false}, splitNumber: 4, splitLine: {lineStyle: {color: colour("--pal--panel--border"), opacity: .35}}},
+		series: ([
+			...(payload.comparison === "none" ? [] : [{name: payload.comparisonTitle, data: payload.previous, comparison: true}]),
+			{name: "This period", data: payload.current},
+		]).map(series => {
+			const lineColour = series.comparison ? secondary : primary;
+			return {name: series.name, type: "line", data: series.data, smooth: .25, showSymbol: false,
+				lineStyle: {width: series.comparison ? 1 : 2, color: lineColour, opacity: series.comparison ? .45 : 1, type: series.comparison ? "dashed" : "solid"},
+				itemStyle: {color: lineColour}, areaStyle: {color: lineColour, opacity: series.comparison ? .06 : .09}};
+		}),
+	}, {notMerge: true});
+	alignMetrics(element, chart);
 }
 
 function initialise() {
@@ -35,10 +59,16 @@ function initialise() {
 	}
 	for(const element of document.querySelectorAll("admin-chart")) {
 		if(charts.has(element)) continue;
-		const payload = JSON.parse(element.querySelector('script[type="application/json"]').textContent);
-		const chart = echarts.init(element.querySelector(".chart"), null, {renderer: "svg"});
-		const observer = new ResizeObserver(() => chart.resize());
+		const container = element.querySelector(".chart");
+		const payload = JSON.parse(container.dataset.chart);
+		const chart = echarts.init(container, null, {renderer: "svg"});
+		const observer = new ResizeObserver(() => {
+			chart.resize();
+			alignMetrics(element, chart);
+		});
 		observer.observe(element);
+		const layout = element.closest(".report-layout");
+		if(layout) observer.observe(layout);
 		charts.set(element, {chart, observer, payload});
 		draw(element, chart, payload);
 	}

@@ -1,0 +1,9 @@
+<header class="stack compact">
+	<div class="toolbar">
+		<h1 data-bind:text="pageTitle">Administration</h1>
+		<span class="badge">Sample data</span>
+	</div>
+	<p data-bind:text="scopeLabel">All applications</p>
+	<p class="muted">Demo settings are saved for this browser session.</p>
+</header>
+<p class="notice" role="status" data-bind:hidden="?!hasNotice" data-bind:text="notice"></p>

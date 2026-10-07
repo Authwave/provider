@@ -1,0 +1,14 @@
+<aside aria-label="Application sidebar"><admin-sidebar /></aside>
+<main id="main-content" class="stack">
+	<admin-header />
+	<admin-page-heading />
+	<section class="settings-panel stack">
+		<h2>Create an organisation</h2>
+		<form method="post" class="form-fields stack compact">
+			<input type="hidden" name="do" value="demo" />
+			<input type="hidden" name="operation" value="create-organisation" />
+			<label><span>Organisation name</span><input type="text" name="name" data-setting="name" required maxlength="100" /></label>
+			<button type="submit" class="primary">Create demo organisation</button>
+		</form>
+	</section>
+</main>

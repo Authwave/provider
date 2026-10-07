@@ -1,0 +1,16 @@
+<header class="toolbar dashboard-header">
+	<a data-bind:href="clientUri">Go to <span data-bind:text="applicationName">your application</span></a>
+	<div class="toolbar header-actions">
+		<form class="search-field" action="/admin/users/" method="get" role="search">
+			<label data-icon="search">
+				<span class="visually-hidden">Search</span>
+				<input type="search" name="search" data-bind:value="headerSearch" placeholder="Search" />
+			</label>
+		</form>
+		<div class="toolbar quick-actions" aria-label="Quick actions">
+			<a class="control accent icon-button" data-icon="bell" data-bind:href="securityUrl" title="Security events"><span>Security events</span></a>
+			<a class="control muted-accent icon-button" data-icon="download" data-bind:href="exportUrl" download="sample-users.csv" title="Export sample users"><span>Export sample users</span></a>
+			<a class="control primary icon-button" data-icon="plus" data-bind:href="addUserUrl" title="Add user"><span>Add user</span></a>
+		</div>
+	</div>
+</header>

@@ -1,0 +1,47 @@
+<aside aria-label="Application sidebar"><admin-sidebar /></aside>
+<main id="main-content" class="stack">
+	<admin-header />
+	<admin-page-heading />
+	<section class="settings-panel stack">
+		<h2>Client libraries</h2>
+		<div class="card-grid">
+			<article class="stack compact"><h3>PHP client</h3><p>The existing Authwave PHP library handles encrypted login and logout requests.</p><code>composer require authwave/php-client</code><a class="control" href="#php-example">View example</a></article>
+			<article class="stack compact"><h3>Other clients</h3><p>Use your backend to generate the encrypted provider request. Keep the deployment key on the server.</p><a class="control" href="#integration-guide">Integration guide</a></article>
+		</div>
+	</section>
+	<section class="settings-panel stack" id="php-example">
+		<h2>PHP integration example</h2>
+		<p>Illustrative configuration using a demo deployment. Replace the demo values when connecting your client.</p>
+		<pre><code>use Authwave\Authenticator;
+require __DIR__ . "/vendor/autoload.php";
+
+// Keep the real deployment client key in your server environment.
+$clientKey = getenv("AUTHWAVE_CLIENT_KEY");
+$auth = new Authenticator(
+    $clientKey,
+    "https://client.example.test" . $_SERVER["REQUEST_URI"],
+    "login.example.test",
+);
+
+if (isset($_GET["login"])) {
+    $auth-&gt;login();
+} elseif (isset($_GET["logout"])) {
+    $auth-&gt;logout("https://client.example.test/");
+}
+
+if ($auth-&gt;isLoggedIn()) {
+    // Display your authenticated application content.
+}</code></pre>
+	</section>
+	<section class="settings-panel stack" id="integration-guide">
+		<h2>Connect a client</h2>
+		<ol class="plain-list">
+			<li>Create an application and choose a deployment.</li>
+			<li>Copy the provider host, deployment ID and API key into your server configuration.</li>
+			<li>Set the client URL and login callback path.</li>
+			<li>Redirect sign-in requests through the Authwave client.</li>
+			<li>Handle the encrypted callback, create your application session and test logout.</li>
+		</ol>
+		<a class="control" data-bind:href="applicationsUrl">Open applications</a>
+	</section>
+</main>

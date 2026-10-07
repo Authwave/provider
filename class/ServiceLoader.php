@@ -1,6 +1,7 @@
 <?php
 namespace Authwave;
 
+use Authwave\Admin\DemoWorkspace;
 use Authwave\Email\EmailRepository;
 use Authwave\Model\EmailSettings;
 use Authwave\Session\FlashSession;
@@ -11,10 +12,19 @@ use Authwave\Security\AdminAccess;
 use Authwave\Security\Audit;
 use Authwave\User\UserRepository;
 use Gt\Database\Database;
+use Gt\Input\Input;
 use Gt\Session\Session;
 use GT\WebEngine\Service\DefaultServiceLoader;
 
 class ServiceLoader extends DefaultServiceLoader {
+	public function loadDemoWorkspace():DemoWorkspace {
+		return new DemoWorkspace(
+			$this->container->get(Session::class),
+			$this->container->get(LoginSession::class),
+			$this->container->get(Input::class),
+		);
+	}
+
 	public function loadAdminAccess():AdminAccess {
 		return new AdminAccess(
 			$this->container->get(Database::class)->queryCollection("user_admin"),

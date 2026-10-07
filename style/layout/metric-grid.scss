@@ -1,0 +1,13 @@
+%l-metric-grid {
+	display: grid;
+	grid-template-columns: repeat(6, minmax(0, 1fr));
+	gap: var(--space--gap);
+	min-inline-size: 0;
+	container: metric-grid / inline-size;
+
+	> * { grid-column: span 3; min-inline-size: 0; }
+
+	@container metric-grid (min-width: 66rem) {
+		> * { grid-column: span 1; }
+	}
+}

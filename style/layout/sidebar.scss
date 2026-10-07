@@ -12,6 +12,7 @@
 	@media(min-width: break.$medium) {
 		display: grid;
 		grid-template-columns: var(--size--sidebar) minmax(0, 1fr);
+		grid-template-rows: minmax(0, 1fr) auto;
 		align-items: start;
 
 		> aside {
@@ -25,5 +26,6 @@
 			overscroll-behavior: contain;
 		}
 		> main { grid-column: 2; }
+		> .site-footer { grid-column: 2; }
 	}
 }

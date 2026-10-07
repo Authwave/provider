@@ -2,6 +2,8 @@ html {
 	font-family: var(--font--body--family);
 	font-size: var(--size--body--font);
 	height: 100%;
+	// Clip the page edge without creating a scroll container for sticky headers.
+	overflow-x: clip;
 	background-color: var(--pal--page--background);
 	color: var(--pal--body--text);
 }
