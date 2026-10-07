@@ -6,23 +6,23 @@
 		<section class="settings-panel stack">
 			<h2>Currently logged in</h2>
 			<p class="metric" data-bind:text="onlineCount">6</p>
-			<ul class="plain-list">
-				<li data-list="online-users"><span data-bind:text="userEmail"></span> · <span data-bind:text="userDevice"></span></li>
+			<ul class="record-list">
+				<li data-list="online-users"><span class="identity"><span class="avatar" data-bind:html="userAvatar" aria-hidden="true"></span><span data-bind:text="userEmail"></span></span><span data-bind:text="userDevice"></span></li>
 			</ul>
 		</section>
 		<section class="settings-panel stack">
 			<h2>Latest login failures</h2>
-			<ul class="plain-list">
-				<li data-list="failed-users"><span data-bind:text="userEmail"></span> · <span data-bind:text="userApplication"></span></li>
+			<ul class="record-list">
+				<li data-list="failed-users"><span class="identity"><span class="avatar" data-bind:html="userAvatar" aria-hidden="true"></span><span data-bind:text="userEmail"></span></span><span data-bind:text="userApplication"></span></li>
 			</ul>
 		</section>
 	</div>
 	<section class="settings-panel stack">
 		<h2>All users</h2>
 		<form method="get" class="filter-grid">
-			<label><span>Search users</span><input type="search" name="search" data-bind:value="search" placeholder="Name or email address" /></label>
+			<label><span>Search users</span><input type="search" name="search" data-bind:value="search" placeholder="Email address" /></label>
 			<label><span>Status</span><select name="userStatus" data-filter="userStatus"><option value="all">All users</option><option value="online">Online now</option><option value="failed">Recent login failure</option><option value="abandoned">Abandoned</option></select></label>
-			<label><span>Sort by</span><select name="userSort" data-filter="userSort"><option value="logins">Sign-in count</option><option value="created">Created date</option><option value="name">Name</option></select></label>
+			<label><span>Sort by</span><select name="userSort" data-filter="userSort"><option value="logins">Sign-in count</option><option value="created">Created date</option><option value="email">Email address</option></select></label>
 			<label class="checkbox-field"><input type="checkbox" name="reveal" value="yes" data-bind:checked="?revealEmails" /><span>Show email addresses</span></label>
 			<button type="submit">Apply filters</button>
 		</form>
@@ -41,7 +41,7 @@
 				</thead>
 				<tbody>
 					<tr data-list="users">
-						<td data-label="Email" data-bind:text="userEmail">Sample</td>
+						<td data-label="Email"><span class="identity"><span class="avatar" data-bind:html="userAvatar" aria-hidden="true"></span><span data-bind:text="userEmail">Sample</span></span></td>
 						<td data-label="Application" data-bind:text="userApplication">Sample</td>
 						<td data-label="Log-ins" data-bind:text="userLogins">Sample</td>
 						<td data-label="Created" data-bind:text="userCreated">Sample</td>
@@ -61,7 +61,6 @@
 		<form method="post" class="form-fields stack compact">
 			<input type="hidden" name="do" value="demo" />
 			<input type="hidden" name="operation" value="create-user" />
-			<label><span>Name</span><input type="text" name="name" data-setting="name" required /></label>
 			<label><span>Email address</span><input type="email" name="email" required /></label>
 			<button type="submit" class="primary">Add demo user</button>
 		</form>

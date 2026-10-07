@@ -90,6 +90,16 @@ try {
 	assert.equal(await evaluate('document.head.querySelector("script").getAttribute("src")'), "/script.js");
 	await until('document.querySelectorAll("admin-chart svg").length === 1');
 	await checkToolbarDropdowns();
+	const avatarStyle = await evaluate(`(()=>{const svg=document.querySelector('.activity-table .avatar svg');return {colours:[...svg.querySelectorAll('[class*=avatar-colour]')].map(slice=>getComputedStyle(slice).fill),clip:getComputedStyle(svg.querySelector('.avatar-silhouette')).clipPath,shape:svg.dataset.shape,slicing:svg.dataset.slicing,viewBox:svg.viewBox.baseVal.width,hasNames:document.querySelector('main').textContent.includes('Sienna Hewitt'),sameAvatar:svg.outerHTML===document.querySelector('admin-new-users .avatar svg').outerHTML};})()`);
+	assert.ok(new Set(avatarStyle.colours).size>=2, "Foreground and background have distinct palette colours");
+	assert.notEqual(avatarStyle.clip, "none", "The slices are clipped to the selected silhouette");
+	assert.ok(avatarStyle.shape && avatarStyle.slicing, "The hash selects a silhouette and slicing mode");
+	assert.equal(avatarStyle.viewBox, 40, "Inline SVG retains its coordinate system");
+	assert.equal(avatarStyle.hasNames, false, "Users are identified by email only");
+	assert.equal(avatarStyle.sameAvatar, true, "The same email has the same artwork across lists");
+	const themedAvatar = await evaluate(`(()=>{const svg=document.querySelector('.activity-table .avatar svg'),slice=svg.querySelector('[class*=avatar-colour]'),before=getComputedStyle(slice).fill;svg.style.setProperty('--pal--theme','#1274b8');const after=getComputedStyle(slice).fill;svg.style.removeProperty('--pal--theme');return {before,after};})()`);
+	assert.notEqual(themedAvatar.before,themedAvatar.after,"Avatar colours follow a change in the primary theme colour");
+
 	assert.equal(await evaluate('getComputedStyle(document.querySelector("main")).borderRadius'), "0px", "Admin main has square corners");
 	for(const [group, title] of [["countries", "Country"], ["devices", "Device"], ["users", "User"]]) {
 		await evaluate(`document.querySelector('admin-top-usage button[value="${group}"]').click()`);
@@ -177,7 +187,7 @@ try {
 		assert.ok(dimensions.page <= dimensions.viewport, `${label}: page overflow ${JSON.stringify(dimensions)}`);
 		for(const table of dimensions.tables) assert.ok(table.width <= table.available, `${label}: table overflow ${JSON.stringify(table)}`);
 	};
-	for(const width of [280, 300, 320, 360, 375, 390, 414, 430, 639, 640, 768, 959, 960, 1024, 1280, 1440, 1920, 2560]) {
+	for(const width of [280, 300, 320, 360, 375, 390, 414, 430, 639, 640, 768, 959, 960, 1024, 1280, 1440, 1920, 2560, 3840]) {
 		await viewport(width);
 		await delay(100);
 		await assertNoHorizontalOverflow(`${width}px, menus closed`);
@@ -197,7 +207,7 @@ try {
 			}
 		}
 
-		const reportLayout = await evaluate(`(()=>{const report=document.querySelector('section.report').getBoundingClientRect(),chart=document.querySelector('.report-chart').getBoundingClientRect(),metrics=document.querySelector('.metrics').getBoundingClientRect(),cards=[...document.querySelectorAll('.metrics > div')].map(item=>{const rect=item.getBoundingClientRect();return {left:rect.left,top:rect.top};});return {reportWidth:report.width,chartWidth:chart.width,chartRight:chart.right,chartBottom:document.querySelector("admin-chart .chart").getBoundingClientRect().bottom,plotBottom:Math.max(...[...document.querySelectorAll("admin-chart svg path")].filter(path=>{const bounds=path.getBBox();return bounds.width>=chart.width-2 && bounds.height<1;}).map(path=>path.getBoundingClientRect().bottom)),metricsLeft:metrics.left,metricsTop:metrics.top,metricsBottom:metrics.bottom,metricsWidth:metrics.width,cards};})()`);
+		const reportLayout = await evaluate(`(()=>{const report=document.querySelector('section.report').getBoundingClientRect(),chart=document.querySelector('.report-chart').getBoundingClientRect(),metrics=document.querySelector('.metrics').getBoundingClientRect(),cards=[...document.querySelectorAll('.metrics > div')].map(item=>{const rect=item.getBoundingClientRect();return {left:rect.left,top:rect.top,width:rect.width};});return {reportWidth:report.width,chartWidth:chart.width,chartRight:chart.right,chartBottom:document.querySelector("admin-chart .chart").getBoundingClientRect().bottom,plotBottom:Math.max(...[...document.querySelectorAll("admin-chart svg path")].filter(path=>{const bounds=path.getBBox();return bounds.width>=chart.width-2 && bounds.height<1;}).map(path=>path.getBoundingClientRect().bottom)),metricsLeft:metrics.left,metricsTop:metrics.top,metricsBottom:metrics.bottom,metricsWidth:metrics.width,metricsGap:parseFloat(getComputedStyle(document.querySelector(".metrics")).columnGap),cards};})()`);
 		assert.equal(reportLayout.cards.length, 6, `${width}px: six metrics`);
 		assert.ok(reportLayout.chartWidth <= 1024, `${width}px: chart respects its 64rem maximum`);
 		assert.ok(Math.abs(reportLayout.cards[0].top - reportLayout.cards[1].top) <= 1, `${width}px: metrics have at least two columns`);
@@ -205,11 +215,20 @@ try {
 			assert.ok(Math.abs(reportLayout.chartWidth - reportLayout.reportWidth) <= 1, `${width}px: mobile chart fills the report`);
 			assert.ok(reportLayout.metricsTop >= reportLayout.chartBottom, `${width}px: mobile metrics sit below the chart`);
 		}
-		if(reportLayout.metricsWidth < 1056) {
+		assert.ok(reportLayout.metricsWidth <= 1024, `${width}px: metrics container respects its 64rem maximum`);
+		assert.ok(reportLayout.cards.every(card=>card.width<=288), `${width}px: metric cards respect their 18rem maximum`);
+		for(let index=1;index<reportLayout.cards.length;index++) {
+			const previous=reportLayout.cards[index-1],card=reportLayout.cards[index];
+			if(Math.abs(card.top-previous.top)<=1) assert.ok(Math.abs(card.left-previous.left-previous.width-reportLayout.metricsGap)<=1, `${width}px: metric cards keep the configured gap`);
+		}
+		if(reportLayout.metricsWidth < 3*288+2*reportLayout.metricsGap) {
 			assert.ok(reportLayout.cards[2].top > reportLayout.cards[0].top, `${width}px: metrics use a 2x3 grid`);
 			assert.ok(Math.abs(reportLayout.cards[2].left - reportLayout.cards[0].left) <= 1, `${width}px: metric columns align`);
 		}
-		else assert.ok(reportLayout.cards.every(card=>Math.abs(card.top-reportLayout.cards[0].top)<=1), `${width}px: wide metrics use one row`);
+		else {
+			assert.ok(reportLayout.cards.slice(0,3).every(card=>Math.abs(card.top-reportLayout.cards[0].top)<=1), `${width}px: wide metrics use three columns`);
+			assert.ok(reportLayout.cards[3].top>reportLayout.cards[0].top, `${width}px: wide metrics wrap onto a second row`);
+		}
 		if(width >= 1280) assert.ok(reportLayout.metricsLeft >= reportLayout.chartRight, `${width}px: metrics sit to the right of the chart ${JSON.stringify(reportLayout)}`);
 		if(reportLayout.metricsLeft >= reportLayout.chartRight) assert.ok(Math.abs(reportLayout.metricsBottom-reportLayout.plotBottom)<=1, `${width}px: metrics and chart align at the bottom`);
 		await evaluate('document.querySelector("admin-chart-data details").open = true');
@@ -328,7 +347,7 @@ try {
 	assert.equal(await evaluate("document.querySelector('.metric').textContent"), "Scale", "Changing the demo plan updates billing");
 	await visitPage("users");
 	assert.equal(await evaluate("document.querySelector('input[value=create-user]').form.querySelector('[name=email]').value"), "", "New user email field starts empty");
-	await evaluate("const form=document.querySelector('input[value=create-user]').form;form.querySelector('[name=name]').value='Ada Example';form.querySelector('[name=email]').value='ada@example.test';form.requestSubmit()");
+	await evaluate("const form=document.querySelector('input[value=create-user]').form;form.querySelector('[name=email]').value='ada@example.test';form.requestSubmit()");
 	await until("document.readyState==='complete' && document.querySelector('[role=status]')?.textContent==='Demo user added. No invitation was sent.'");
 	await visitPage("users", "organisation=example&application=all&search=ada&reveal=yes");
 	assert.equal(await evaluate("document.querySelectorAll('.record-table tbody tr').length"), 1, "Adding a demo user updates the user list");

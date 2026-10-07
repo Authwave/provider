@@ -70,10 +70,7 @@ body.dir--admin {
 		flex: 0 0 2.5rem;
 		block-size: 2.5rem;
 		border-radius: 50%;
-		background: var(--pal--accent--background);
-		color: var(--pal--heading--text);
-		font-size: .85rem;
-		font-weight: 600;
+		overflow: hidden;
 	}
 	.notification, .badge { @extend %p-badge; }
 	.toggle-badge { @extend %p-toggle-badge; }

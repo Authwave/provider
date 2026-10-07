@@ -1,7 +1,7 @@
 <section class="settings-panel stack" aria-labelledby="new-users-title">
 	<h2 id="new-users-title">New users</h2>
 	<ul class="record-list">
-		<li data-list="new-users"><span data-bind:text="userEmail">s••••@example.test</span><time data-bind:datetime="signupTime" data-bind:title="signupTimeTitle" data-bind:text="signupTimeText">2 hours ago</time></li>
+		<li data-list="new-users"><span class="identity"><span class="avatar" data-bind:html="userAvatar" aria-hidden="true"></span><span data-bind:text="userEmail">Sample</span></span><time data-bind:datetime="signupTime" data-bind:title="signupTimeTitle" data-bind:text="signupTimeText">2 hours ago</time></li>
 	</ul>
 	<p class="muted" data-bind:hidden="?hasNewUsers">No users have signed up yet.</p>
 	<footer><a class="card-link" data-bind:href="newUsersUrl"><span>See all new users</span><span data-icon="arrow-right" aria-hidden="true"></span></a></footer>

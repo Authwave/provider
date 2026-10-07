@@ -69,9 +69,9 @@ class DemoWorkspace {
 	public function users():array {
 		$users = [];
 		foreach($this->applications() as $id => $app) {
-			foreach([["Sienna Hewitt", "sienna", "United Kingdom", "Desktop"], ["Ammar Foley", "ammar", "Germany", "Mobile"], ["Pippa Wilkinson", "pippa", "United States", "Mobile"], ["Olly Schroeder", "olly", "France", "Desktop"], ["Mathilde Lewis", "mathilde", "Canada", "Tablet"], ["Julius Vaughan", "julius", "Netherlands", "Desktop"], ["Zaid Schwartz", "zaid", "United Kingdom", "Mobile"]] as $i => [$name, $local, $country, $device]) {
+			foreach([["sienna", "United Kingdom", "Desktop"], ["ammar", "Germany", "Mobile"], ["pippa", "United States", "Mobile"], ["olly", "France", "Desktop"], ["mathilde", "Canada", "Tablet"], ["julius", "Netherlands", "Desktop"], ["zaid", "United Kingdom", "Mobile"]] as $i => [$local, $country, $device]) {
 				$createdAt = new \DateTimeImmutable($i === 0 ? "-2 hours" : "-$i days 09:00");
-				$users[] = ["id" => "$id-$i", "name" => $name, "email" => "$local@example.test", "application" => $app["name"], "applicationId" => $id, "country" => $country, "device" => $device, "logins" => 143 - $i * 17, "created" => $createdAt->format("Y-m-d"), "createdAt" => $createdAt->format(DATE_ATOM), "signupStartedAt" => date(DATE_ATOM, strtotime("-3 hours")), "lastSeen" => $i < 3 ? "Just now" : "$i hours ago", "online" => $i < 3, "status" => $i === 3 ? "Failed" : ($i === 6 ? "Abandoned" : "Success")];
+				$users[] = ["id" => "$id-$i", "email" => "$local@example.test", "application" => $app["name"], "applicationId" => $id, "country" => $country, "device" => $device, "logins" => 143 - $i * 17, "created" => $createdAt->format("Y-m-d"), "createdAt" => $createdAt->format(DATE_ATOM), "signupStartedAt" => date(DATE_ATOM, strtotime("-3 hours")), "lastSeen" => $i < 3 ? "Just now" : "$i hours ago", "online" => $i < 3, "status" => $i === 3 ? "Failed" : ($i === 6 ? "Abandoned" : "Success")];
 			}
 		}
 		return array_merge($users, array_values(array_filter($this->organisation()["users"] ?? [], fn($user) => $user["applicationId"] === $this->applicationId)));
@@ -173,7 +173,7 @@ class DemoWorkspace {
 			if(!$app) throw new InvalidArgumentException("Create an application first.");
 			$email = $this->required($input, "email");
 			if(!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new InvalidArgumentException("Enter a valid email address.");
-			$org["users"][] = ["id" => bin2hex(random_bytes(4)), "name" => $this->required($input, "name"), "email" => $email, "application" => $org["applications"][$app]["name"], "applicationId" => $app, "country" => "United Kingdom", "device" => "Desktop", "logins" => 0, "created" => date("Y-m-d"), "createdAt" => date(DATE_ATOM), "lastSeen" => "Never", "online" => false, "status" => "New"];
+			$org["users"][] = ["id" => bin2hex(random_bytes(4)), "email" => $email, "application" => $org["applications"][$app]["name"], "applicationId" => $app, "country" => "United Kingdom", "device" => "Desktop", "logins" => 0, "created" => date("Y-m-d"), "createdAt" => date(DATE_ATOM), "lastSeen" => "Never", "online" => false, "status" => "New"];
 			$this->store->set("notice", "Demo user added. No invitation was sent.");
 		}
 		elseif(in_array($operation, ["verify-domain", "test-email", "revoke-sessions", "revoke-device"], true)) {

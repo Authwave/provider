@@ -1,0 +1,25 @@
+.email-avatar {
+	// The fixed palette varies in lightness as well as hue, including two neutrals.
+	--avatar--colour-0: color-mix(in srgb, var(--pal--theme) 15%, #453f3a);
+	--avatar--colour-1: color-mix(in srgb, var(--pal--theme) 4%, #fafaf9);
+	@for $i from 2 through 7 {
+		--avatar--colour-#{$i}: color-mix(in srgb, var(--pal--theme) 25%, #a8a29e);
+	}
+	display: block;
+	inline-size: 100%;
+	block-size: 100%;
+	@supports not (color: oklch(from red .7 .18 h)) {
+		@for $i from 2 through 7 {
+			.avatar-colour-#{$i} { filter: hue-rotate(#{($i - 2) * 60}deg); }
+		}
+	}
+	@supports(color: oklch(from red .7 .18 h)) {
+		@for $i from 2 through 7 {
+			--avatar--colour-#{$i}: oklch(from var(--pal--theme) #{.55 + (($i - 2) % 3) * .125} .07 calc(h + #{($i - 2) * 60}));
+		}
+	}
+	@for $i from 0 through 7 {
+		.avatar-colour-#{$i} { fill: var(--avatar--colour-#{$i}); --avatar--slice-colour: var(--avatar--colour-#{$i}); }
+	}
+	.avatar-slice { stroke: var(--avatar--slice-colour); stroke-width: .2; }
+}

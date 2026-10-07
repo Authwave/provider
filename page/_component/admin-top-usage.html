@@ -7,7 +7,7 @@
 	</form>
 	<table class="summary-table">
 		<thead><tr><th scope="col" data-bind:text="usageGroupTitle">User</th><th scope="col">Logins</th></tr></thead>
-		<tbody><tr data-list="top-usage"><th scope="row" data-bind:text="usageName">s••••@example.test</th><td data-bind:text="usageCount">143</td></tr></tbody>
+		<tbody><tr data-list="top-usage"><th scope="row"><span class="identity"><span class="avatar" data-bind:html="usageAvatar" data-bind:hidden="?!hasUsageAvatar" aria-hidden="true"></span><span data-bind:text="usageName">s••••@example.test</span></span></th><td data-bind:text="usageCount">143</td></tr></tbody>
 	</table>
 	<p class="muted" data-bind:hidden="?hasTopUsage">No usage yet.</p>
 	<footer><a class="card-link" data-bind:href="topUsersUrl"><span>See all users</span><span data-icon="arrow-right" aria-hidden="true"></span></a></footer>

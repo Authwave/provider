@@ -1,13 +1,14 @@
 %l-metric-grid {
-	display: grid;
-	grid-template-columns: repeat(6, minmax(0, 1fr));
+	display: flex;
+	flex-wrap: wrap;
 	gap: var(--space--gap);
 	min-inline-size: 0;
+	max-inline-size: var(--size--metrics-max);
 	container: metric-grid / inline-size;
 
-	> * { grid-column: span 3; min-inline-size: 0; }
-
-	@container metric-grid (min-width: 66rem) {
-		> * { grid-column: span 1; }
+	> * {
+		flex: 1 1 min(var(--size--metric-max), calc((100% - var(--space--gap)) / 2));
+		min-inline-size: 0;
+		max-inline-size: var(--size--metric-max);
 	}
 }

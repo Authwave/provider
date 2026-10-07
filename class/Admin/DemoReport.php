@@ -2,6 +2,7 @@
 namespace Authwave\Admin;
 
 use DateTimeImmutable;
+use Authwave\UI\EmailAvatar;
 use Gt\Input\Input;
 
 /** Normalised report filters and sample data, shared by the dashboard components. */
@@ -54,8 +55,6 @@ class DemoReport {
 		$previous = array_map(static fn($value) => (int)round($value / $comparisonFactor), $current);
 		foreach($points as $i => &$point) $point["pointPrevious"] = $previous[$i];
 		unset($point);
-		if($workspace && $input->getString("reveal") !== "yes") foreach($rows as &$row) $row["userEmail"] = DemoWorkspace::email($row["userEmail"]);
-		unset($row);
 		$rows = array_values(array_filter($rows, static function(array $row) use($state, $from, $to, $activityFields):bool {
 			return $row["dateValue"] >= $from->format("Y-m-d") && $row["dateValue"] <= $to->format("Y-m-d")
 				&& $state[$activityFields[$row["statusValue"]]] === "yes"
@@ -63,15 +62,17 @@ class DemoReport {
 				&& ($state["method"] === "all" || $row["methodValue"] === $state["method"])
 				&& ($state["activity"] !== "abandoned" || $row["statusValue"] === "abandoned")
 				&& ($state["activity"] !== "top" || $row["statusValue"] === "success")
-				&& (!$state["search"] || str_contains(strtolower($row["authId"] . " " . $row["userName"] . " " . $row["userEmail"]), strtolower($state["search"])));
+				&& (!$state["search"] || str_contains(strtolower($row["authId"] . " " . $row["userEmail"]), strtolower($state["search"])));
 		}));
 		if($state["activity"] === "top") {
 			usort($rows, static fn($a, $b) => $b["loginCount"] <=> $a["loginCount"]);
 		}
 		elseif($state["sort"] !== "date") {
-			$key = $state["sort"] === "user" ? "userName" : "statusValue";
+			$key = $state["sort"] === "user" ? "userEmail" : "statusValue";
 			usort($rows, static fn($a, $b) => $a[$key] <=> $b[$key]);
 		}
+		if($workspace && $input->getString("reveal") !== "yes") foreach($rows as &$row) $row["userEmail"] = DemoWorkspace::email($row["userEmail"]);
+		unset($row);
 		$count = count($rows);
 		$pageCount = max(1, (int)ceil($count / 7));
 		$page = min($pageCount, max(1, (int)$input->getString("page")));
@@ -111,20 +112,15 @@ class DemoReport {
 	}
 
 	private function activities(DateTimeImmutable $today):array {
-		$people = [
-			["Sienna Hewitt", "sienna@example.com", "SH"], ["Ammar Foley", "ammar@example.com", "AF"],
-			["Pippa Wilkinson", "pippa@example.com", "PW"], ["Olly Schroeder", "olly@example.com", "OS"],
-			["Mathilde Lewis", "mathilde@example.com", "ML"], ["Julius Vaughan", "julius@example.com", "JV"],
-			["Zaid Schwartz", "zaid@example.com", "ZS"],
-		];
+		$people = ["sienna@example.test", "ammar@example.test", "pippa@example.test", "olly@example.test", "mathilde@example.test", "julius@example.test", "zaid@example.test"];
 		$rows = [];
 		for($i = 0; $i < 28; $i++) {
-			[$name, $email, $initials] = $people[$i % 7];
+			$email = $people[$i % 7];
 			$status = ["success", "success", "success", "failed", "success", "abandoned", "abandoned"][$i % 7];
 			$date = $today->modify("-" . (int)floor($i / 3) . " days");
 			$rows[] = ["authId" => "#" . (26678 - $i), "activityDate" => $date->format("j M Y"), "dateValue" => $date->format("Y-m-d"),
-				"statusValue" => $status, "statusLabel" => ucfirst($status), "userName" => $name, "userEmail" => $email,
-				"userInitials" => $initials, "methodValue" => $i % 2 ? "password" : "email", "loginCount" => 140 - $i];
+				"statusValue" => $status, "statusLabel" => ucfirst($status), "userEmail" => $email,
+				"userAvatar" => EmailAvatar::svg($email), "methodValue" => $i % 2 ? "password" : "email", "loginCount" => 140 - $i];
 		}
 		return $rows;
 	}

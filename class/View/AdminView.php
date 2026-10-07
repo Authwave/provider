@@ -2,6 +2,7 @@
 namespace Authwave\View;
 
 use Authwave\Admin\DemoWorkspace;
+use Authwave\UI\EmailAvatar;
 use DateTimeImmutable;
 use Gt\Dom\{Element, HTMLDocument};
 use Gt\DomTemplate\Binder;
@@ -35,7 +36,7 @@ class AdminView {
 	}
 
 	public function userRow(array $user):array {
-		return ["userEmail" => DemoWorkspace::email($user["email"], $this->reveal), "userName" => $user["name"], "userApplication" => $user["application"], "userLogins" => $user["logins"], "userCreated" => $user["created"], "userLastSeen" => $user["lastSeen"], "userCountry" => $user["country"], "userDevice" => $user["device"]];
+		return ["userEmail" => DemoWorkspace::email($user["email"], $this->reveal), "userAvatar" => EmailAvatar::svg($user["email"]), "userApplication" => $user["application"], "userLogins" => $user["logins"], "userCreated" => $user["created"], "userLastSeen" => $user["lastSeen"], "userCountry" => $user["country"], "userDevice" => $user["device"]];
 	}
 
 	public function signupRow(array $user, string $timeKey = "createdAt"):array {

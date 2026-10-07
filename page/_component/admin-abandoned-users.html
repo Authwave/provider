@@ -2,7 +2,7 @@
 	<h2 id="abandoned-users-title">Abandoned users</h2>
 	<p class="muted">Signups that were started but not completed.</p>
 	<ul class="record-list">
-		<li data-list="abandoned-users"><span data-bind:text="userEmail">z••••@example.test</span><time data-bind:datetime="signupTime" data-bind:title="signupTimeTitle" data-bind:text="signupTimeText">3 hours ago</time></li>
+		<li data-list="abandoned-users"><span class="identity"><span class="avatar" data-bind:html="userAvatar" aria-hidden="true"></span><span data-bind:text="userEmail">Sample</span></span><time data-bind:datetime="signupTime" data-bind:title="signupTimeTitle" data-bind:text="signupTimeText">3 hours ago</time></li>
 	</ul>
 	<p class="muted" data-bind:hidden="?hasAbandonedUsers">No unfinished signups.</p>
 	<footer><a class="card-link" data-bind:href="abandonedUsersUrl"><span>See all abandoned users</span><span data-icon="arrow-right" aria-hidden="true"></span></a></footer>

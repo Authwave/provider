@@ -65,6 +65,16 @@ class AdminDashboardTest extends TestCase {
 		self::assertFalse($empty->document->querySelector('.activity-panel > p')->hasAttribute("hidden"));
 	}
 
+	public function testUserReferencesHaveEmailAvatarsInsteadOfNames():void {
+		$view = $this->render();
+		self::assertStringNotContainsString("Sienna Hewitt", $view->document->body->textContent);
+		self::assertCount(7, $view->document->querySelectorAll(".activity-table .avatar svg"));
+		self::assertSame($view->document->querySelector("admin-new-users .avatar svg")->outerHTML, $view->document->querySelector(".activity-table .avatar svg")->outerHTML);
+		self::assertCount(5, $view->document->querySelectorAll("admin-new-users .avatar svg"));
+		self::assertCount(1, $view->document->querySelectorAll("admin-abandoned-users .avatar svg"));
+		self::assertStringNotContainsString("userName", $view->document->querySelector("main")->innerHTML);
+	}
+
 	public function testInvalidInputsFallBackAndDatesAreNormalised():void {
 		$view = $this->render(["period" => "invalid", "status" => "invalid", "from" => "2026-10-05", "to" => "2026-10-01", "page" => "-99"]);
 		self::assertCount(0, $view->document->querySelectorAll('button[name="period"][aria-pressed="true"]'));

@@ -15,9 +15,9 @@ function go(HTMLDocument $document, Binder $binder, Input $input, DemoWorkspace 
 	$view->list("failed-users", array_map($view->userRow(...), array_values(array_filter($users, fn($user) => $user["status"] === "Failed"))));
 	$search = substr(trim($input->getString("search") ?? ""), 0, 100);
 	$status = $view->choice("userStatus", ["all", "online", "failed", "abandoned"], "all");
-	$sort = $view->choice("userSort", ["logins", "created", "name"], "logins");
-	$users = array_values(array_filter($users, fn($user) => (!$search || str_contains(strtolower($user["name"] . " " . $user["email"]), strtolower($search))) && match($status) {"online" => $user["online"] && $workspace->settings()["sessionsRevoked"] !== "yes", "failed" => $user["status"] === "Failed", "abandoned" => $user["status"] === "Abandoned", default => true}));
-	usort($users, fn($a, $b) => $sort === "name" ? $a["name"] <=> $b["name"] : ($sort === "created" ? ($b["createdAt"] ?? $b["created"]) <=> ($a["createdAt"] ?? $a["created"]) : $b[$sort] <=> $a[$sort]));
+	$sort = $view->choice("userSort", ["logins", "created", "email"], "logins");
+	$users = array_values(array_filter($users, fn($user) => (!$search || str_contains(strtolower($user["email"]), strtolower($search))) && match($status) {"online" => $user["online"] && $workspace->settings()["sessionsRevoked"] !== "yes", "failed" => $user["status"] === "Failed", "abandoned" => $user["status"] === "Abandoned", default => true}));
+	usort($users, fn($a, $b) => $sort === "email" ? $a["email"] <=> $b["email"] : ($sort === "created" ? ($b["createdAt"] ?? $b["created"]) <=> ($a["createdAt"] ?? $a["created"]) : $b[$sort] <=> $a[$sort]));
 	$pages = max(1, (int)ceil(count($users) / 10));
 	$page = min($pages, max(1, (int)$input->getString("page")));
 	$query = ["search" => $search, "userStatus" => $status, "userSort" => $sort, "reveal" => $view->reveal ? "yes" : ""];

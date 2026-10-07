@@ -109,7 +109,7 @@ class AdminConsoleTest extends TestCase {
 		self::assertCount(1, $workspace->applications());
 		$workspace->mutate(new Input(["operation" => "sender", "sender" => "new", "senderName" => "Analytics accounts", "senderEmail" => "accounts@example.test", "replyTo" => "support@example.test", "senderDomain" => "example.test"]));
 		self::assertSame("Analytics accounts", $workspace->senders()[$workspace->changedSender]);
-		$workspace->mutate(new Input(["operation" => "create-user", "name" => "Ada Example", "email" => "ada@example.test"]));
+		$workspace->mutate(new Input(["operation" => "create-user", "email" => "ada@example.test"]));
 		self::assertCount(8, $workspace->users());
 		$view = $this->render("users", ["search" => "ada", "reveal" => "yes"]);
 		self::assertCount(1, $view->document->querySelectorAll(".record-table tbody tr"));

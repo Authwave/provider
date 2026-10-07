@@ -86,8 +86,8 @@
 						<th scope="row" data-bind:text="authId">#26678</th>
 						<td data-bind:text="activityDate">5 Oct 2026</td>
 						<td data-priority="secondary"><span class="status" data-bind:data-status="statusValue" data-bind:text="statusLabel">Success</span></td>
-						<td data-priority="secondary"><span class="identity"><span class="avatar" data-bind:text="userInitials">SH</span><span><strong data-bind:text="userName">Sienna Hewitt</strong><small data-bind:text="userEmail">sienna@example.com</small></span></span></td>
-						<td data-priority="disclosure"><details class="disclosure-menu row-menu"><summary data-icon="dots-vertical"><span class="visually-hidden">Authentication details</span></summary><div class="disclosure-content"><strong data-bind:text="authId">#26678</strong><p><span class="status" data-bind:data-status="statusValue" data-bind:text="statusLabel">Success</span></p><p data-bind:text="userName">Sienna Hewitt</p><p data-bind:text="userEmail">sienna@example.com</p><p>Method: <span data-bind:text="methodValue">email</span></p></div></details></td>
+						<td data-priority="secondary"><span class="identity"><span class="avatar" data-bind:html="userAvatar" aria-hidden="true"></span><strong data-bind:text="userEmail">sienna@example.com</strong></span></td>
+						<td data-priority="disclosure"><details class="disclosure-menu row-menu"><summary data-icon="dots-vertical"><span class="visually-hidden">Authentication details</span></summary><div class="disclosure-content"><strong data-bind:text="authId">#26678</strong><p><span class="status" data-bind:data-status="statusValue" data-bind:text="statusLabel">Success</span></p><p data-bind:text="userEmail">sienna@example.com</p><p>Method: <span data-bind:text="methodValue">email</span></p></div></details></td>
 					</tr>
 				</tbody>
 			</table>
