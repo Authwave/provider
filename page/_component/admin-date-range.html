@@ -1,6 +1,6 @@
 <details class="disclosure-menu date-menu">
 	<summary class="control">Custom</summary>
-	<form class="disclosure-content form-fields" action="/admin/" method="get">
+	<form class="disclosure-content form-fields" method="get" data-flux>
 		<input type="hidden" name="period" data-bind:value="period" />
 		<input type="hidden" name="status" data-bind:value="status" />
 		<input type="hidden" name="method" data-bind:value="method" />
@@ -9,6 +9,6 @@
 		<input type="hidden" name="search" data-bind:value="search" />
 		<label><span>From</span><input type="date" name="from" data-bind:value="from" required /></label>
 		<label><span>To</span><input type="date" name="to" data-bind:value="to" required /></label>
-		<button type="submit">Apply dates</button>
+		<button type="submit"><span>Apply dates</span></button>
 	</form>
 </details>

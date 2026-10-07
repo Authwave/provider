@@ -46,7 +46,7 @@ class AdminConsoleTest extends TestCase {
 			foreach($view->document->querySelectorAll("form:not([data-scope-form])") as $form) {
 				self::assertNotNull($form->querySelector('[name="organisation"]'), $page);
 				self::assertNotNull($form->querySelector('[name="application"]'), $page);
-				self::assertFalse($form->hasAttribute("data-flux"));
+				if($page !== "index") self::assertFalse($form->hasAttribute("data-flux"));
 			}
 		}
 	}

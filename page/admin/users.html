@@ -1,23 +1,23 @@
-<aside aria-label="Application sidebar"><admin-sidebar /></aside>
-<main id="main-content" class="stack">
+<aside aria-label="Application sidebar"><admin-sidebar data-flux="update" /></aside>
+<main data-flux="update-link" id="main-content" class="stack">
 	<admin-header />
 	<admin-page-heading />
 	<div class="card-grid">
-		<section class="settings-panel stack">
+		<section data-flux="update" class="settings-panel stack">
 			<h2>Currently logged in</h2>
 			<p class="metric" data-bind:text="onlineCount">6</p>
 			<ul class="record-list">
 				<li data-list="online-users"><span class="identity"><span class="avatar" data-bind:html="userAvatar" aria-hidden="true"></span><span data-bind:text="userEmail"></span></span><span data-bind:text="userDevice"></span></li>
 			</ul>
 		</section>
-		<section class="settings-panel stack">
+		<section data-flux="update" class="settings-panel stack">
 			<h2>Latest login failures</h2>
 			<ul class="record-list">
 				<li data-list="failed-users"><span class="identity"><span class="avatar" data-bind:html="userAvatar" aria-hidden="true"></span><span data-bind:text="userEmail"></span></span><span data-bind:text="userApplication"></span></li>
 			</ul>
 		</section>
 	</div>
-	<section class="settings-panel stack">
+	<section data-flux="update" class="settings-panel stack">
 		<h2>All users</h2>
 		<form method="get" class="filter-grid">
 			<label><span>Search users</span><input type="search" name="search" data-bind:value="search" placeholder="Email address" /></label>
@@ -56,7 +56,7 @@
 		<p data-bind:text="userPagination"></p>
 		<nav class="toolbar" aria-label="User pages"><a class="control" data-bind:href="userPrevious" data-bind:hidden="?!hasUserPrevious">Previous</a><a class="control" data-bind:href="userNext" data-bind:hidden="?!hasUserNext">Next</a></nav>
 	</section>
-	<section class="settings-panel stack" id="add-user">
+	<section data-flux="update" class="settings-panel stack" id="add-user">
 		<h2>Add a user</h2>
 		<form method="post" class="form-fields stack compact">
 			<input type="hidden" name="do" value="demo" />

@@ -1,7 +1,7 @@
-<aside aria-label="Application sidebar"><admin-sidebar /></aside>
-<main id="main-content" class="stack">
+<aside aria-label="Application sidebar"><admin-sidebar data-flux="update" /></aside>
+<main data-flux="update-link" id="main-content" class="stack">
 	<admin-header />
-	<section data-bind:hidden="?!hasApplications" class="report" aria-labelledby="overview-title">
+	<section id="report" data-flux="update" data-bind:hidden="?!hasApplications" class="report" aria-labelledby="overview-title">
 		<div class="report-layout">
 			<div class="report-chart stack">
 				<header>
@@ -11,7 +11,7 @@
 						<div class="toolbar toolbar-end report-controls">
 							<admin-comparison />
 							<div class="segmented-control">
-								<form action="/admin/" method="get" aria-label="Reporting period">
+								<form method="get" data-flux aria-label="Reporting period">
 									<input type="hidden" name="from" value="" />
 									<input type="hidden" name="to" value="" />
 									<input type="hidden" name="status" data-bind:value="status" />
@@ -19,9 +19,9 @@
 									<input type="hidden" name="activity" data-bind:value="activity" />
 									<input type="hidden" name="sort" data-bind:value="sort" />
 									<input type="hidden" name="search" data-bind:value="search" />
-									<button type="submit" name="period" value="30d" data-choice aria-pressed="true">30 days</button>
-									<button type="submit" name="period" value="7d" data-choice aria-pressed="false">7 days</button>
-									<button type="submit" name="period" value="24h" data-choice aria-pressed="false">Today</button>
+									<button type="submit" name="period" value="30d" data-choice aria-pressed="true"><span>30 days</span></button>
+									<button type="submit" name="period" value="7d" data-choice aria-pressed="false"><span>7 days</span></button>
+									<button type="submit" name="period" value="24h" data-choice aria-pressed="false"><span>Today</span></button>
 								</form>
 								<admin-date-range class="segment-menu" />
 							</div>
@@ -60,7 +60,7 @@
 		</div>
 		<admin-chart-data />
 	</section>
-	<section data-bind:hidden="?!hasApplications" id="activity" class="activity-panel" aria-labelledby="activity-title">
+	<section data-flux="update" data-bind:hidden="?!hasApplications" id="activity" class="activity-panel" aria-labelledby="activity-title">
 		<header class="panel-heading">
 			<h2 id="activity-title">Activity</h2>
 		</header>
@@ -95,7 +95,7 @@
 		<p class="panel-body" data-bind:hidden="?hasActivities">No activity matches these filters. Try another period or reset the filters.</p>
 		<footer class="toolbar panel-body">
 			<span data-bind:text="paginationLabel">Page 1 of 4</span>
-			<nav class="toolbar" aria-label="Activity pages"><a class="control" data-bind:href="previousPage" data-bind:hidden="?!hasPrevious" data-icon="chevron-left">Previous</a><a class="control" data-bind:href="nextPage" data-bind:hidden="?!hasNext" data-icon="chevron-right">Next</a></nav>
+			<nav class="toolbar" aria-label="Activity pages"><a class="control" data-flux="link" data-bind:href="previousPage" data-bind:hidden="?!hasPrevious" data-icon="chevron-left">Previous</a><a class="control" data-flux="link" data-bind:href="nextPage" data-bind:hidden="?!hasNext" data-icon="chevron-right">Next</a></nav>
 		</footer>
 	</section>
 	<div class="card-grid" data-bind:hidden="?!hasApplications">

@@ -1,15 +1,15 @@
-<aside aria-label="Application sidebar"><admin-sidebar /></aside>
-<main id="main-content" class="stack">
+<aside aria-label="Application sidebar"><admin-sidebar data-flux="update" /></aside>
+<main data-flux="update-link" id="main-content" class="stack">
 	<admin-header />
 	<admin-page-heading />
-	<section class="settings-panel stack">
+	<section data-flux="update" class="settings-panel stack">
 		<h2>Client libraries</h2>
 		<div class="card-grid">
 			<article class="stack compact"><h3>PHP client</h3><p>The existing Authwave PHP library handles encrypted login and logout requests.</p><code>composer require authwave/php-client</code><a class="control" href="#php-example">View example</a></article>
 			<article class="stack compact"><h3>Other clients</h3><p>Use your backend to generate the encrypted provider request. Keep the deployment key on the server.</p><a class="control" href="#integration-guide">Integration guide</a></article>
 		</div>
 	</section>
-	<section class="settings-panel stack" id="php-example">
+	<section data-flux="update" class="settings-panel stack" id="php-example">
 		<h2>PHP integration example</h2>
 		<p>Illustrative configuration using a demo deployment. Replace the demo values when connecting your client.</p>
 		<pre><code>use Authwave\Authenticator;
@@ -33,7 +33,7 @@ if ($auth-&gt;isLoggedIn()) {
     // Display your authenticated application content.
 }</code></pre>
 	</section>
-	<section class="settings-panel stack" id="integration-guide">
+	<section data-flux="update" class="settings-panel stack" id="integration-guide">
 		<h2>Connect a client</h2>
 		<ol class="plain-list">
 			<li>Create an application and choose a deployment.</li>

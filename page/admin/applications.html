@@ -1,8 +1,8 @@
-<aside aria-label="Application sidebar"><admin-sidebar /></aside>
-<main id="main-content" class="stack">
+<aside aria-label="Application sidebar"><admin-sidebar data-flux="update" /></aside>
+<main data-flux="update-link" id="main-content" class="stack">
 	<admin-header />
 	<admin-page-heading />
-	<section class="settings-panel stack">
+	<section data-flux="update" class="settings-panel stack">
 		<h2>Create an application</h2>
 		<form method="post" class="form-fields stack compact">
 			<input type="hidden" name="do" value="demo" />
@@ -12,7 +12,7 @@
 		</form>
 	</section>
 	<div class="card-grid">
-		<section class="settings-panel stack" data-list="applications">
+		<section data-flux="update" class="settings-panel stack" data-list="applications">
 			<h2 data-bind:text="appName">Application</h2>
 			<details class="settings-disclosure">
 				<summary>Application settings</summary>

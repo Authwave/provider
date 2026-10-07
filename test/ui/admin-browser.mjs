@@ -12,9 +12,12 @@ const root = resolve(import.meta.dirname, "../..");
 const temporary = await mkdtemp(join(tmpdir(), "authwave-admin-"));
 let browser, socket, server;
 const errors = [];
+const fluxRequests = [];
+let fluxDelay = 0;
 try {
 	server = createServer(async (request, response) => {
 		const url = new URL(request.url, "http://localhost");
+		if(request.headers["x-authwave-flux"] === "1") fluxRequests.push(url.href);
 		try {
 			let file;
 			if(url.pathname.startsWith("/admin/")) {
@@ -29,6 +32,7 @@ try {
 			else if(url.pathname.startsWith("/asset/") && !url.pathname.includes("..")) file = join(root, url.pathname);
 			const types = {html: "text/html", css: "text/css", js: "text/javascript", svg: "image/svg+xml", woff2: "font/woff2"};
 			const content = await readFile(file || "");
+			if(request.headers["x-authwave-flux"] === "1") await delay(fluxDelay);
 			response.writeHead(200, {"Content-Type": types[file?.split(".").pop()] || "application/octet-stream"}).end(content);
 		} catch { response.writeHead(404).end(); }
 	});
@@ -58,6 +62,20 @@ try {
 	};
 	const until = async expression => { for(let i = 0; i < 100; i++) { if(await evaluate(expression)) return; await delay(50); } throw new Error(`Timed out: ${expression}`); };
 	const navigate = async query => { await call("Page.navigate", {url: `${origin}/admin/${query || "?period=30d&application=admin-preview-no-logo"}`}); await until('document.readyState === "complete" && !!document.querySelector("admin-sidebar")'); };
+	const checkBackgroundUpdate = async (action, ready, label, replacesMain = false) => {
+		const timeOrigin = await evaluate('performance.timeOrigin');
+		const requestCount = fluxRequests.length;
+		await evaluate('window.fluxRegions = {body:document.body, main:document.querySelector("main"), sidebar:document.querySelector("admin-sidebar")}');
+		await evaluate(action);
+		await until(ready);
+		await until('document.querySelector("admin-chart .chart svg") !== null && document.querySelector("admin-chart .chart").getBoundingClientRect().height > 0');
+		assert.equal(await evaluate('performance.timeOrigin'), timeOrigin, `${label}: no document navigation`);
+		assert.equal(fluxRequests.length, requestCount + 1, `${label}: one background request`);
+		assert.equal(await evaluate('document.body === window.fluxRegions.body'), true, `${label}: body is retained`);
+		assert.equal(await evaluate('document.querySelector("main") !== window.fluxRegions.main'), replacesMain, `${label}: main is only replaced on link navigation`);
+		assert.equal(await evaluate('document.querySelector("admin-sidebar") !== window.fluxRegions.sidebar'), true, `${label}: sidebar is refreshed`);
+		assert.equal(await evaluate('document.querySelectorAll("script").length'), 1, `${label}: shared bundle stays loaded once`);
+	};
 	const checkToolbarDropdowns = async () => {
 		await evaluate('document.querySelector("admin-comparison summary").click()');
 		await until('document.querySelector("admin-comparison details").open');
@@ -293,16 +311,23 @@ try {
 	await evaluate('document.querySelector("admin-comparison summary").click()');
 	assert.equal(await evaluate('document.querySelector("admin-comparison details").open'), true);
 	assert.equal(await evaluate('document.querySelector("admin-comparison .disclosure-content").getBoundingClientRect().left >= 0'), true);
-	await evaluate('document.querySelector("admin-comparison select[name=reportComparison]").value = "year"; document.querySelector("admin-comparison form").requestSubmit()');
-	await until('location.search.includes("reportComparison=year") && document.readyState === "complete"');
+	assert.equal(await evaluate('getComputedStyle(document.querySelector("admin-comparison button")).display'), "none", "Flux hides the comparison fallback button");
+	await checkBackgroundUpdate('const select=document.querySelector("admin-comparison select[name=reportComparison]"); select.value="year"; select.dispatchEvent(new Event("change", {bubbles:true}))', 'location.search.includes("reportComparison=year") && JSON.parse(document.querySelector("admin-chart .chart").dataset.chart).comparisonTitle === "Previous year"', "Comparison autosave");
 	assert.equal(await evaluate('JSON.parse(document.querySelector("admin-chart .chart").dataset.chart).comparisonTitle'), "Previous year");
 	await checkToolbarDropdowns();
 	await navigate();
+	fluxDelay = 300;
+	const periodTimeOrigin = await evaluate('performance.timeOrigin');
 	await evaluate(`document.querySelector('button[value="7d"]').click()`);
+	await until(`document.querySelector('form[aria-label="Reporting period"]').getAttribute("aria-busy") === "true" && document.querySelector('button[value="7d"]').classList.contains("flux-button-waiting")`);
 	await until('location.search.includes("period=7d") && document.querySelector(".report-chart header p")?.textContent === "An overview of activity for the last 7 days"');
+	assert.equal(await evaluate('performance.timeOrigin'), periodTimeOrigin, "Reporting period changes in the background");
+	fluxDelay = 0;
 	await navigate();
-	await evaluate('document.querySelector("a[data-icon=chevron-right]").click()');
-	await until('location.search.includes("page=2") && document.querySelector(".activity-table tbody th")?.textContent === "#26671"');
+	await checkBackgroundUpdate('document.querySelector("a[data-icon=chevron-right]").click()', 'location.search.includes("page=2") && document.querySelector(".activity-table tbody th")?.textContent === "#26671"', "Activity pagination", true);
+	for(const group of ["countries", "devices", "users"]) {
+		await checkBackgroundUpdate(`document.querySelector('button[name="topUsage"][value="${group}"]').click()`, `document.querySelector('button[name="topUsage"][value="${group}"]').getAttribute('aria-pressed') === 'true'`, `Top usage ${group}`);
+	}
 	const visitPage = async (page, query = "organisation=example&application=all") => {
 		await call("Page.navigate", {url: `${origin}/admin/${page}/?${query}`});
 		await until(`document.readyState === "complete" && ${page === "organisation" ? "document.querySelector('main h1')?.textContent==='Organisation'" : `document.querySelector('[data-nav="${page}"][aria-current="page"]') !== null`}`);
@@ -384,8 +409,7 @@ try {
 	assert.equal(await evaluate('document.querySelector("admin-date-range summary").hasAttribute("aria-current")'), false, "Choosing a preset deselects Custom");
 	assert.equal(await evaluate(`document.querySelector('button[value="7d"]').getAttribute("aria-pressed")`), "true");
 	await navigate();
-	await evaluate('document.querySelector("admin-activity-filters input[type=checkbox][name=activitySuccess]").closest("label").click()');
-	await until('location.search.includes("activitySuccess=no") && !document.querySelector("admin-activity-filters form").classList.contains("flux-form-waiting")');
+	await checkBackgroundUpdate('document.querySelector("admin-activity-filters input[type=checkbox][name=activitySuccess]").closest("label").click()', 'location.search.includes("activitySuccess=no") && document.querySelectorAll(".activity-table tbody tr").length===7 && !document.querySelector("admin-activity-filters form").classList.contains("flux-form-waiting")', "Activity filter");
 	assert.equal(await evaluate('[...document.querySelectorAll(".activity-table tbody .status")].every(status=>["failed","abandoned"].includes(status.dataset.status))'), true, "Badge checkboxes combine activity statuses");
 	await evaluate('document.querySelector("admin-activity-filters input[type=checkbox][name=activityAbandoned]").closest("label").click()');
 	await until('location.search.includes("activityAbandoned=no") && document.querySelectorAll(".activity-table tbody tr").length===4');
@@ -402,6 +426,11 @@ try {
 	assert.equal(await evaluate('document.querySelector(".sidebar-menu").open'), true);
 	assert.equal(await evaluate('document.querySelector(".chart-data").open'), true);
 	await assertNoHorizontalOverflow("No JavaScript");
+	assert.equal(await evaluate('document.querySelector("admin-chart .chart").hidden'), true, "Without JavaScript, chart values remain available in the data table");
+	await evaluate('document.querySelector("admin-comparison summary").click();document.querySelector("admin-comparison select").value="quarter";document.querySelector("admin-comparison button").click()');
+	await until('document.readyState==="complete" && location.search.includes("reportComparison=quarter") && document.querySelector("admin-comparison select").value==="quarter"');
+	await evaluate('document.querySelector("admin-top-usage button[value=countries]").click()');
+	await until('document.readyState==="complete" && document.querySelector("admin-top-usage thead th").textContent==="Country"');
 	await evaluate('document.querySelector("admin-activity-filters input[type=checkbox][name=activitySuccess]").checked=false;document.querySelector("admin-activity-filters input[type=checkbox][name=activityAbandoned]").checked=false;document.querySelector("admin-activity-filters button").click()');
 	await until('document.readyState==="complete" && document.querySelectorAll(".activity-table tbody tr").length===4');
 	assert.equal(await evaluate('document.querySelector("admin-activity-filters input[type=checkbox][name=activitySuccess]").checked'), false, "Badge filters submit without JavaScript");

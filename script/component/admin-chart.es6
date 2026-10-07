@@ -60,6 +60,9 @@ function initialise() {
 	for(const element of document.querySelectorAll("admin-chart")) {
 		if(charts.has(element)) continue;
 		const container = element.querySelector(".chart");
+		// Keep the no-JavaScript fallback out of <noscript>: fetched HTML is
+		// parsed with scripting disabled, which would activate its styles.
+		container.hidden = false;
 		const payload = JSON.parse(container.dataset.chart);
 		const chart = echarts.init(container, null, {renderer: "svg"});
 		const observer = new ResizeObserver(() => {

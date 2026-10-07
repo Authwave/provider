@@ -1,9 +1,9 @@
-<aside aria-label="Application sidebar"><admin-sidebar /></aside>
-<main id="main-content" class="stack">
+<aside aria-label="Application sidebar"><admin-sidebar data-flux="update" /></aside>
+<main data-flux="update-link" id="main-content" class="stack">
 	<admin-header />
 	<admin-page-heading />
 	<div class="card-grid">
-		<section class="settings-panel stack">
+		<section data-flux="update" class="settings-panel stack">
 			<h2>Security score</h2>
 			<p class="metric" data-bind:text="securityScore">7 / 10</p>
 			<p>Improve your score by completing the recommended actions.</p>
@@ -13,13 +13,13 @@
 				<li><a href="#sessions">Reduce the maximum session lifetime</a></li>
 			</ul>
 		</section>
-		<section class="settings-panel stack">
+		<section data-flux="update" class="settings-panel stack">
 			<h2>Recommended actions</h2>
 			<p>Review your password rules and trusted devices regularly. Configure each method below for the selected application scope.</p>
 			<a class="control" href="#audit">Review audit log</a>
 		</section>
 	</div>
-	<section class="settings-panel stack">
+	<section data-flux="update" class="settings-panel stack">
 		<h2>Recent security events</h2>
 		<div class="table-scroll">
 			<table class="record-table">
@@ -42,7 +42,7 @@
 			</table>
 		</div>
 	</section>
-	<section class="settings-panel stack" id="authentication">
+	<section data-flux="update" class="settings-panel stack" id="authentication">
 		<h2>Authentication methods</h2>
 		<form method="post" class="form-fields stack compact">
 			<input type="hidden" name="do" value="demo" />
@@ -74,7 +74,7 @@
 			</div>
 		</details>
 	</section>
-	<section class="settings-panel stack" id="sessions">
+	<section data-flux="update" class="settings-panel stack" id="sessions">
 		<h2>Session management</h2>
 		<form method="post" class="form-fields stack compact">
 			<input type="hidden" name="do" value="demo" />
@@ -90,7 +90,7 @@
 			<button type="submit" class="primary">Revoke all demo sessions</button>
 		</form>
 	</section>
-	<section class="settings-panel stack">
+	<section data-flux="update" class="settings-panel stack">
 		<h2>Trusted devices</h2>
 		<ul class="record-list">
 			<li data-list="devices">
@@ -107,7 +107,7 @@
 			</li>
 		</ul>
 	</section>
-	<section class="settings-panel stack" id="audit">
+	<section data-flux="update" class="settings-panel stack" id="audit">
 		<h2>Audit log</h2>
 		<form method="get" class="toolbar">
 			<label class="grow"><span class="visually-hidden">Search audit log</span><input name="auditSearch" type="search" data-bind:value="auditSearch" placeholder="Search users or actions" /></label>

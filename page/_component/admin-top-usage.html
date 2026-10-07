@@ -1,9 +1,9 @@
-<section class="settings-panel stack" aria-labelledby="top-usage-title">
+<section id="admin-top-usage" data-flux="update" class="settings-panel stack" aria-labelledby="top-usage-title">
 	<h2 id="top-usage-title">Top usage</h2>
-	<form method="get" action="/admin/" class="segmented-control" aria-label="Top usage grouping">
-		<button name="topUsage" value="users" aria-pressed="true">Users</button>
-		<button name="topUsage" value="countries" aria-pressed="false">Countries</button>
-		<button name="topUsage" value="devices" aria-pressed="false">Devices</button>
+	<form method="get" data-flux class="segmented-control" aria-label="Top usage grouping">
+		<button name="topUsage" value="users" aria-pressed="true"><span>Users</span></button>
+		<button name="topUsage" value="countries" aria-pressed="false"><span>Countries</span></button>
+		<button name="topUsage" value="devices" aria-pressed="false"><span>Devices</span></button>
 	</form>
 	<table class="summary-table">
 		<thead><tr><th scope="col" data-bind:text="usageGroupTitle">User</th><th scope="col">Logins</th></tr></thead>

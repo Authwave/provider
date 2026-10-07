@@ -29,6 +29,12 @@ class AdminDashboardTest extends TestCase {
 
 	public function testDashboardHasBrandedMenuNativeControlsAndServerChartData():void {
 		$view = $this->render();
+		self::assertSame("update-attributes", $view->document->body->getAttribute("data-flux"));
+		self::assertSame("update-link", $view->document->querySelector("main")->getAttribute("data-flux"));
+		self::assertSame("update", $view->document->querySelector("admin-sidebar")->getAttribute("data-flux"));
+		foreach($view->document->querySelectorAll("main section") as $section) {
+			self::assertSame("update", $section->getAttribute("data-flux"));
+		}
 		self::assertNull($view->document->querySelector("#application-theme"));
 		self::assertNull($view->document->querySelector("admin-sidebar img"));
 		self::assertNotNull($view->document->querySelector("admin-sidebar > .sidebar-header application-switcher"));
@@ -47,7 +53,7 @@ class AdminDashboardTest extends TestCase {
 		self::assertTrue($view->document->querySelector('a[data-icon="chevron-left"]')->hasAttribute("hidden"));
 		foreach($view->document->querySelectorAll(".report-chart header form") as $form) {
 			self::assertSame("get", $form->method);
-			self::assertFalse($form->hasAttribute("data-flux"));
+			self::assertTrue($form->hasAttribute("data-flux"));
 		}
 	}
 
