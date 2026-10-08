@@ -1,21 +1,41 @@
 @use "../variable/break";
 
-.site-footer {
+site-footer {
 	display: none;
-	body.dir--admin & { display: block; }
+
+	body.dir--admin & {
+		display: block;
+	}
+
 	min-inline-size: 0;
 	inline-size: 100%;
 	box-sizing: border-box;
 	margin-block-start: auto;
 	padding: var(--authwave-space-footer-block) var(--theme-workspace-padding, var(--theme-space-4));
-	font-size: .75rem;
-	line-height: 1.5;
+	font-size: var(--theme-caption-size, inherit);
+	line-height: var(--theme-prose-line-height, var(--theme-line-height));
 	color: var(--theme-color-text);
 
-	nav { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem 1rem; }
-	a { color: inherit; }
+	nav {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: var(--theme-space-2) var(--theme-space-4);
+	}
+
+	a {
+		color: inherit;
+	}
+
+	@media(min-width: break.$medium) {
+		body.dir--admin & {
+			grid-column: 2;
+		}
+	}
 
 	@media(min-width: break.$small) {
-		nav { justify-content: flex-end; }
+		nav {
+			justify-content: flex-end;
+		}
 	}
 }

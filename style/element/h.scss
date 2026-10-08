@@ -1,29 +1,32 @@
-h1, h2, h3, h4, h5, h6 {
-	font-family: var(--theme-font-heading);
-	margin: 0;
-	color: var(--theme-color-heading);
-}
+@use "../decoration/heading";
+
 
 h1 {
+	@extend %d-heading;
 	font-size: var(--authwave-size-title-font);
 }
 
 h2 {
-	font-size: calc(var(--authwave-size-title-font) * 0.8);
+	@extend %d-heading;
+	font-size: calc(var(--authwave-size-title-font) * .8);
 }
 
 h3 {
-	font-size: calc(var(--authwave-size-title-font) * 0.6);
+	@extend %d-heading;
+	font-size: calc(var(--authwave-size-title-font) * .6);
 }
 
 h4 {
-	font-size: calc(var(--authwave-size-title-font) * 0.5);
+	@extend %d-heading;
+	font-size: calc(var(--authwave-size-title-font) * .5);
 }
 
 h5 {
-	font-size: calc(var(--authwave-size-title-font) * 0.5);
+	@extend %d-heading;
+	font-size: calc(var(--authwave-size-title-font) * .5);
 }
 
 h6 {
-	font-size: calc(var(--authwave-size-title-font) * 0.5);
+	@extend %d-heading;
+	font-size: calc(var(--authwave-size-title-font) * .5);
 }

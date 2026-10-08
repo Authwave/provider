@@ -26,7 +26,7 @@ class DemoReport {
 		];
 		$activityFields = ["success" => "activitySuccess", "failed" => "activityFailed", "abandoned" => "activityAbandoned"];
 		foreach($activityFields as $status => $key) {
-			$default = $state["activity"] === "abandoned" ? $status === "abandoned" : ($state["activity"] === "top" ? $status === "success" : true);
+			$default = $state["activity"] === "abandoned" ? $status === "abandoned" : ($state["activity"] === "top" ? $status === "success" : false);
 			$state[$key] = $this->choice($input, $key, ["yes", "no"], $default ? "yes" : "no");
 		}
 		if($state["from"] && $state["to"] && $state["from"] > $state["to"]) {
@@ -55,9 +55,10 @@ class DemoReport {
 		$previous = array_map(static fn($value) => (int)round($value / $comparisonFactor), $current);
 		foreach($points as $i => &$point) $point["pointPrevious"] = $previous[$i];
 		unset($point);
-		$rows = array_values(array_filter($rows, static function(array $row) use($state, $from, $to, $activityFields):bool {
+		$hasActivityFilter = count(array_filter($activityFields, static fn(string $key):bool => $state[$key] === "yes")) > 0;
+		$rows = array_values(array_filter($rows, static function(array $row) use($state, $from, $to, $activityFields, $hasActivityFilter):bool {
 			return $row["dateValue"] >= $from->format("Y-m-d") && $row["dateValue"] <= $to->format("Y-m-d")
-				&& $state[$activityFields[$row["statusValue"]]] === "yes"
+				&& (!$hasActivityFilter || $state[$activityFields[$row["statusValue"]]] === "yes")
 				&& ($state["status"] === "all" || $row["statusValue"] === $state["status"])
 				&& ($state["method"] === "all" || $row["methodValue"] === $state["method"])
 				&& ($state["activity"] !== "abandoned" || $row["statusValue"] === "abandoned")

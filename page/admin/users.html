@@ -7,13 +7,13 @@
 			<h2>Currently logged in</h2>
 			<p class="metric" data-bind:text="onlineCount">6</p>
 			<ul class="record-list">
-				<li data-list="online-users"><span class="identity"><span class="avatar" data-bind:html="userAvatar" aria-hidden="true"></span><span data-bind:text="userEmail"></span></span><span data-bind:text="userDevice"></span></li>
+				<li data-list="online-users"><span class="identity"><span class="avatar" aria-hidden="true"><email-avatar /></span><span data-bind:text="userEmail"></span></span><span data-bind:text="userDevice"></span></li>
 			</ul>
 		</section>
 		<section data-flux="update" class="settings-panel stack">
 			<h2>Latest login failures</h2>
 			<ul class="record-list">
-				<li data-list="failed-users"><span class="identity"><span class="avatar" data-bind:html="userAvatar" aria-hidden="true"></span><span data-bind:text="userEmail"></span></span><span data-bind:text="userApplication"></span></li>
+				<li data-list="failed-users"><span class="identity"><span class="avatar" aria-hidden="true"><email-avatar /></span><span data-bind:text="userEmail"></span></span><span data-bind:text="userApplication"></span></li>
 			</ul>
 		</section>
 	</div>
@@ -41,7 +41,7 @@
 				</thead>
 				<tbody>
 					<tr data-list="users">
-						<td data-label="Email"><span class="identity"><span class="avatar" data-bind:html="userAvatar" aria-hidden="true"></span><span data-bind:text="userEmail">Sample</span></span></td>
+						<td data-label="Email"><span class="identity"><span class="avatar" aria-hidden="true"><email-avatar /></span><span data-bind:text="userEmail">Sample</span></span></td>
 						<td data-label="Application" data-bind:text="userApplication">Sample</td>
 						<td data-label="Log-ins" data-bind:text="userLogins">Sample</td>
 						<td data-label="Created" data-bind:text="userCreated">Sample</td>

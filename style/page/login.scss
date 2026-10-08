@@ -1,4 +1,4 @@
-@use "../flair";
+@use "../../node_modules/flair/style/flair";
 @use "../variable/break";
 
 body.dir--login {
@@ -30,7 +30,6 @@ body.dir--login {
 
 	> main {
 		@extend %o-content-panel;
-		--theme-content-panel-section-gap: var(--authwave-space-topper);
 
 		@media(width < break.$small) {
 			border: 0;
@@ -39,27 +38,44 @@ body.dir--login {
 
 		form {
 			@extend %p-form-fields;
+
 			.actions {
 				--theme-actions-direction: column;
 				--theme-actions-compact-direction: column;
 				--theme-actions-compact-align-items: stretch;
 				--theme-actions-margin: 0px;
 				--theme-actions-gap: var(--theme-space-4);
-				> * { flex-grow: 1; }
+
+				> * {
+					flex-grow: 1;
+				}
 			}
+
 			.field-action {
 				@extend %p-field-action;
+
 				> button {
 					@extend %o-icon-button;
-					> span { @extend %d-visually-hidden; inset: 0; translate: none; }
+
+					> span {
+						@extend %d-visually-hidden;
+						inset: 0;
+						translate: none;
+					}
+
 					--theme-button-min-height: var(--theme-icon-button-size);
 					--theme-button-padding-block: 0px;
 					--theme-button-padding-inline: 0px;
-					display: inline-grid; place-items: center;
-					inline-size: var(--theme-icon-button-size); block-size: var(--theme-icon-button-size);
+					display: inline-grid;
+					place-items: center;
+					inline-size: var(--theme-icon-button-size);
+					block-size: var(--theme-icon-button-size);
 				}
 			}
-			label { @extend %o-labelled-control; }
+
+			label {
+				@extend %o-labelled-control;
+			}
 		}
 	}
 

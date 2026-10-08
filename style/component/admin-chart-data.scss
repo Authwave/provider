@@ -1,0 +1,14 @@
+admin-chart-data {
+	display: block;
+	min-inline-size: 0;
+	max-inline-size: var(--authwave-size-report-chart-max);
+
+	.chart-data {
+		font-size: var(--theme-compact-size, inherit);
+
+		summary {
+			cursor: pointer;
+			padding-block: var(--theme-space-2);
+		}
+	}
+}

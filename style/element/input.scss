@@ -1,9 +1,24 @@
-@use "../flair";
+@use "../../node_modules/flair/style/flair";
 
 input {
-	&:not([type="hidden"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="submit"], [type="button"], [type="reset"]) { @extend %o-control; inline-size: auto; }
-	&:is([type="checkbox"], [type="radio"]) { @extend %o-choice; }
-	&[type="range"] { @extend %o-range; }
-	&[type="color"] { @extend %o-color; }
-	&:is([type="submit"], [type="button"], [type="reset"]) { @extend %o-button; }
+	&:not([type="hidden"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="submit"], [type="button"], [type="reset"]) {
+		@extend %o-control;
+		inline-size: auto;
+	}
+
+	&:is([type="checkbox"], [type="radio"]) {
+		@extend %o-choice;
+	}
+
+	&[type="range"] {
+		@extend %o-range;
+	}
+
+	&[type="color"] {
+		@extend %o-color;
+	}
+
+	&:is([type="submit"], [type="button"], [type="reset"]) {
+		@extend %o-button;
+	}
 }

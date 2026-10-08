@@ -1,4 +1,4 @@
-@use "../flair";
+@use "../../node_modules/flair/style/flair";
 
 a {
 	color: var(--theme-link-color);
@@ -10,6 +10,7 @@ a {
 	&[href]:hover:not([aria-disabled="true"]) {
 		color: var(--theme-link-hover-color);
 	}
+
 	&[href]:active:not([aria-disabled="true"]) {
 		color: var(--theme-link-active-color);
 		background-color: var(--theme-link-active-background);

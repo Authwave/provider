@@ -108,6 +108,19 @@ try {
 	assert.equal(await evaluate('document.head.querySelector("script").getAttribute("src")'), "/script.js");
 	await until('document.querySelectorAll("admin-chart svg").length === 1');
 	await checkToolbarDropdowns();
+	const nextSpacing = await evaluate(`(()=>{
+		const next=document.querySelector('[aria-label="Activity pages"] a[data-icon-right]');
+		const style=getComputedStyle(next),icon=getComputedStyle(next,'::after');
+		const range=document.createRange();range.selectNodeContents(next);
+		const text=range.getBoundingClientRect(),box=next.getBoundingClientRect();
+		return {leftPadding:parseFloat(style.paddingLeft),rightPadding:parseFloat(style.paddingRight),
+			iconMargin:parseFloat(icon.marginInlineStart),gap:parseFloat(style.columnGap),
+			actualGap:box.right-parseFloat(style.borderRightWidth)-parseFloat(style.paddingRight)-parseFloat(icon.width)-text.right};
+	})()`);
+	assert.equal(nextSpacing.leftPadding,nextSpacing.rightPadding,"Pagination padding is symmetric");
+	assert.equal(nextSpacing.iconMargin,0,"Trailing pagination icon adds no second gap");
+	assert.ok(Math.abs(nextSpacing.actualGap-nextSpacing.gap)<=1,"Pagination text/icon gap matches the button gap");
+
 	const avatarStyle = await evaluate(`(()=>{const svg=document.querySelector('.activity-table .avatar svg');return {colours:[...svg.querySelectorAll('[class*=avatar-colour]')].map(slice=>getComputedStyle(slice).fill),clip:getComputedStyle(svg.querySelector('.avatar-silhouette')).clipPath,shape:svg.dataset.shape,slicing:svg.dataset.slicing,viewBox:svg.viewBox.baseVal.width,hasNames:document.querySelector('main').textContent.includes('Sienna Hewitt'),sameAvatar:svg.outerHTML===document.querySelector('admin-new-users .avatar svg').outerHTML};})()`);
 	assert.ok(new Set(avatarStyle.colours).size>=2, "Foreground and background have distinct palette colours");
 	assert.notEqual(avatarStyle.clip, "none", "The slices are clipped to the selected silhouette");
@@ -115,7 +128,7 @@ try {
 	assert.equal(avatarStyle.viewBox, 40, "Inline SVG retains its coordinate system");
 	assert.equal(avatarStyle.hasNames, false, "Users are identified by email only");
 	assert.equal(avatarStyle.sameAvatar, true, "The same email has the same artwork across lists");
-	const themedAvatar = await evaluate(`(()=>{const svg=document.querySelector('.activity-table .avatar svg'),slice=svg.querySelector('[class*=avatar-colour]'),before=getComputedStyle(slice).fill;svg.style.setProperty('--theme-color-primary','#1274b8');const after=getComputedStyle(slice).fill;svg.style.removeProperty('--theme-color-primary');return {before,after};})()`);
+	const themedAvatar = await evaluate(`(()=>{const svg=document.querySelector('.activity-table .avatar svg'),slice=svg.querySelector('[class*=avatar-colour]'),before=getComputedStyle(slice).fill;svg.closest('email-avatar').style.setProperty('--theme-color-primary','#1274b8');const after=getComputedStyle(slice).fill;svg.closest('email-avatar').style.removeProperty('--theme-color-primary');return {before,after};})()`);
 	assert.notEqual(themedAvatar.before,themedAvatar.after,"Avatar colours follow a change in the primary theme colour");
 
 	assert.equal(await evaluate('getComputedStyle(document.querySelector("main")).borderRadius'), "0px", "Admin main has square corners");
@@ -304,6 +317,15 @@ try {
 	assert.equal(await evaluate('getComputedStyle(document.querySelector(".quick-actions")).display'), "none");
 	assert.equal(await evaluate('document.documentElement.scrollWidth <= document.documentElement.clientWidth'), true);
 	await screenshot("admin-mobile");
+	const rowControl = await evaluate(`(()=>{
+		const summary=document.querySelector('.row-menu summary'),style=getComputedStyle(summary);
+		return {border:style.borderTopWidth,shadow:style.boxShadow,background:style.backgroundColor};
+	})()`);
+	assert.deepEqual(rowControl,{border:"0px",shadow:"none",background:"rgba(0, 0, 0, 0)"},"Row disclosure uses a plain icon control");
+	await evaluate("document.querySelector('.row-menu summary').focus()");
+	await until("parseFloat(getComputedStyle(document.querySelector('.row-menu summary')).outlineWidth)>0");
+	await evaluate("document.querySelector('.row-menu summary').blur();window.scrollTo(0,0)");
+
 	await evaluate('document.querySelector(".sidebar-menu > summary").click()');
 	assert.equal(await evaluate('document.querySelector(".side-navigation").getBoundingClientRect().height > 100'), true);
 	await screenshot("admin-mobile-menu");
@@ -409,17 +431,20 @@ try {
 	assert.equal(await evaluate('document.querySelector("admin-date-range summary").hasAttribute("aria-current")'), false, "Choosing a preset deselects Custom");
 	assert.equal(await evaluate(`document.querySelector('button[value="7d"]').getAttribute("aria-pressed")`), "true");
 	await navigate();
-	await checkBackgroundUpdate('document.querySelector("admin-activity-filters input[type=checkbox][name=activitySuccess]").closest("label").click()', 'location.search.includes("activitySuccess=no") && document.querySelectorAll(".activity-table tbody tr").length===7 && !document.querySelector("admin-activity-filters form").classList.contains("flux-form-waiting")', "Activity filter");
-	assert.equal(await evaluate('[...document.querySelectorAll(".activity-table tbody .status")].every(status=>["failed","abandoned"].includes(status.dataset.status))'), true, "Badge checkboxes combine activity statuses");
+	assert.equal(await evaluate('document.querySelectorAll("admin-activity-filters input[type=checkbox]:checked").length'), 0, "Activity filters start unchecked");
+	await checkBackgroundUpdate('document.querySelector("admin-activity-filters input[type=checkbox][name=activityFailed]").closest("label").click()', 'location.search.includes("activityFailed=yes") && document.querySelectorAll(".activity-table tbody tr").length===4', "Activity filter");
+	assert.equal(await evaluate('[...document.querySelectorAll(".activity-table tbody .status")].every(status=>status.dataset.status==="failed")'), true, "First selected badge filters to that status");
+	await evaluate('document.querySelector("admin-activity-filters input[type=checkbox][name=activityAbandoned]").closest("label").click()');
+	await until('location.search.includes("activityAbandoned=yes") && document.querySelectorAll(".activity-table tbody tr").length===7');
+	assert.equal(await evaluate('[...document.querySelectorAll(".activity-table tbody .status")].every(status=>["failed","abandoned"].includes(status.dataset.status))'), true, "Two selected badges combine statuses");
 	await evaluate('document.querySelector("admin-activity-filters input[type=checkbox][name=activityAbandoned]").closest("label").click()');
 	await until('location.search.includes("activityAbandoned=no") && document.querySelectorAll(".activity-table tbody tr").length===4');
-	assert.equal(await evaluate('[...document.querySelectorAll(".activity-table tbody .status")].every(status=>status.dataset.status==="failed")'), true, "One selected badge filters to that status");
 	await call("Input.dispatchKeyEvent", {type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9});
 	await call("Input.dispatchKeyEvent", {type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9});
 	await evaluate('document.querySelector("admin-activity-filters input[type=checkbox][name=activityFailed]").focus()');
 	await until('getComputedStyle(document.querySelector("admin-activity-filters input[type=checkbox][name=activityFailed]").closest("label")).outlineColor !== "rgba(0, 0, 0, 0)"');
 	await evaluate('document.querySelector("admin-activity-filters input[type=checkbox][name=activityFailed]").closest("label").click()');
-	await until('location.search.includes("activityFailed=no") && document.querySelectorAll(".activity-table tbody tr").length===0');
+	await until('location.search.includes("activityFailed=no") && document.querySelectorAll(".activity-table tbody tr").length===7');
 	await call("Emulation.setScriptExecutionDisabled", {value: true});
 	await navigate();
 	await evaluate('document.querySelector(".sidebar-menu > summary").click(); document.querySelector(".chart-data summary").click()');
@@ -431,9 +456,12 @@ try {
 	await until('document.readyState==="complete" && location.search.includes("reportComparison=quarter") && document.querySelector("admin-comparison select").value==="quarter"');
 	await evaluate('document.querySelector("admin-top-usage button[value=countries]").click()');
 	await until('document.readyState==="complete" && document.querySelector("admin-top-usage thead th").textContent==="Country"');
-	await evaluate('document.querySelector("admin-activity-filters input[type=checkbox][name=activitySuccess]").checked=false;document.querySelector("admin-activity-filters input[type=checkbox][name=activityAbandoned]").checked=false;document.querySelector("admin-activity-filters button").click()');
+	await evaluate('document.querySelector("admin-activity-filters input[type=checkbox][name=activityFailed]").checked=true;document.querySelector("admin-activity-filters button").click()');
 	await until('document.readyState==="complete" && document.querySelectorAll(".activity-table tbody tr").length===4');
 	assert.equal(await evaluate('document.querySelector("admin-activity-filters input[type=checkbox][name=activitySuccess]").checked'), false, "Badge filters submit without JavaScript");
+	await evaluate('document.querySelector("admin-activity-filters input[type=checkbox][name=activityFailed]").checked=false;document.querySelector("admin-activity-filters button").click()');
+	await until('document.readyState==="complete" && location.search.includes("activityFailed=no") && document.querySelectorAll(".activity-table tbody tr").length===7');
+	assert.equal(await evaluate('document.querySelectorAll("admin-activity-filters input[type=checkbox]:checked").length'),0,"Clearing badges removes the filter without JavaScript");
 	await evaluate(`document.querySelector('button[value="30d"]').click()`);
 	await until('location.search.includes("period=30d") && document.querySelector(".report-chart header p")?.textContent === "An overview of activity for the last 30 days"');
 	await evaluate(`const select=document.querySelector('application-switcher select');select.value=JSON.stringify(['example','operations','all']);select.form.querySelector('button').click()`);

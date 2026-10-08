@@ -19,7 +19,7 @@ function go(Element $element, Binder $binder, Input $input, DemoWorkspace $works
 	arsort($counts);
 	$rows = [];
 	foreach(array_slice($counts, 0, 5, true) as $name => $count) {
-		$rows[] = ["usageName" => $group === "users" ? DemoWorkspace::email($name, $view->reveal) : $name, "usageAvatar" => $group === "users" ? EmailAvatar::svg($name) : "", "hasUsageAvatar" => $group === "users", "usageCount" => number_format($count)];
+		$rows[] = ["usageName" => $group === "users" ? DemoWorkspace::email($name, $view->reveal) : $name, "userAvatar" => $group === "users" ? EmailAvatar::svg($name) : "", "hasUsageAvatar" => $group === "users", "usageCount" => number_format($count)];
 	}
 	$view->keys(["topUsage" => $group, "hasTopUsage" => count($rows) > 0,
 		"usageGroupTitle" => match($group) { "countries" => "Country", "devices" => "Device", default => "User" },

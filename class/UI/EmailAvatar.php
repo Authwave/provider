@@ -56,7 +56,7 @@ class EmailAvatar {
 			$artwork .= '<g class="avatar-extra" transform="translate(' . ($x - 5) . ' ' . ($y - 5) . ') scale(.25)" style="clip-path:' . $symbol . ' view-box">';
 			$artwork .= self::paint($sliceShapes ? $paths : [], $colours, $colours[$i + 1]) . '</g>';
 		}
-		return '<svg xmlns="http://www.w3.org/2000/svg" class="email-avatar" viewBox="0 0 40 40" aria-hidden="true" focusable="false" data-shape="' . $shape . '" data-slicing="' . $slicing . '" data-slice-target="' . $target . '">' . $artwork . '</svg>';
+		return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" aria-hidden="true" focusable="false" data-shape="' . $shape . '" data-slicing="' . $slicing . '" data-slice-target="' . $target . '">' . $artwork . '</svg>';
 	}
 
 	private static function paint(array $paths, array $colours, int $solid):string {

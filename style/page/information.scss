@@ -1,20 +1,18 @@
-@use "../flair";
+@use "../../node_modules/flair/style/flair";
 @use "../variable/break";
 
-body.dir--help,
-body.dir--legal,
-body.uri--privacy,
-body.uri--terms {
-	@extend %l-centered-panel;
-	--theme-centered-panel-gutter: var(--authwave-space-topper);
+body {
+	&:is(.dir--help, .dir--legal, .uri--privacy, .uri--terms) {
+		@extend %l-centered-panel;
+		--theme-centered-panel-gutter: var(--authwave-space-topper);
 
-	> main {
-		@extend %o-content-panel;
-		--theme-content-panel-section-gap: var(--authwave-space-topper);
+		> main {
+			@extend %o-content-panel;
 
-		@media(width < break.$small) {
-			border: 0;
-			border-radius: 0;
+			@media(width < break.$small) {
+				border: 0;
+				border-radius: 0;
+			}
 		}
 	}
 }

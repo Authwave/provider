@@ -102,7 +102,7 @@ class AdminDashboardTest extends TestCase {
 		}
 	}
 
-	public function testActivityCheckboxesCombineStatusesAndAllowAnEmptySelection():void {
+	public function testActivityCheckboxesCombineStatusesAndClearTheFilterWhenUnchecked():void {
 		$view = $this->render(["activitySuccess" => "no", "activityFailed" => "yes", "activityAbandoned" => "yes"]);
 		foreach($view->document->querySelectorAll(".activity-table tbody .status") as $status) {
 			self::assertContains($status->getAttribute("data-status"), ["failed", "abandoned"]);
@@ -113,7 +113,17 @@ class AdminDashboardTest extends TestCase {
 		$failed = $this->render(["activitySuccess" => "no", "activityFailed" => "yes", "activityAbandoned" => "no"]);
 		self::assertCount(4, $failed->document->querySelectorAll(".activity-table tbody tr"));
 		$empty = $this->render(["activitySuccess" => "no", "activityFailed" => "no", "activityAbandoned" => "no"]);
-		self::assertCount(0, $empty->document->querySelectorAll(".activity-table tbody tr"));
-		self::assertFalse($empty->document->querySelector('.activity-panel > p')->hasAttribute("hidden"));
+		self::assertCount(7, $empty->document->querySelectorAll(".activity-table tbody tr"));
+		self::assertTrue($empty->document->querySelector('.activity-panel > p')->hasAttribute("hidden"));
+		$default = $this->render();
+		self::assertCount(0, $default->document->querySelectorAll('admin-activity-filters input[checked]'));
+		self::assertSame($default->document->querySelector('.activity-table tbody')->textContent, $empty->document->querySelector('.activity-table tbody')->textContent);
+		foreach(["activitySuccess" => "success", "activityFailed" => "failed", "activityAbandoned" => "abandoned"] as $key => $status) {
+			$single = $this->render([$key => "yes"]);
+			self::assertGreaterThan(0, $single->document->querySelectorAll('.activity-table tbody tr')->length);
+			foreach($single->document->querySelectorAll('.activity-table tbody .status') as $badge) {
+				self::assertSame($status, $badge->getAttribute("data-status"));
+			}
+		}
 	}
 }

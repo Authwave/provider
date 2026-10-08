@@ -1,9 +1,11 @@
 application-switcher {
 	display: block;
+
 	.select-control {
 		display: block;
 		position: relative;
 		--theme-icon-gap: 0;
+
 		&::before {
 			position: absolute;
 			inset-block-start: 50%;
@@ -12,12 +14,13 @@ application-switcher {
 			pointer-events: none;
 		}
 	}
+
 	select {
 		appearance: none;
 		inline-size: 100%;
 		padding-inline-end: calc(2 * var(--theme-control-padding) + var(--theme-icon-size));
-		font-size: .85rem;
-		font-weight: 600;
+		font-size: var(--theme-small-size, inherit);
+		font-weight: var(--theme-heading-weight);
 		cursor: pointer;
 	}
 }

@@ -8,7 +8,7 @@ export async function assertPageLayout(evaluate, label, desktop) {
 			const rect=element.getBoundingClientRect();
 			return rect.width>1 && (rect.left < -1 || rect.right > viewport+1);
 		}).map(element=>({tag:element.tagName,class:element.className,left:element.getBoundingClientRect().left,right:element.getBoundingClientRect().right}));
-		const footer=document.querySelector('.site-footer'),admin=document.body.classList.contains('dir--admin'),visible=footer.checkVisibility(),links=(visible ? [...footer.querySelectorAll('a')] : []).map(link=>{const rect=link.getBoundingClientRect();return {left:rect.left,right:rect.right,top:rect.top};});
+		const footer=document.querySelector('site-footer'),admin=document.body.classList.contains('dir--admin'),visible=footer.checkVisibility(),links=(visible ? [...footer.querySelectorAll('a')] : []).map(link=>{const rect=link.getBoundingClientRect();return {left:rect.left,right:rect.right,top:rect.top};});
 		const y=window.scrollY;
 		window.scrollTo(1000,y);
 		const scrollX=window.scrollX;

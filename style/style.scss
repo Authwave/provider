@@ -1,4 +1,4 @@
-@use "flair" with ($icon-names: (
+@forward "../node_modules/flair/style/flair" with ($icon-names: (
 	facebook,
 	github,
 	google,
@@ -34,10 +34,10 @@
 	check,
 	circle-check,
 ));
-@use "theme";
+@use "../node_modules/flair/style/flair";
+@use "../node_modules/flair/style/theme";
 @use "font/fira-mono";
 @use "font/inter";
-
 
 @use "variable/size";
 @use "variable/space";
@@ -56,6 +56,7 @@
 @use "component/admin-sidebar";
 @use "component/application-switcher";
 @use "component/admin-chart";
+@use "component/admin-chart-data";
 @use "component/site-footer";
 @use "component/email-avatar";
 
@@ -67,7 +68,17 @@
 @use "page/information";
 @use "page/admin";
 @use "page/admin-console";
+@use "page/logged-out";
 
+
+// Remove the attribute or choose base for the fully usable monochrome design.
+:root {
+	@include theme.base;
+
+	&[data-flair-theme="bright"] {
+		@include theme.bright;
+	}
+}
 
 @include flair.base;
 @include flair.icon;

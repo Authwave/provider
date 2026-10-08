@@ -1,4 +1,8 @@
 html {
+	&:has(> body.dir--admin) {
+		--authwave-size-body-font: var(--theme-workspace-font-size, var(--theme-font-size));
+	}
+
 	font-family: var(--theme-font-body);
 	font-size: var(--authwave-size-body-font);
 	height: 100%;

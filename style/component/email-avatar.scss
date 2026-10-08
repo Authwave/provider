@@ -1,4 +1,4 @@
-.email-avatar {
+email-avatar {
 	// The fixed palette varies in lightness as well as hue, including two neutrals.
 	--authwave-avatar-colour-0: color-mix(in srgb, var(--theme-color-primary) 15%, var(--theme-color-text));
 	--authwave-avatar-colour-1: color-mix(in srgb, var(--theme-color-primary) 4%, var(--theme-color-page));
@@ -8,18 +8,34 @@
 	display: block;
 	inline-size: 100%;
 	block-size: 100%;
+
+	> span, svg {
+		display: block;
+		inline-size: 100%;
+		block-size: 100%;
+	}
+
 	@supports not (color: oklch(from red .7 .18 h)) {
 		@for $i from 2 through 7 {
-			.avatar-colour-#{$i} { filter: hue-rotate(#{($i - 2) * 60}deg); }
+			.avatar-colour-#{$i} {
+				filter: hue-rotate(#{($i - 2) * 60}deg);
+			}
 		}
 	}
-	@supports(color: oklch(from red .7 .18 h)) {
+	@supports (color: oklch(from red .7 .18 h)) {
 		@for $i from 2 through 7 {
 			--authwave-avatar-colour-#{$i}: oklch(from var(--theme-color-primary) #{.55 + (($i - 2) % 3) * .125} var(--theme-avatar-chroma, 0) calc(h + #{($i - 2) * 60}));
 		}
 	}
 	@for $i from 0 through 7 {
-		.avatar-colour-#{$i} { fill: var(--authwave-avatar-colour-#{$i}); --authwave-avatar-slice-colour: var(--authwave-avatar-colour-#{$i}); }
+		.avatar-colour-#{$i} {
+			fill: var(--authwave-avatar-colour-#{$i});
+			--authwave-avatar-slice-colour: var(--authwave-avatar-colour-#{$i});
+		}
 	}
-	.avatar-slice { stroke: var(--authwave-avatar-slice-colour); stroke-width: .2; }
+
+	.avatar-slice {
+		stroke: var(--authwave-avatar-slice-colour);
+		stroke-width: .2;
+	}
 }

@@ -1,15 +1,16 @@
 @use "../variable/icon" as variable;
-
-form[data-flux].flux-form-waiting {
-	cursor: wait;
-	--theme-button-cursor: wait;
-
-	button, input, select, textarea, [contenteditable] {
-		cursor: wait;
-	}
-}
+@use "../animation/flux-loader-spin";
 
 form[data-flux] {
+	&.flux-form-waiting {
+		cursor: wait;
+		--theme-button-cursor: wait;
+
+		button, input, select, textarea, [contenteditable] {
+			cursor: wait;
+		}
+	}
+
 	button[type="submit"], button:not([type]) {
 		position: relative;
 
@@ -46,16 +47,8 @@ form[data-flux] {
 			}
 		}
 	}
-}
 
-@keyframes flux-loader-spin {
-	to {
-		rotate: 1turn;
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	form[data-flux] {
+	@media (prefers-reduced-motion: reduce) {
 		button[type="submit"], button:not([type]) {
 			> span, &::before, &::after {
 				transition: none;
