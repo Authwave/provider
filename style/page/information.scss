@@ -1,15 +1,16 @@
-@use "../layout/middle-panel";
-@use "../decoration/panel";
+@use "../flair";
 @use "../variable/break";
 
 body.dir--help,
 body.dir--legal,
 body.uri--privacy,
 body.uri--terms {
-	@extend %l-middle-panel;
+	@extend %l-centered-panel;
+	--theme-centered-panel-gutter: var(--authwave-space-topper);
 
 	> main {
-		@extend %d-panel;
+		@extend %o-content-panel;
+		--theme-content-panel-section-gap: var(--authwave-space-topper);
 
 		@media(width < break.$small) {
 			border: 0;

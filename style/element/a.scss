@@ -1,17 +1,17 @@
-@use "../decoration/focus";
+@use "../flair";
 
 a {
-	color: var(--pal--link--text);
+	color: var(--theme-link-color);
 
 	&[href] {
 		@extend %d-focus;
 	}
 
 	&[href]:hover:not([aria-disabled="true"]) {
-		color: var(--pal--link--text-hover);
+		color: var(--theme-link-hover-color);
 	}
 	&[href]:active:not([aria-disabled="true"]) {
-		color: var(--pal--link--text-active);
-		background-color: var(--pal--link--background-active);
+		color: var(--theme-link-active-color);
+		background-color: var(--theme-link-active-background);
 	}
 }

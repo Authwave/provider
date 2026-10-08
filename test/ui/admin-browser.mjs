@@ -115,7 +115,7 @@ try {
 	assert.equal(avatarStyle.viewBox, 40, "Inline SVG retains its coordinate system");
 	assert.equal(avatarStyle.hasNames, false, "Users are identified by email only");
 	assert.equal(avatarStyle.sameAvatar, true, "The same email has the same artwork across lists");
-	const themedAvatar = await evaluate(`(()=>{const svg=document.querySelector('.activity-table .avatar svg'),slice=svg.querySelector('[class*=avatar-colour]'),before=getComputedStyle(slice).fill;svg.style.setProperty('--pal--theme','#1274b8');const after=getComputedStyle(slice).fill;svg.style.removeProperty('--pal--theme');return {before,after};})()`);
+	const themedAvatar = await evaluate(`(()=>{const svg=document.querySelector('.activity-table .avatar svg'),slice=svg.querySelector('[class*=avatar-colour]'),before=getComputedStyle(slice).fill;svg.style.setProperty('--theme-color-primary','#1274b8');const after=getComputedStyle(slice).fill;svg.style.removeProperty('--theme-color-primary');return {before,after};})()`);
 	assert.notEqual(themedAvatar.before,themedAvatar.after,"Avatar colours follow a change in the primary theme colour");
 
 	assert.equal(await evaluate('getComputedStyle(document.querySelector("main")).borderRadius'), "0px", "Admin main has square corners");
@@ -128,12 +128,12 @@ try {
 	assert.equal(await evaluate('document.querySelector("main admin-setup") === null'), true, "Setup is only displayed in the sidebar");
 	assert.deepEqual(await evaluate('[...document.querySelectorAll(".metrics dt")].map(label=>label.textContent)'), ["Total usage", "New users", "Security codes sent", "Password changes", "Login success ratio", "Provider logins"]);
 	const downwardTrend = await evaluate(`(()=>{const trend=document.querySelector('.metrics [data-trend="down"]');return {colour:getComputedStyle(trend).color,icon:getComputedStyle(trend,'::before').maskImage};})()`);
-	assert.equal(downwardTrend.colour, "rgb(240, 68, 56)", "Downward trends use the negative colour");
+	assert.equal(downwardTrend.colour, "rgb(180, 35, 24)", "Downward trends use the accessible negative colour");
 	assert.ok(downwardTrend.icon.includes("trending-down.svg"), "Downward trends use the Tabler icon");
 
 	assert.equal(await evaluate('getComputedStyle(document.documentElement).backgroundColor'), "rgb(250, 250, 249)");
 	assert.equal(await evaluate('getComputedStyle(document.querySelector("main")).backgroundColor'), "rgb(255, 255, 255)");
-	assert.equal(await evaluate('getComputedStyle(document.documentElement).getPropertyValue("--pal--theme").trim()'), "#c328d1");
+	assert.equal(await evaluate('getComputedStyle(document.documentElement).getPropertyValue("--theme-color-primary").trim()'), "#c328d1");
 	assert.equal(await evaluate('document.querySelector(".side-navigation").getBoundingClientRect().height > 100'), true, "Closed desktop disclosure must show navigation");
 	assert.equal(await evaluate('document.querySelector(".sidebar-menu").open'), false);
 	assert.equal(await evaluate('getComputedStyle(document.querySelector(".quick-actions")).display'), "flex");

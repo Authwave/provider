@@ -1,50 +1,49 @@
 @use "../variable/break";
-@use "../decoration/focus";
-@use "../decoration/visually-hidden";
+@use "../flair";
 
 admin-sidebar {
 	display: block;
 	position: relative;
-	border-block-end: 1px solid var(--pal--panel--border);
-	background: var(--pal--panel--background);
+	border-block-end: 1px solid var(--theme-color-border);
+	background: var(--theme-color-surface);
 
 	.sidebar-header {
 		justify-content: center;
-		min-block-size: var(--size--sidebar-header);
+		min-block-size: var(--authwave-size-sidebar-header);
 		margin: 0;
-		padding: .75rem 4rem .75rem var(--space--gap);
+		padding: .75rem 4rem .75rem var(--theme-space-4);
 		label > span:not(.select-control) { @extend %d-visually-hidden; }
-		select { block-size: var(--size--icon-button); }
+		select { block-size: var(--theme-icon-button-size); }
 	}
 
 	.sidebar-menu > summary {
 		@extend %d-focus;
 		position: absolute;
 		inset-block-start: .9rem;
-		inset-inline-end: var(--space--gap);
+		inset-inline-end: var(--theme-space-4);
 		list-style: none;
 		cursor: pointer;
 		padding: .5rem;
-		--space--icon--gap: 0;
+		--theme-icon-gap: 0;
 		span { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
 		&::-webkit-details-marker { display: none; }
 	}
 
 	.sidebar-content {
-		padding: 0 var(--space--gap) var(--space--gap);
+		padding: 0 var(--theme-space-4) var(--theme-space-4);
 	}
 	.sidebar-bottom { margin-block-start: 2rem; }
 
 	@media(min-width: break.$medium) {
 		min-block-size: 100svh;
 		border-block-end: 0;
-		border-inline-end: 1px solid var(--pal--panel--border);
-		.sidebar-header { padding-inline: var(--space--gap); }
+		border-inline-end: 1px solid var(--theme-color-border);
+		.sidebar-header { padding-inline: var(--theme-space-4); }
 		.sidebar-menu {
 			> summary { display: none; }
 			// Keep the same disclosure visible on desktop without JS or an open attribute.
 			&::details-content { content-visibility: visible; display: block; }
-			> .sidebar-content { display: flex; flex-direction: column; min-block-size: calc(100svh - var(--size--sidebar-header)); box-sizing: border-box; }
+			> .sidebar-content { display: flex; flex-direction: column; min-block-size: calc(100svh - var(--authwave-size-sidebar-header)); box-sizing: border-box; }
 		}
 		.sidebar-bottom { margin-block-start: auto; padding-block-start: 2rem; }
 	}

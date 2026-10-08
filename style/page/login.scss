@@ -1,22 +1,22 @@
-@use "../layout/middle-panel";
-@use "../pattern/form-fields";
-@use "../decoration/panel";
+@use "../flair";
 @use "../variable/break";
 
 body.dir--login {
-	@extend %l-middle-panel;
+	@extend %l-centered-panel;
+	--theme-centered-panel-gutter: var(--authwave-space-topper);
 
 	.auth-heading {
 		text-align: center;
 
 		.logo {
 			display: block;
-			inline-size: var(--size--login--logo);
+			filter: var(--theme-brand-filter, grayscale(1));
+			inline-size: var(--authwave-size-login-logo);
 			max-inline-size: 100%;
 			block-size: auto;
-			max-block-size: var(--size--login--logo);
+			max-block-size: var(--authwave-size-login-logo);
 			margin-inline: auto;
-			margin-block-end: var(--space--topper);
+			margin-block-end: var(--authwave-space-topper);
 		}
 
 		h1 {
@@ -25,11 +25,12 @@ body.dir--login {
 	}
 
 	.form-error {
-		color: var(--pal--negative);
+		color: var(--theme-color-danger);
 	}
 
 	> main {
-		@extend %d-panel;
+		@extend %o-content-panel;
+		--theme-content-panel-section-gap: var(--authwave-space-topper);
 
 		@media(width < break.$small) {
 			border: 0;
@@ -38,6 +39,27 @@ body.dir--login {
 
 		form {
 			@extend %p-form-fields;
+			.actions {
+				--theme-actions-direction: column;
+				--theme-actions-compact-direction: column;
+				--theme-actions-compact-align-items: stretch;
+				--theme-actions-margin: 0px;
+				--theme-actions-gap: var(--theme-space-4);
+				> * { flex-grow: 1; }
+			}
+			.field-action {
+				@extend %p-field-action;
+				> button {
+					@extend %o-icon-button;
+					> span { @extend %d-visually-hidden; inset: 0; translate: none; }
+					--theme-button-min-height: var(--theme-icon-button-size);
+					--theme-button-padding-block: 0px;
+					--theme-button-padding-inline: 0px;
+					display: inline-grid; place-items: center;
+					inline-size: var(--theme-icon-button-size); block-size: var(--theme-icon-button-size);
+				}
+			}
+			label { @extend %o-labelled-control; }
 		}
 	}
 

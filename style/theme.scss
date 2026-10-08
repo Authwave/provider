@@ -1,0 +1,7 @@
+@use "../node_modules/flair/style/theme";
+
+// Remove the attribute or choose base for the fully usable monochrome design.
+:root {
+	@include theme.base;
+	&[data-flair-theme="bright"] { @include theme.bright; }
+}

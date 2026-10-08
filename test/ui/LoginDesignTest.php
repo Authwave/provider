@@ -112,7 +112,7 @@ class LoginDesignTest extends TestCase {
 			self::assertSame($light ? "/$directory/$light" : "/asset/default-logo.svg", $picture->querySelector("img")->getAttribute("src"));
 			self::assertSame("Branded application logo", $picture->querySelector("img")->getAttribute("alt"));
 			self::assertNull($view->document->documentElement->getAttribute("style"));
-			self::assertSame($style ? ':root[data-color-scheme="light"] { ' . $style . ' }' : null,
+			self::assertSame($style ? ':root[data-flair-theme="bright"][data-color-scheme="light"] { ' . $style . ' }' : null,
 				$view->document->querySelector("#application-theme")?->textContent);
 		}
 		finally {
@@ -126,15 +126,15 @@ class LoginDesignTest extends TestCase {
 	public function brandingCases():array {
 		return [
 			"default branding" => ["index", [], null, "", "", null],
-			"SVG pair" => ["index", ["logo.svg", "logo_dark.svg"], "#123456", "logo.svg", "logo_dark.svg", "--pal--theme: #123456;"],
-			"mixed formats" => ["authenticate", ["logo.png", "logo_dark.jpeg"], "#abc", "logo.png", "logo_dark.jpeg", "--pal--theme: #abc;"],
+			"SVG pair" => ["index", ["logo.svg", "logo_dark.svg"], "#123456", "logo.svg", "logo_dark.svg", "--theme-color-primary: #123456;"],
+			"mixed formats" => ["authenticate", ["logo.png", "logo_dark.jpeg"], "#abc", "logo.png", "logo_dark.jpeg", "--theme-color-primary: #abc;"],
 			"light only" => ["security-check", ["logo.jpg"], null, "logo.jpg", "logo.jpg", null],
-			"dark only" => ["success", ["logo_dark.PNG"], "#11223344", "", "logo_dark.PNG", "--pal--theme: #11223344;"],
+			"dark only" => ["success", ["logo_dark.PNG"], "#11223344", "", "logo_dark.PNG", "--theme-color-primary: #11223344;"],
 			"invalid colour and unrelated files" => ["index", ["logo.txt", "logo_old.svg"], "red; display: none", "", "", null],
-			"both colours" => ["index", [], "#123456", "", "", "--pal--theme: #123456; --pal--theme-secondary: #abcdef;", "#abcdef"],
-			"secondary only" => ["authenticate", [], null, "", "", "--pal--theme-secondary: #abcd;", "#abcd"],
-			"invalid secondary" => ["security-check", [], "#abc", "", "", "--pal--theme: #abc;", "red; display: none"],
-			"invalid primary with secondary" => ["success", [], "invalid", "", "", "--pal--theme-secondary: #12345678;", "#12345678"],
+			"both colours" => ["index", [], "#123456", "", "", "--theme-color-primary: #123456; --theme-color-secondary: #abcdef;", "#abcdef"],
+			"secondary only" => ["authenticate", [], null, "", "", "--theme-color-secondary: #abcd;", "#abcd"],
+			"invalid secondary" => ["security-check", [], "#abc", "", "", "--theme-color-primary: #abc;", "red; display: none"],
+			"invalid primary with secondary" => ["success", [], "invalid", "", "", "--theme-color-secondary: #12345678;", "#12345678"],
 		];
 	}
 
@@ -146,7 +146,7 @@ class LoginDesignTest extends TestCase {
 			]), "Test application", random_bytes(32), "client.example.test", "/callback"));
 		$view = new View("login/index");
 		$this->call("_common", "go", $view->document, $view->binder, $this->login);
-		self::assertSame(":root[data-color-scheme=\"light\"] { --pal--theme: #123456; }\n:root[data-color-scheme=\"dark\"] { --pal--theme: #abcdef; --pal--page--background: #111; }",
+		self::assertSame(":root[data-flair-theme=\"bright\"][data-color-scheme=\"light\"] { --theme-color-primary: #123456; }\n:root[data-flair-theme=\"bright\"][data-color-scheme=\"dark\"] { --theme-color-primary: #abcdef; --theme-color-page: #111; }",
 			$view->document->querySelector("#application-theme")->textContent);
 		$html = (string)$view->document;
 		self::assertGreaterThan(strpos($html, '/style.css'), strpos($html, 'id="application-theme"'));
@@ -444,4 +444,22 @@ class LoginDesignTest extends TestCase {
 		$this->callFile("page/_common.php", "go", $apps, new \Gt\Http\Uri("https://login.example.test/logged-out/"), new LoginSession(new SessionStore("empty", $this->session), $this->audit, $this->anonymous), $this->session, $this->response);
 	}
 
+
+	public function testMonochromePreferenceIsRenderedWithoutChangingLoginState():void {
+		$request = $this->createMock(\Gt\Http\ServerRequest::class);
+		$request->method("getQueryParams")->willReturn([]);
+		$request->method("getCookieParams")->willReturn(["authwave-flair-theme" => "base"]);
+		$view = new View("login/index");
+		$this->callFile("page/_common.php", "go_after", $view->document, $request);
+		self::assertSame("base", $view->document->documentElement->getAttribute("data-flair-theme"));
+	}
+
+	public function testUnknownThemePreferenceFallsBackToBright():void {
+		$request = $this->createMock(\Gt\Http\ServerRequest::class);
+		$request->method("getQueryParams")->willReturn([]);
+		$request->method("getCookieParams")->willReturn(["authwave-flair-theme" => "unknown"]);
+		$view = new View("login/index");
+		$this->callFile("page/_common.php", "go_after", $view->document, $request);
+		self::assertSame("bright", $view->document->documentElement->getAttribute("data-flair-theme"));
+	}
 }

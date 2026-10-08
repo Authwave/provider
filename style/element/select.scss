@@ -1,5 +1,3 @@
-@use "../decoration/control";
+@use "../flair";
 
-select {
-	@extend %d-control;
-}
+select { @extend %o-control; inline-size: auto; }

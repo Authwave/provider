@@ -2,6 +2,7 @@
 
 form[data-flux].flux-form-waiting {
 	cursor: wait;
+	--theme-button-cursor: wait;
 
 	button, input, select, textarea, [contenteditable] {
 		cursor: wait;

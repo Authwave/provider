@@ -10,10 +10,10 @@ security-code {
 
 		> legend {
 			padding: 0;
-			margin-block-end: var(--space--label--margin);
-			font-family: var(--font--label--family);
-			font-size: var(--size--label--font);
-			color: var(--pal--heading--text);
+			margin-block-end: var(--authwave-space-label-margin);
+			font-family: var(--theme-font-body);
+			font-size: var(--authwave-size-label-font);
+			color: var(--theme-color-heading);
 		}
 	}
 
@@ -24,20 +24,20 @@ security-code {
 	.security-code-digits {
 		display: grid;
 		grid-template-columns: repeat(5, minmax(0, 1fr));
-		gap: var(--space--code-input--gap);
+		gap: var(--authwave-space-code-input-gap);
 		direction: ltr;
 
 		> input {
-			--pal--border-hover: var(--pal--code-input--border);
+			--theme-control-border-hover: var(--theme-code-input-border);
 			box-sizing: border-box;
 			inline-size: 100%;
 			min-inline-size: 0;
 			min-block-size: 0;
 			aspect-ratio: 1;
 			padding: 0;
-			border: var(--border--code-input);
-			font-family: var(--font--code-input--family);
-			font-size: var(--size--code-input--font);
+			border: var(--authwave-size-code-input-border) solid var(--theme-code-input-border);
+			font-family: var(--theme-font-mono);
+			font-size: var(--authwave-size-code-input-font);
 			text-align: center;
 		}
 	}

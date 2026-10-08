@@ -17,7 +17,7 @@ class ApplicationThemeTest extends TestCase {
 			"linkText" => "#fff; display:none",
 			"unknown" => "#123456",
 		]);
-		self::assertSame(':root[data-color-scheme="dark"] { --pal--theme: #abcdef; --pal--theme-secondary: #1234; --pal--page--background: #12345678; --pal--button--text-primary: #fff; }', $theme->toCss());
+		self::assertSame(':root[data-flair-theme="bright"][data-color-scheme="dark"] { --theme-color-primary: #abcdef; --theme-color-secondary: #1234; --theme-color-page: #12345678; --theme-button-primary-text: #fff; }', $theme->toCss());
 	}
 
 	public function testInvalidJsonAndNonObjectsKeepDefaults():void {

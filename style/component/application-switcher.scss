@@ -3,11 +3,11 @@ application-switcher {
 	.select-control {
 		display: block;
 		position: relative;
-		--space--icon--gap: 0;
+		--theme-icon-gap: 0;
 		&::before {
 			position: absolute;
 			inset-block-start: 50%;
-			inset-inline-end: var(--space--control--padding);
+			inset-inline-end: var(--theme-control-padding);
 			transform: translateY(-50%);
 			pointer-events: none;
 		}
@@ -15,7 +15,7 @@ application-switcher {
 	select {
 		appearance: none;
 		inline-size: 100%;
-		padding-inline-end: calc(2 * var(--space--control--padding) + var(--size--icon));
+		padding-inline-end: calc(2 * var(--theme-control-padding) + var(--theme-icon-size));
 		font-size: .85rem;
 		font-weight: 600;
 		cursor: pointer;

@@ -1,15 +1,44 @@
+@use "flair" with ($icon-names: (
+	facebook,
+	github,
+	google,
+	linkedin,
+	lock,
+	login,
+	mail,
+	home,
+	chart-bar,
+	shield,
+	apps,
+	chart-pie,
+	users,
+	lifebuoy,
+	settings,
+	credit-card,
+	search,
+	menu-2,
+	selector,
+	plus,
+	bell,
+	download,
+	filter,
+	calendar,
+	adjustments-horizontal,
+	trending-up,
+	trending-down,
+	dots-vertical,
+	chevron-left,
+	chevron-right,
+	arrow-right,
+	logout,
+	check,
+	circle-check,
+));
+@use "theme";
 @use "font/fira-mono";
 @use "font/inter";
 
-@use "mixin/icon";
 
-@use "variable/border";
-@use "variable/font";
-@use "variable/motion";
-@use "variable/outline";
-@use "variable/palette";
-@use "variable/radius";
-@use "variable/shadow";
 @use "variable/size";
 @use "variable/space";
 
@@ -39,4 +68,6 @@
 @use "page/admin";
 @use "page/admin-console";
 
-@include icon.icon;
+
+@include flair.base;
+@include flair.icon;

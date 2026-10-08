@@ -1,8 +1,0 @@
-%p-toolbar {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: var(--space--toolbar, .75rem);
-	min-inline-size: 0;
-	> .toolbar-end { margin-inline-start: auto; }
-}

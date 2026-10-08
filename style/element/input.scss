@@ -1,22 +1,9 @@
-@use "../decoration/control";
-@use "../decoration/focus";
+@use "../flair";
 
 input {
-	&:not([type="checkbox"],[type="radio"],[type="hidden"]) {
-		@extend %d-control;
-	}
-
-	&:is([type="checkbox"], [type="radio"]) {
-		@extend %d-focus;
-		accent-color: var(--pal--theme);
-	}
-
-	&[type="date"] {
-		font-family: inherit;
-	}
-
-	&::placeholder {
-		color: var(--pal--control--placeholder);
-		opacity: 1;
-	}
+	&:not([type="hidden"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="submit"], [type="button"], [type="reset"]) { @extend %o-control; inline-size: auto; }
+	&:is([type="checkbox"], [type="radio"]) { @extend %o-choice; }
+	&[type="range"] { @extend %o-range; }
+	&[type="color"] { @extend %o-color; }
+	&:is([type="submit"], [type="button"], [type="reset"]) { @extend %o-button; }
 }

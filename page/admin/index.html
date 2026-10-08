@@ -95,7 +95,7 @@
 		<p class="panel-body" data-bind:hidden="?hasActivities">No activity matches these filters. Try another period or reset the filters.</p>
 		<footer class="toolbar panel-body">
 			<span data-bind:text="paginationLabel">Page 1 of 4</span>
-			<nav class="toolbar" aria-label="Activity pages"><a class="control" data-flux="link" data-bind:href="previousPage" data-bind:hidden="?!hasPrevious" data-icon="chevron-left">Previous</a><a class="control" data-flux="link" data-bind:href="nextPage" data-bind:hidden="?!hasNext" data-icon="chevron-right">Next</a></nav>
+			<nav class="toolbar" aria-label="Activity pages"><a class="control" data-flux="link" data-bind:href="previousPage" data-bind:hidden="?!hasPrevious" data-icon="chevron-left">Previous</a><a class="control" data-flux="link" data-bind:href="nextPage" data-bind:hidden="?!hasNext" data-icon="chevron-right" data-icon-right>Next</a></nav>
 		</footer>
 	</section>
 	<div class="card-grid" data-bind:hidden="?!hasApplications">

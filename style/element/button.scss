@@ -1,25 +1,3 @@
-@use "../decoration/control";
-@use "../decoration/control-bevel";
+@use "../flair";
 
-button {
-	@extend %d-control;
-	@extend %d-control-bevel;
-
-	--pal--background: var(--pal--button--background);
-	--pal--border-hover: var(--pal--button--border-hover);
-	--pal--background-active: var(--pal--button--background-active);
-
-	cursor: pointer;
-	font-weight: var(--font--button--weight);
-	background: var(--pal--background);
-	color: var(--pal--button--text);
-	border: var(--border--button);
-
-	&.primary {
-		--pal--background: var(--pal--button--background-primary);
-		--pal--border-hover: var(--pal--button--border-primary-hover);
-		--pal--background-active: var(--pal--button--background-primary-active);
-		border-color: var(--pal--button--border-primary);
-		color: var(--pal--button--text-primary);
-	}
-}
+button { @extend %o-button; &.primary { @extend %o-button-primary; } }

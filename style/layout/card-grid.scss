@@ -1,7 +1,0 @@
-%l-card-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
-	gap: var(--space--gap);
-	min-inline-size: 0;
-	> * { min-inline-size: 0; }
-}

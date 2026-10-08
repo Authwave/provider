@@ -18,24 +18,32 @@ function alignMetrics(element, chart) {
 	if(!Number.isFinite(plotBottom)) return;
 	// Count charts start at zero, so its pixel position is the plot's lower edge.
 	const labelSpace = Math.max(0, chart.getHeight() - plotBottom);
-	layout.style.setProperty("--space--chart-labels", `${labelSpace}px`);
+	layout.style.setProperty("--authwave-space-chart-labels", `${labelSpace}px`);
 	layout.toggleAttribute("data-metrics-beside-chart", metrics.getBoundingClientRect().left >= container.getBoundingClientRect().right);
 }
 
 function draw(element, chart, payload) {
 	const palette = getComputedStyle(document.documentElement);
-	const colour = name => palette.getPropertyValue(name).trim();
-	const primary = colour("--pal--theme");
-	const secondary = colour("--pal--theme-secondary");
+	const colour = name => {
+		const sample = document.createElement("span");
+		sample.style.color = `var(${name})`;
+		sample.hidden = true;
+		document.documentElement.append(sample);
+		const value = getComputedStyle(sample).color;
+		sample.remove();
+		return value;
+	};
+	const primary = colour("--theme-color-primary");
+	const secondary = colour("--theme-color-secondary");
 	chart.setOption({
 		animation: !reducedMotion.matches,
-		textStyle: {fontFamily: palette.fontFamily, color: colour("--pal--body--text")},
+		textStyle: {fontFamily: palette.fontFamily, color: colour("--theme-color-text")},
 		aria: {enabled: true},
 		tooltip: {trigger: "axis", confine: true, extraCssText: "max-width:100%;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere;"},
-		legend: {type: "scroll", top: 0, right: 0, icon: "circle", itemWidth: 8, itemHeight: 8, textStyle: {color: colour("--pal--body--text")}},
+		legend: {type: "scroll", top: 0, right: 0, icon: "circle", itemWidth: 8, itemHeight: 8, textStyle: {color: colour("--theme-color-text")}},
 		grid: {left: 0, right: 0, top: 42, bottom: 28, outerBoundsMode: "none"},
-		xAxis: {type: "category", data: payload.labels, boundaryGap: false, axisTick: {show: false}, axisLine: {lineStyle: {color: colour("--pal--panel--border")}}, axisLabel: {color: colour("--pal--body--text"), hideOverlap: true, alignMinLabel: "left", alignMaxLabel: "right"}},
-		yAxis: {type: "value", min: 0, axisLabel: {show: false}, splitNumber: 4, splitLine: {lineStyle: {color: colour("--pal--panel--border"), opacity: .35}}},
+		xAxis: {type: "category", data: payload.labels, boundaryGap: false, axisTick: {show: false}, axisLine: {lineStyle: {color: colour("--theme-color-border")}}, axisLabel: {color: colour("--theme-color-text"), hideOverlap: true, alignMinLabel: "left", alignMaxLabel: "right"}},
+		yAxis: {type: "value", min: 0, axisLabel: {show: false}, splitNumber: 4, splitLine: {lineStyle: {color: colour("--theme-color-border"), opacity: .35}}},
 		series: ([
 			...(payload.comparison === "none" ? [] : [{name: payload.comparisonTitle, data: payload.previous, comparison: true}]),
 			{name: "This period", data: payload.current},

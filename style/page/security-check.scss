@@ -1,6 +1,6 @@
 body.uri--login--security-check {
 	form > security-code {
 		// The form already supplies one gap between its children.
-		margin-block-start: max(0px, calc(var(--space--topper) - var(--space--gap)));
+		margin-block-start: max(0px, calc(var(--authwave-space-topper) - var(--theme-space-4)));
 	}
 }

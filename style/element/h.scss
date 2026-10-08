@@ -1,29 +1,29 @@
 h1, h2, h3, h4, h5, h6 {
-	font-family: var(--font--heading--family);
+	font-family: var(--theme-font-heading);
 	margin: 0;
-	color: var(--pal--heading--text);
+	color: var(--theme-color-heading);
 }
 
 h1 {
-	font-size: var(--size--title--font);
+	font-size: var(--authwave-size-title-font);
 }
 
 h2 {
-	font-size: calc(var(--size--title--font) * 0.8);
+	font-size: calc(var(--authwave-size-title-font) * 0.8);
 }
 
 h3 {
-	font-size: calc(var(--size--title--font) * 0.6);
+	font-size: calc(var(--authwave-size-title-font) * 0.6);
 }
 
 h4 {
-	font-size: calc(var(--size--title--font) * 0.5);
+	font-size: calc(var(--authwave-size-title-font) * 0.5);
 }
 
 h5 {
-	font-size: calc(var(--size--title--font) * 0.5);
+	font-size: calc(var(--authwave-size-title-font) * 0.5);
 }
 
 h6 {
-	font-size: calc(var(--size--title--font) * 0.5);
+	font-size: calc(var(--authwave-size-title-font) * 0.5);
 }

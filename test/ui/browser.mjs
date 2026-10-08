@@ -83,8 +83,8 @@ try {
 		assert.ok(!result.exceptionDetails, JSON.stringify(result.exceptionDetails));
 		return result.result.value;
 	};
-	const navigate = async page => {
-		await send("Page.navigate", {url: `${origin}/${page}.html`});
+	const navigate = async (page, theme = "bright") => {
+		await send("Page.navigate", {url: `${origin}/${page}.html?flairTheme=${theme}`});
 		for(let attempts = 0; attempts < 100; attempts++) {
 			if(await evaluate(`location.pathname === '/${page}.html' && document.readyState === 'complete'`)) return;
 			await delay(50);
@@ -106,13 +106,20 @@ try {
 		await send("Emulation.setDeviceMetricsOverride", {width, height: 844, deviceScaleFactor: 1, mobile: width < 600});
 		for(const mode of ["light", "dark"]) {
 			await send("Emulation.setEmulatedMedia", {features: [{name: "prefers-color-scheme", value: mode}]});
-			for(const page of ["index", "authenticate", "security-check", "success", "access-denied"]) {
-				await navigate(page);
+			for(const theme of ["base", "bright"]) for(const page of ["index", "authenticate", "security-check", "success", "access-denied"]) {
+				await navigate(page, theme);
+				assert.equal(await evaluate("document.documentElement.dataset.flairTheme"), theme);
 				assert.equal(await evaluate("document.documentElement.dataset.colorScheme"), mode);
-				assert.equal(await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--pal--theme').trim()"), mode === "light" ? "#123456" : "#abcdef");
-				assert.equal(await evaluate("getComputedStyle(document.documentElement).backgroundColor"), mode === "light" ? "rgb(240, 241, 242)" : "rgb(16, 17, 18)");
-				assert.equal(await evaluate("document.documentElement.scrollWidth <= innerWidth"), true, `${page} ${width}: overflow`);
-				await assertPageLayout(evaluate, `${page}, ${width}px, ${mode}`, width >= 640);
+				if(theme === "bright") {
+					assert.equal(await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--theme-color-primary').trim()"), mode === "light" ? "#123456" : "#abcdef");
+					assert.equal(await evaluate("getComputedStyle(document.documentElement).backgroundColor"), mode === "light" ? "rgb(240, 241, 242)" : "rgb(16, 17, 18)");
+				} else {
+					assert.equal(await evaluate("getComputedStyle(document.documentElement).backgroundColor"), mode === "light" ? "rgb(255, 255, 255)" : "rgb(22, 22, 22)", "Customer branding must not colour the neutral base");
+					const ink = await evaluate("getComputedStyle(document.body).color.match(/[0-9]+/g).map(Number)");
+					assert.equal(new Set(ink).size, 1, "Monochrome text stays neutral");
+				}
+				assert.equal(await evaluate("document.documentElement.scrollWidth <= innerWidth"), true, `${page} ${theme} ${width}: overflow`);
+				await assertPageLayout(evaluate, `${page}, ${theme}, ${width}px, ${mode}`, width >= 640);
 				assert.equal(await evaluate("document.querySelector('.logo').naturalWidth > 0"), true);
 				assert.equal(await evaluate("new URL(document.querySelector('.logo').currentSrc).search"), `?${mode}`, `${page}: ${mode} logo`);
 				const dimensions = await evaluate("({main:document.querySelector('main').getBoundingClientRect().width, viewport:innerWidth})");
@@ -120,7 +127,7 @@ try {
 				if(process.env.UI_SCREENSHOT_DIR) {
 					await mkdir(process.env.UI_SCREENSHOT_DIR, {recursive: true});
 					const screenshot = await send("Page.captureScreenshot", {format: "png", captureBeyondViewport: true});
-					await writeFile(join(process.env.UI_SCREENSHOT_DIR, `${page}-${width}-${mode}.png`), Buffer.from(screenshot.data, "base64"));
+					await writeFile(join(process.env.UI_SCREENSHOT_DIR, `${page}-${theme}-${width}-${mode}.png`), Buffer.from(screenshot.data, "base64"));
 				}
 			}
 		}
@@ -143,8 +150,8 @@ try {
 		await navigate("security-check");
 		const branding = await evaluate(`(() => {
 			const root = document.documentElement;
-			root.style.setProperty('--pal--theme', '#123456');
-			root.style.setProperty('--pal--theme-secondary', '#abcdef');
+			root.style.setProperty('--theme-color-primary', '#123456');
+			root.style.setProperty('--theme-color-secondary', '#abcdef');
 			const button = document.querySelector('button.primary');
 			const code = document.querySelector('.security-code-digits input');
 			code.style.transition = 'none';
@@ -153,11 +160,11 @@ try {
 			const background = style.backgroundColor;
 			const outline = getComputedStyle(code).outlineColor;
 			const codeBorder = getComputedStyle(code).borderTopColor;
-			const tint = style.getPropertyValue('--pal--background-active');
-			root.style.setProperty('--pal--theme-secondary', '#fedcba');
+			const tint = style.getPropertyValue('--theme-button-background-active');
+			root.style.setProperty('--theme-color-secondary', '#fedcba');
 			return {background, outline, codeBorder,
 				primaryUnchanged: background === style.backgroundColor,
-				tintChanged: tint !== style.getPropertyValue('--pal--background-active')};
+				tintChanged: tint !== style.getPropertyValue('--theme-button-background-active')};
 		})()`);
 		assert.deepEqual(branding, {
 			background: "rgb(18, 52, 86)", outline: "rgb(171, 205, 239)",
@@ -347,7 +354,7 @@ try {
 	assert.equal(await evaluate("document.querySelector('form').checkValidity()"), true);
 	assert.equal(await evaluate("new FormData(document.querySelector('form')).get('token')"), "01234");
 	assert.deepEqual(failures, []);
-	console.log("Passed: five responsive pages and assets; code entry and no-JavaScript submission; Flux loaders, field locking, duplicate prevention, failure retry and repeated code submissions.");
+	console.log("Passed: five responsive pages in both themes and schemes, branding isolation and assets; code entry and no-JavaScript submission; Flux loaders, field locking, duplicate prevention, failure retry and repeated code submissions.");
 } finally {
 	finishPost?.();
 	socket?.close();

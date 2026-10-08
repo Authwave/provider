@@ -1,3 +1,4 @@
+import "./component/flair-theme.es6";
 import "@phpgt/flux";
 import "./app/form-submission.es6";
 import "./app/form-viewport.es6";

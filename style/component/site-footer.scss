@@ -1,15 +1,16 @@
 @use "../variable/break";
 
 .site-footer {
-	display: block;
+	display: none;
+	body.dir--admin & { display: block; }
 	min-inline-size: 0;
 	inline-size: 100%;
 	box-sizing: border-box;
 	margin-block-start: auto;
-	padding: var(--space--footer-block) var(--space--workspace, var(--space--gap));
+	padding: var(--authwave-space-footer-block) var(--theme-workspace-padding, var(--theme-space-4));
 	font-size: .75rem;
 	line-height: 1.5;
-	color: var(--pal--body--text);
+	color: var(--theme-color-text);
 
 	nav { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem 1rem; }
 	a { color: inherit; }

@@ -1,9 +1,9 @@
 html {
-	font-family: var(--font--body--family);
-	font-size: var(--size--body--font);
+	font-family: var(--theme-font-body);
+	font-size: var(--authwave-size-body-font);
 	height: 100%;
 	// Clip the page edge without creating a scroll container for sticky headers.
 	overflow-x: clip;
-	background-color: var(--pal--page--background);
-	color: var(--pal--body--text);
+	background-color: var(--theme-color-page);
+	color: var(--theme-color-text);
 }

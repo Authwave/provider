@@ -1,11 +1,12 @@
 {
 	"scripts": {
-		"test:ui": "vendor/bin/build --default vendor/phpgt/webengine/build.default.ini && vendor/bin/phpunit --bootstrap vendor/autoload.php test/ui && node test/ui/browser.mjs && node test/ui/admin-browser.mjs"
+		"test:ui": "vendor/bin/build --default vendor/phpgt/webengine/build.default.json && vendor/bin/phpunit --bootstrap vendor/autoload.php test/ui && node test/ui/browser.mjs && node test/ui/admin-browser.mjs"
 	},
-  "dependencies": {
-    "@phpgt/flux": "github:PhpGt/Flux",
-    "echarts": "^6.1.0",
-    "esbuild": "^0.25.9",
-    "sass": "^1.92.1"
-  }
+	"dependencies": {
+		"@phpgt/flux": "github:PhpGt/Flux",
+		"echarts": "^6.1.0",
+		"esbuild": "^0.25.9",
+		"sass": "^1.92.1",
+		"flair": "file:../../BrightFlair/flair"
+	}
 }
