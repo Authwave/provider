@@ -445,10 +445,10 @@ class LoginDesignTest extends TestCase {
 	}
 
 
-	public function testMonochromePreferenceIsRenderedWithoutChangingLoginState():void {
+	public function testMonochromeQueryIsRenderedWithoutChangingLoginState():void {
 		$request = $this->createMock(\Gt\Http\ServerRequest::class);
-		$request->method("getQueryParams")->willReturn([]);
-		$request->method("getCookieParams")->willReturn(["authwave-flair-theme" => "base"]);
+		$request->method("getQueryParams")->willReturn(["flairTheme" => "base"]);
+		$request->method("getCookieParams")->willReturn([]);
 		$view = new View("login/index");
 		$this->callFile("page/_common.php", "go_after", $view->document, $request);
 		self::assertSame("base", $view->document->documentElement->getAttribute("data-flair-theme"));
@@ -456,8 +456,8 @@ class LoginDesignTest extends TestCase {
 
 	public function testUnknownThemePreferenceFallsBackToBright():void {
 		$request = $this->createMock(\Gt\Http\ServerRequest::class);
-		$request->method("getQueryParams")->willReturn([]);
-		$request->method("getCookieParams")->willReturn(["authwave-flair-theme" => "unknown"]);
+		$request->method("getQueryParams")->willReturn(["flairTheme" => "unknown"]);
+		$request->method("getCookieParams")->willReturn([]);
 		$view = new View("login/index");
 		$this->callFile("page/_common.php", "go_after", $view->document, $request);
 		self::assertSame("bright", $view->document->documentElement->getAttribute("data-flair-theme"));

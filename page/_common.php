@@ -75,14 +75,3 @@ function go(
 		$appRepo->redirectToDeployment($deployment, $host, $response);
 	}
 }
-
-// Presentation preference stays separate from login and deployment handling.
-function go_after(HTMLDocument $document, ServerRequest $request):void {
-	$requestedTheme = $request->getQueryParams()["flairTheme"] ?? null;
-	$theme = $requestedTheme ?? $request->getCookieParams()["authwave-flair-theme"] ?? "bright";
-	$theme = in_array($theme, ["base", "bright"], true) ? $theme : "bright";
-	$document->documentElement->setAttribute("data-flair-theme", $theme);
-	if(in_array($requestedTheme, ["base", "bright"], true)) {
-		setcookie("authwave-flair-theme", $theme, ["expires" => time() + 31536000, "path" => "/", "samesite" => "Lax"]);
-	}
-}
