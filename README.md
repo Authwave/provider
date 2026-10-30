@@ -18,6 +18,13 @@ User authentication flow
 6) The user agent is redirected back to your application after successful authentication.
 7) Your application has access to the user's authenticated details, such as email, id, and any supplementary information requested by your application.
 
+Login return destinations
+-------------------------
+
+The client can send a requested return destination in the hexadecimal `u` query parameter when starting login. The provider keeps a validated destination in the login session and returns the encrypted authentication response to that path, query string and fragment.
+
+Root-relative paths, query-only or fragment-only references, and absolute URLs on the deployment's configured client origin are supported. An absolute URL must match the configured scheme, host and effective port. External origins, credentials, scheme-relative URLs, malformed encodings and unsafe characters are ignored; login then uses the deployment's configured client return URI. Destinations without `u` also use that default, with the encrypted `returnQuery` value supported for query-only integrations.
+
 User profile management
 -----------------------
 
@@ -44,3 +51,14 @@ Only administrators' email addresses can be used to authenticate to the administ
 To create an administrator account, sign into the Authwave provider application (either at account.authwave.com/admin or self-hosted) and configure a new client application. Administrators will be able to manage the application and user details once the application is hosted under the client application's domain.
   
 When self-hosting a provider, it is necessary to create the first administrative user manually. This is done by adding the email address to the project configuration. The email address should be added to the `admin_email` key of the `authwave` section of the provider's config.ini.
+
+Running unit tests
+------------------
+
+After installing Composer dependencies, run the provider unit tests with:
+
+```bash
+vendor/bin/phpunit -c phpunit.xml
+```
+
+The login return tests exercise request handling and successful authentication with encrypted messages, using controlled repositories and sessions without requiring a database or browser.
