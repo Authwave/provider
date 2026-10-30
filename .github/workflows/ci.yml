@@ -20,7 +20,10 @@ jobs:
         run: |
           apt-get update
           apt-get install -y --no-install-recommends git unzip libcurl4-openssl-dev libonig-dev libxml2-dev
-          docker-php-ext-install curl mbstring pcntl dom xml xmlwriter
+          missing_extensions=$(php -r 'foreach (["curl", "mbstring", "pcntl", "dom", "xml", "xmlwriter"] as $extension) { if (!extension_loaded($extension)) { echo $extension, " "; } }')
+          if [ -n "$missing_extensions" ]; then
+            docker-php-ext-install $missing_extensions
+          fi
       - name: Check out tested revision
         env:
           REPOSITORY: ${{ github.repository }}
