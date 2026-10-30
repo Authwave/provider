@@ -11,6 +11,7 @@ use Gt\Cipher\Message\PlainTextMessage;
 use Gt\DomTemplate\Binder;
 use Gt\Http\Response;
 use Gt\Http\Request;
+use Gt\Http\Uri;
 use Gt\Input\Input;
 use Gt\Session\Session;
 
@@ -58,10 +59,13 @@ function go(
 		]),
 		$secretIv,
 	);
-	$returnUri = $deployment->getClientReturnUri();
+	$requestedReturnUri = $loginSession->getDataKey("returnUri");
+	$returnUri = $requestedReturnUri
+		? new Uri($requestedReturnUri)
+		: $deployment->getClientReturnUri();
 	$cipherText = $userDataMessage->encrypt(new Key($deployment->secret));
 
-	if($returnQuery = $loginSession->getDataKey("returnQuery")) {
+	if(!$requestedReturnUri && ($returnQuery = $loginSession->getDataKey("returnQuery"))) {
 		$returnUri = $returnUri->withQuery($returnQuery);
 	}
 	$queryString = $returnUri->getQuery();

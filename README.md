@@ -18,6 +18,13 @@ User authentication flow
 6) After successful authentication, the provider returns encrypted user details to your application.
 7) The client library stores the authenticated user in your application's session, giving your application access to their ID and email address.
 
+Login return destinations
+-------------------------
+
+The client can send a requested return destination in the hexadecimal `u` query parameter when starting login. The provider keeps a validated destination in the login session and returns the encrypted authentication response to that path, query string and fragment.
+
+Root-relative paths, query-only or fragment-only references, and absolute URLs on the deployment's configured client origin are supported. An absolute URL must match the configured scheme, host and effective port. External origins, credentials, scheme-relative URLs, malformed encodings and unsafe characters are ignored; login then uses the deployment's configured client return URI. Destinations without `u` also use that default, with the encrypted `returnQuery` value supported for query-only integrations.
+
 User account administration
 ---------------------------
 
@@ -28,3 +35,15 @@ Visiting `/admin` uses the normal login screens and returns to `/admin` after au
 Administrators logging in from a client application see “Continue to ApplicationName” and “User Administration” on the success page. Other users continue to the application automatically. Administrator sessions remain available on the provider so the dashboard can be opened after login.
   
 Application administrators are granted in the application admin screeen, but a super admin can be added to the provider config file (useful for adding the first admin account to self-hosted providers).
+
+
+Running unit tests
+------------------
+
+After installing Composer dependencies, run the provider unit tests with:
+
+```bash
+vendor/bin/phpunit -c phpunit.xml
+```
+
+The login return tests exercise request handling and successful authentication with encrypted messages, using controlled repositories and sessions without requiring a database or browser.

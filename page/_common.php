@@ -33,6 +33,10 @@ function go(
 
 		if($data["action"] === "login") {
 			$loginSession->setDeploymentForLogin($deployment);
+			unset($data["returnUri"]);
+			if($returnUri = $providerUri->getReturnUri($deployment->getClientReturnUri())) {
+				$data["returnUri"] = (string)$returnUri;
+			}
 			$loginSession->setData($data);
 			$response->redirect("/");
 		}
