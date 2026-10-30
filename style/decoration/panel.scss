@@ -1,0 +1,14 @@
+%d-panel {
+	background-color: var(--pal--panel--background);
+	border: var(--border--panel);
+	border-radius: var(--radius--panel);
+	box-shadow: var(--shadow--control);
+
+	form {
+		margin-top: var(--space--topper);
+	}
+
+	>footer {
+		margin-top: var(--space--topper);
+	}
+}

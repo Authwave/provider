@@ -1,25 +1,34 @@
-<login-header />
-<form method="post">
-	<h1>Security check</h1>
+<main id="main-content">
+	<header class="auth-heading">
+		<picture>
+			<source media="(prefers-color-scheme: dark)" srcset="/asset/default-logo.svg" data-bind:srcset="darkLogoPath" />
+			<img class="logo" src="/asset/default-logo.svg" alt="{{applicationName}} logo" data-bind:src="logoPath" />
+		</picture>
 
-	<p>
-		We've just emailed <a href="/login/?email={{email}}" data-bind:text="email">email@example.com</a> a security code.
-	</p>
-	<p>
-		Please confirm your account by typing the security code into the field below.
-	</p>
+		<p>Logging in as <a href="/login/?email={{email}}" data-bind:text="email">example@example.com</a>.</p>
+	</header>
 
-	<label>
-		<span>Security code</span>
-		<span data-template="error" data-bind:text class="error">Error message.</span>
-		<input name="token" required autofocus autocomplete="off" />
-	</label>
+	<form method="post">
+		<p>We've just emailed a security code to your email address.</p>
+		<p>Enter the five-digit code below to confirm it's you.</p>
 
-	<div class="actions">
-		<button name="do" value="confirm" class="primary">Confirm</button>
-	</div>
-	<div class="help">
-		<a href="/login/?email={{email}}">Cancel</a>
-	</div>
-</form>
-<login-footer />
+		<p class="form-error" role="alert" data-template="error" data-bind:text></p>
+		<security-code></security-code>
+
+		<button name="do" value="confirm" class="primary" type="submit">
+			<span>Confirm</span>
+		</button>
+	</form>
+
+	<p>Didn't receive the code? <a href="/login/authenticate/">Return to sign-in to request another</a>.</p>
+
+	<footer>
+		<p>
+			<a href="/login/?do=cancel">Cancel</a> and return to <span data-bind:text="applicationName">Amazing App.</span>
+		</p>
+		<p>
+			<a href="/help/">Need help?</a>
+		</p>
+	</footer>
+
+</main>

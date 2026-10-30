@@ -1,0 +1,15 @@
+@use "../decoration/visually-hidden";
+
+%o-icon-button {
+	--space--icon--gap: 0;
+	display: inline-grid;
+	place-items: center;
+	box-sizing: border-box;
+	inline-size: var(--size--icon-button);
+	block-size: var(--size--icon-button);
+	padding: 0;
+
+	> span {
+		@extend %d-visually-hidden;
+	}
+}

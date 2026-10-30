@@ -1,0 +1,12 @@
+@use "../variable/icon" as variable;
+@use "../pattern/icon";
+
+// Register names once; markup only needs data-icon="name".
+@mixin icon($names: variable.$names, $path: variable.$path) {
+	@each $name in $names {
+		[data-icon="#{$name}"] {
+			@extend %p-icon;
+			--icon--image: url("#{$path}#{$name}.svg");
+		}
+	}
+}

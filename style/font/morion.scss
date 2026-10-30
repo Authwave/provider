@@ -1,0 +1,98 @@
+// Licensed Authwave font assets from Brandbeet.
+@mixin morion {
+	@font-face {
+		font-family: "Morion";
+		font-weight: 700;
+		font-style: italic;
+		font-display: swap;
+		src: url("/asset/font/morion/morion-bold-italic.woff2") format("woff2");
+	}
+
+	@font-face {
+		font-family: "Morion";
+		font-weight: 700;
+		font-style: normal;
+		font-display: swap;
+		src: url("/asset/font/morion/morion-bold.woff2") format("woff2");
+	}
+
+	@font-face {
+		font-family: "Morion";
+		font-weight: 400;
+		font-style: italic;
+		font-display: swap;
+		src: url("/asset/font/morion/morion-italic.woff2") format("woff2");
+	}
+
+	@font-face {
+		font-family: "Morion";
+		font-weight: 300;
+		font-style: italic;
+		font-display: swap;
+		src: url("/asset/font/morion/morion-light-italic.woff2") format("woff2");
+	}
+
+	@font-face {
+		font-family: "Morion";
+		font-weight: 300;
+		font-style: normal;
+		font-display: swap;
+		src: url("/asset/font/morion/morion-light.woff2") format("woff2");
+	}
+
+	@font-face {
+		font-family: "Morion";
+		font-weight: 400;
+		font-style: normal;
+		font-display: swap;
+		src: url("/asset/font/morion/morion-regular.woff2") format("woff2");
+	}
+
+	@font-face {
+		font-family: "Morion";
+		font-weight: 600;
+		font-style: italic;
+		font-display: swap;
+		src: url("/asset/font/morion/morion-semibold-italic.woff2") format("woff2");
+	}
+
+	@font-face {
+		font-family: "Morion";
+		font-weight: 600;
+		font-style: normal;
+		font-display: swap;
+		src: url("/asset/font/morion/morion-semibold.woff2") format("woff2");
+	}
+
+	@font-face {
+		font-family: "Morion";
+		font-weight: 100;
+		font-style: italic;
+		font-display: swap;
+		src: url("/asset/font/morion/morion-thin-italic.woff2") format("woff2");
+	}
+
+	@font-face {
+		font-family: "Morion";
+		font-weight: 100;
+		font-style: normal;
+		font-display: swap;
+		src: url("/asset/font/morion/morion-thin.woff2") format("woff2");
+	}
+
+	@font-face {
+		font-family: "Morion";
+		font-weight: 200;
+		font-style: italic;
+		font-display: swap;
+		src: url("/asset/font/morion/morion-ultralight-italic.woff2") format("woff2");
+	}
+
+	@font-face {
+		font-family: "Morion";
+		font-weight: 200;
+		font-style: normal;
+		font-display: swap;
+		src: url("/asset/font/morion/morion-ultralight.woff2") format("woff2");
+	}
+}

@@ -1,0 +1,34 @@
+@use "../pattern/field-action";
+@use "../object/icon-button";
+
+body.uri--login--authenticate {
+	.field-action {
+		@extend %p-field-action;
+
+		> button {
+			@extend %o-icon-button;
+		}
+	}
+
+	.actions {
+		flex-direction: column;
+	}
+
+	.providers {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: var(--space--icon--gap);
+
+		> button {
+			--space--icon--gap: 0;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: var(--space--providers--gap);
+			min-inline-size: 0;
+			padding: var(--space--providers--padding);
+			font-size: var(--size--providers--font);
+		}
+	}
+}

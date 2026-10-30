@@ -1,0 +1,23 @@
+body {
+	height: 100%;
+	margin: 0;
+
+	.skip-link {
+		--pal--foreground: contrast-color(var(--pal--panel--background));
+		--pal--background: var(--pal--panel--background);
+		display: inline-block;
+
+		position: absolute;
+		top: 0;
+		left: 0;
+		padding: 2rem;
+		background-color: var(--pal--background);
+		color: var(--pal--foreground);
+		border: 2px solid var(--pal--foreground);
+		clip: rect(0, 0, 0, 0);
+
+		&:focus {
+			clip: auto;
+		}
+	}
+}
