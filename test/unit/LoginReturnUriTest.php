@@ -22,8 +22,13 @@ class LoginReturnUriTest extends TestCase {
 	/**
 	 * @runInSeparateProcess
 	 * @preserveGlobalState disabled
+	 * @dataProvider destinations
 	 */
-	public function testLoginReturnsEncryptedUserToRequestedPathQueryAndFragment():void {
+	public function testLoginReturnsEncryptedUserToRequestedPathQueryAndFragment(
+		?string $requested,
+		?string $legacyQuery,
+		string $expected,
+	):void {
 		require dirname(__DIR__, 2) . "/page/login/success.php";
 		$secret = str_repeat("s", 32);
 		$iv = new InitVector();
@@ -38,20 +43,16 @@ class LoginReturnUriTest extends TestCase {
 		$login->method("getEmail")->willReturn($user->email);
 		$login->method("getDataKey")->willReturnCallback(fn($key) => [
 			"secretIv" => (string)$iv,
-			"returnUri" => "https://app.example.test/members/orders?status=open#latest",
-			"returnQuery" => "status=open",
+			"returnUri" => $requested,
+			"returnQuery" => $legacyQuery,
 		][$key] ?? null);
 		$users = $this->createMock(UserRepository::class);
 		$users->method("get")->willReturn($user);
 		$response = $this->createMock(Response::class);
 		$response->expects(self::once())->method("redirect")
-			->willReturnCallback(function(UriInterface $uri) use ($secret, $iv):void {
-				self::assertSame("https", $uri->getScheme());
-				self::assertSame("app.example.test", $uri->getHost());
-				self::assertSame("/members/orders", $uri->getPath());
-				self::assertSame("latest", $uri->getFragment());
+			->willReturnCallback(function(UriInterface $uri) use ($secret, $iv, $expected):void {
+				self::assertSame($expected, (string)(new \Gt\Http\Uri((string)$uri))->withoutQueryValue("AUTHWAVE_RESPONSE_DATA"));
 				parse_str($uri->getQuery(), $query);
-				self::assertSame("open", $query["status"]);
 				$decoded = (new EncryptedMessage($query["AUTHWAVE_RESPONSE_DATA"], $iv))->decrypt(new Key($secret));
 				self::assertSame("user-id", json_decode((string)$decoded)->id);
 			});
@@ -61,5 +62,14 @@ class LoginReturnUriTest extends TestCase {
 			$this->createMock(Input::class), $response, $this->createMock(Binder::class),
 			$login, $users, $session, $this->createMock(Audit::class),
 		);
+	}
+
+	public function destinations():array {
+		return [
+			["https://app.example.test/members/orders?status=open#latest", "status=open", "https://app.example.test/members/orders?status=open#latest"],
+			["https://app.example.test/members", "stale=query", "https://app.example.test/members"],
+			[null, null, "https://app.example.test/callback"],
+			[null, "page=2", "https://app.example.test/callback?page=2"],
+		];
 	}
 }
