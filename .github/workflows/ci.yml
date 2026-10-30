@@ -10,15 +10,34 @@ permissions:
 jobs:
   phpunit:
     runs-on: ubuntu-latest
+    container: php:${{ matrix.php }}-cli
     strategy:
       matrix:
         php: ['8.4', '8.5']
     steps:
-      - uses: actions/checkout@v6
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php }}
-          extensions: curl, dom, mbstring, pcntl, pdo, sodium, xml, xmlwriter
-          coverage: none
-      - run: composer install --no-interaction --prefer-dist
+      # This repository permits local actions only, so setup uses shell steps.
+      - name: Install test prerequisites
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends git unzip libcurl4-openssl-dev libonig-dev libxml2-dev
+          docker-php-ext-install curl mbstring pcntl dom xml xmlwriter
+      - name: Check out tested revision
+        env:
+          REPOSITORY: ${{ github.repository }}
+          REVISION: ${{ github.sha }}
+        run: |
+          git init .
+          git remote add origin "https://github.com/$REPOSITORY.git"
+          git fetch --depth=1 origin "$REVISION"
+          git checkout --detach FETCH_HEAD
+      - name: Install Composer
+        run: |
+          curl -fsSL https://getcomposer.org/installer -o /tmp/composer-setup.php
+          curl -fsSL https://composer.github.io/installer.sig -o /tmp/composer-setup.sig
+          php -r 'if (hash_file("sha384", "/tmp/composer-setup.php") !== trim(file_get_contents("/tmp/composer-setup.sig"))) { exit(1); }'
+          php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
+      - name: Install dependencies
+        env:
+          COMPOSER_ALLOW_SUPERUSER: '1'
+        run: composer install --no-interaction --prefer-dist
       - run: vendor/bin/phpunit -c phpunit.xml
