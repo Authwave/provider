@@ -4,3 +4,4 @@
 /vendor/
 /www/
 /config.*.ini
+/test/phpunit/.phpunit.cache/
