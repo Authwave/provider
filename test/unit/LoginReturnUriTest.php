@@ -30,6 +30,7 @@ class LoginReturnUriTest extends TestCase {
 		?string $requested,
 		?string $legacyQuery,
 		string $expected,
+		bool $development = false,
 	):void {
 		require dirname(__DIR__, 2) . "/page/login/success.php";
 		$secret = str_repeat("s", 32);
@@ -47,11 +48,12 @@ class LoginReturnUriTest extends TestCase {
 			"secretIv" => (string)$iv,
 			"returnUri" => $requested,
 			"returnQuery" => $legacyQuery,
+			"developmentLogin" => $development ? "1" : null,
 		][$key] ?? null);
 		$users = $this->createMock(UserRepository::class);
 		$users->method("get")->willReturn($user);
 		$response = $this->createMock(Response::class);
-		$response->expects(self::once())->method("redirect")
+		$response->expects($development ? self::never() : self::once())->method("redirect")
 			->willReturnCallback(function(UriInterface $uri) use ($secret, $iv, $expected):void {
 				self::assertSame($expected, (string)(new \Gt\Http\Uri((string)$uri))->withoutQueryValue("AUTHWAVE_RESPONSE_DATA"));
 				parse_str($uri->getQuery(), $query);
@@ -69,6 +71,7 @@ class LoginReturnUriTest extends TestCase {
 
 	public function destinations():array {
 		return [
+			[null, null, "https://app.example.test/callback", true],
 			["https://app.example.test/members/orders?status=open#latest", "status=open", "https://app.example.test/members/orders?status=open#latest"],
 			["https://app.example.test/members", "stale=query", "https://app.example.test/members"],
 			[null, null, "https://app.example.test/callback"],

@@ -1,4 +1,4 @@
-@use "../../node_modules/flair/style/flair";
+@use "../../node_modules/flair/style/lib/flair";
 
 body.dir--admin {
 	admin-header, admin-page-heading, admin-top-usage, admin-new-users, admin-abandoned-users {
@@ -55,6 +55,11 @@ body.dir--admin {
 
 	.settings-disclosure {
 		@extend %o-settings-disclosure;
+		transition: var(--theme-control-transition, none);
+
+		&:has(> summary:hover) {
+			border-color: var(--theme-control-border-hover, var(--theme-color-text));
+		}
 
 		> summary {
 			@extend %d-focus;
@@ -235,10 +240,6 @@ body.dir--admin {
 		> span + span {
 			background: var(--preview-secondary);
 		}
-	}
-
-	.control.primary {
-		@extend %o-button-primary;
 	}
 
 	.control.accent {

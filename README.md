@@ -40,6 +40,18 @@ Application administrators are granted in the application admin screeen, but a s
 Running unit tests
 ------------------
 
+For manual testing without a client application, open
+`http://localhost:9105/?dev-login=<deployment-id>` on your provider (adjust the
+host and port). Use an existing application deployment ID from your database.
+This starts a fresh login session with a generated IV, clears previous login
+state, and opens the normal email/password flow. After authentication, the
+success page stays open instead of redirecting to the client. Revisit the URL
+to start another login.
+
+This helper requires `authwave.dev_login=true`, enabled in `config.dev.ini`.
+It is always disabled when `app.production=true`. It still requires the normal
+deployment database and user authentication; it does not bypass credentials.
+
 After installing Composer dependencies, run the provider unit tests with:
 
 ```bash

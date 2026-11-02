@@ -1,4 +1,4 @@
-@use "../../node_modules/flair/style/flair";
+@use "../../node_modules/flair/style/lib/flair";
 
 input {
 	&:not([type="hidden"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="submit"], [type="button"], [type="reset"]) {

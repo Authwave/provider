@@ -22,12 +22,5 @@ function do_logout(
 	\Authwave\User\UserRepository $userRepo,
 	\Authwave\Security\AdminAccess $adminAccess,
 ):void {
-	if($request->getMethod() !== "POST" || rtrim($request->getUri()->getPath(), "/") !== "/admin/logout") return;
-	if($loginSession->getState() !== \Authwave\User\LoginState::LOGGED_IN
-	|| !$adminAccess->allows($userRepo->get($loginSession->getDeployment(), $loginSession->getEmail()))) {
-		throw new \Authwave\Security\AdminAccessDenied("Administrator access is required.");
-	}
-	$loginSession->clearDataForLogout($loginSession->getDeployment());
-	$session->kill();
-	$response->redirect($config->getString("authwave.logout_redirect") ?: "/logged-out/");
+	\Authwave\Admin\LogoutAction::submit($request, $response, $session, $config, $loginSession, $userRepo, $adminAccess);
 }

@@ -104,6 +104,59 @@ try {
 	await call("Page.enable"); await call("Runtime.enable");
 	await viewport(1440);
 	await navigate();
+	// Match the public site's cycle, persistence and accessible state labels.
+	for(const system of ["light", "dark"]) {
+		await call("Emulation.setEmulatedMedia", {features: [{name: "prefers-color-scheme", value: system}]});
+		await until(`document.documentElement.dataset.colorScheme === "${system}"`);
+		const order = system === "light" ? ["system", "dark", "light", "system"] : ["system", "light", "dark", "system"];
+		for(const [index, mode] of order.entries()) {
+			if(index) await evaluate('document.querySelector("[data-theme-toggle]").click()');
+			assert.equal(await evaluate('document.querySelector("[data-theme-toggle]").dataset.themeMode'), mode);
+			assert.equal(await evaluate('document.documentElement.dataset.colorScheme'), mode === "system" ? system : mode);
+			assert.equal(await evaluate('localStorage.getItem("authwave-color-scheme")'), mode === "system" ? null : mode);
+			assert.equal(await evaluate('document.querySelector("[data-theme-toggle]").dataset.icon'), {system: "sun-moon", light: "sun", dark: "moon"}[mode]);
+			assert.ok(await evaluate('document.querySelector("[data-theme-toggle]").getAttribute("aria-label").includes("Switch to")'));
+		}
+	}
+	// Delegated events continue working after Flux replaces the sidebar.
+	await evaluate('document.querySelector("[data-theme-toggle]").click()');
+	const savedTheme = await evaluate('document.querySelector("[data-theme-toggle]").dataset.themeMode');
+	await navigate();
+	assert.equal(await evaluate('document.querySelector("[data-theme-toggle]").dataset.themeMode'), savedTheme);
+	await evaluate('document.querySelector("admin-sidebar").replaceWith(document.querySelector("admin-sidebar").cloneNode(true)); document.dispatchEvent(new Event("flux:after-render")); document.querySelector("[data-theme-toggle]").click()');
+	assert.notEqual(await evaluate('document.querySelector("[data-theme-toggle]").dataset.themeMode'), savedTheme);
+	await evaluate('document.querySelector("[data-theme-toggle]").click()');
+	assert.equal(await evaluate('localStorage.getItem("authwave-color-scheme")'), null);
+	// Primary icon links must retain Flair's primary colours despite the
+	// admin-scoped generic button rules, in every interaction state.
+	await call("DOM.enable");
+	await call("CSS.enable");
+	const {root: documentNode} = await call("DOM.getDocument");
+	const {nodeId: primaryNode} = await call("DOM.querySelector", {nodeId: documentNode.nodeId, selector: ".dashboard-header .control.primary"});
+	assert.ok(primaryNode, "Header primary control exists");
+	for(const scheme of ["dark", "light"]) {
+		await call("Emulation.setEmulatedMedia", {features: [{name: "prefers-color-scheme", value: scheme}]});
+		for(const state of ["", "hover", "active"]) {
+			await call("CSS.forcePseudoState", {nodeId: primaryNode, forcedPseudoClasses: state ? ["hover", state] : []});
+			await delay(150);
+			const colours = await evaluate(`(() => {
+				const control = document.querySelector(".dashboard-header .control.primary");
+				const actual = getComputedStyle(control);
+				const probe = document.createElement("div");
+				probe.style.backgroundColor = "var(--theme-button-primary-background${state ? "-" + state : ""})";
+				probe.style.color = "var(--theme-button-primary-text)";
+				control.append(probe);
+				const expected = getComputedStyle(probe);
+				const result = {background: actual.backgroundColor, text: actual.color, icon: getComputedStyle(control, "::before").backgroundColor, expectedBackground: expected.backgroundColor, expectedText: expected.color};
+				probe.remove();
+				return result;
+			})()`);
+			assert.equal(colours.background, colours.expectedBackground, `${scheme} ${state || "normal"}: primary background`);
+			assert.equal(colours.text, colours.expectedText, `${scheme} ${state || "normal"}: primary text`);
+			assert.equal(colours.icon, colours.expectedText, `${scheme} ${state || "normal"}: contrasting icon`);
+		}
+	}
+	await call("CSS.forcePseudoState", {nodeId: primaryNode, forcedPseudoClasses: []});
 	assert.equal(await evaluate('document.querySelectorAll("script").length'), 1, "Only the shared bundle has a script tag");
 	assert.equal(await evaluate('document.head.querySelector("script").getAttribute("src")'), "/script.js");
 	await until('document.querySelectorAll("admin-chart svg").length === 1');

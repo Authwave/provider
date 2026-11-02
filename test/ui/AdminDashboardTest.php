@@ -57,6 +57,20 @@ class AdminDashboardTest extends TestCase {
 		}
 	}
 
+	public function testSidebarHasDirectLogoutAndThemeControl():void {
+		$view = $this->render();
+		$form = $view->document->querySelector(".sidebar-account form[data-admin-logout]");
+		self::assertSame("post", $form->method);
+		self::assertSame("admin-sidebar", $form->querySelector('input[name="__component"]')->value);
+		self::assertSame("/admin/logout/", $form->getAttribute("action"));
+		self::assertSame("logout", $form->querySelector('button[name="do"]')->value);
+		self::assertFalse($form->hasAttribute("data-flux"));
+		$toggle = $view->document->querySelector(".sidebar-account button[data-theme-toggle]");
+		self::assertSame("button", $toggle->type);
+		self::assertSame("sun-moon", $toggle->getAttribute("data-icon"));
+		self::assertSame("System theme", $toggle->querySelector("span")->textContent);
+	}
+
 	public function testFiltersAndPaginationAreAppliedBeforeRendering():void {
 		$view = $this->render(["activity" => "abandoned", "page" => "2"]);
 		self::assertCount(1, $view->document->querySelectorAll(".activity-table tbody tr"));

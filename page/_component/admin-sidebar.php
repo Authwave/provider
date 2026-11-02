@@ -36,3 +36,15 @@ function go(Element $element, Binder $binder, Input $input, DemoWorkspace $works
 	$view->list("sidebar-setup-steps", $rows);
 	$view->forms();
 }
+
+function do_logout(
+	\Gt\Http\Request $request,
+	\Gt\Http\Response $response,
+	\Gt\Session\Session $session,
+	\Gt\Config\Config $config,
+	LoginSession $loginSession,
+	\Authwave\User\UserRepository $userRepo,
+	\Authwave\Security\AdminAccess $adminAccess,
+):void {
+	\Authwave\Admin\LogoutAction::submit($request, $response, $session, $config, $loginSession, $userRepo, $adminAccess);
+}

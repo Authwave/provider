@@ -1,4 +1,4 @@
-@forward "../node_modules/flair/style/flair" with ($icon-names: (
+@forward "../node_modules/flair/style/lib/flair" with ($icon-names: (
 	facebook,
 	github,
 	google,
@@ -31,11 +31,15 @@
 	chevron-right,
 	arrow-right,
 	logout,
+	sun,
+	moon,
+	sun-moon,
 	check,
 	circle-check,
 ));
-@use "../node_modules/flair/style/flair";
-@use "../node_modules/flair/style/theme";
+@use "../node_modules/flair/style/lib/flair";
+@use "../node_modules/flair/style/lib/theme/base";
+@use "../node_modules/flair/style/lib/theme/bright";
 @use "font/fira-mono";
 @use "font/inter";
 
@@ -73,12 +77,25 @@
 
 // Remove the attribute or choose base for the fully usable monochrome design.
 :root {
-	@include theme.base;
+	@include base.base;
 
 	&[data-flair-theme="bright"] {
-		@include theme.bright;
+		@include bright.bright;
+
+		--theme-button-primary-background-hover: color-mix(in srgb, var(--theme-button-primary-background) 80%, white);
+		--theme-control-border-hover: color-mix(in srgb, var(--theme-control-border) 70%, var(--theme-color-heading));
+		--theme-button-border-hover: var(--theme-control-border-hover);
+		--theme-button-primary-border-hover: color-mix(in srgb, var(--theme-button-primary-border) 70%, var(--theme-color-heading));
+
+		// Buttons and button-like controls share the metric cards' elevation.
+		--theme-button-shadow: var(--theme-surface-shadow);
+		--theme-button-shadow-hover: var(--theme-surface-shadow);
+		--theme-button-shadow-active: var(--theme-surface-shadow);
+		--theme-button-primary-shadow: var(--theme-surface-shadow);
+		--theme-button-primary-shadow-hover: var(--theme-surface-shadow);
+		--theme-button-primary-shadow-active: var(--theme-surface-shadow);
 	}
 }
 
-@include flair.base;
+@include flair.init;
 @include flair.icon;

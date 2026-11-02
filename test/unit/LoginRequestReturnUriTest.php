@@ -46,7 +46,7 @@ class LoginRequestReturnUriTest extends TestCase {
 		$response = $this->createMock(Response::class);
 		$response->expects(self::once())->method("redirect")->with("/");
 
-		\go($apps, new Uri("https://login.example.test/?" . http_build_query($query)), $login, $session, $response);
+		\go($apps, new Uri("https://login.example.test/?" . http_build_query($query)), $login, $session, $response, new \Gt\Config\Config());
 
 		self::assertSame($expected, $login->getDataKey("returnUri"));
 		self::assertSame($deployment, $login->getDeployment());

@@ -6,7 +6,6 @@ import {SVGRenderer} from "echarts/renderers";
 echarts.use([LineChart, GridComponent, LegendComponent, TooltipComponent, AriaComponent, SVGRenderer]);
 
 const charts = new Map();
-const darkMode = window.matchMedia("(prefers-color-scheme: dark)");
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 function alignMetrics(element, chart) {
@@ -94,5 +93,5 @@ function redraw() {
 
 initialise();
 document.addEventListener("flux:after-render", initialise);
-darkMode.addEventListener("change", redraw);
+document.addEventListener("authwave:color-scheme-change", redraw);
 reducedMotion.addEventListener("change", redraw);

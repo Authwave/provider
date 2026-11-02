@@ -5,6 +5,10 @@ use Authwave\Session\LoginSession;
 use Authwave\Model\ApplicationRepository;
 use Gt\Cipher\EncryptedUri;
 use Gt\Cipher\Key;
+use Gt\Config\Config;
+use Gt\Cipher\InitVector;
+use Gt\Http\ResponseStatusException\ClientError\HttpNotFound;
+use Gt\Http\ResponseStatusException\ClientError\HttpBadRequest;
 use Gt\Http\Response;
 use Gt\Http\ServerRequest;
 use Gt\Dom\HTMLDocument;
@@ -17,8 +21,31 @@ function go(
 	LoginSession $loginSession,
 	Session $session,
 	Response $response,
+	Config $config,
 ):void {
 	if(rtrim($uri->getPath(), "/") === "/logged-out") return;
+	parse_str($uri->getQuery(), $query);
+	if(isset($query["dev-login"])) {
+		if($config->isProduction() || !$config->getBool("authwave.dev_login")) {
+			throw new HttpNotFound();
+		}
+
+		$deploymentId = $query["dev-login"];
+		if(!is_string($deploymentId) || $deploymentId === "") {
+			throw new HttpBadRequest();
+		}
+		$deployment = $appRepo->getDeploymentById($deploymentId);
+		$loginSession->setDeploymentForLogin($deployment);
+		$loginSession->resetAuthentication();
+		$loginSession->setData([
+			"action" => "login",
+			"secretIv" => (string)new InitVector(),
+			"developmentLogin" => "1",
+		]);
+		$response->redirect("/login/");
+		return;
+	}
+
 	$providerUri = new ProviderUri($uri);
 	if($deploymentId = $providerUri->getDeploymentId()) {
 		$deployment = $appRepo->getDeploymentById($deploymentId);

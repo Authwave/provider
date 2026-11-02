@@ -1,5 +1,5 @@
 @use "../variable/break";
-@use "../../node_modules/flair/style/flair";
+@use "../../node_modules/flair/style/lib/flair";
 
 body.dir--admin {
 	@extend %l-admin-shell;

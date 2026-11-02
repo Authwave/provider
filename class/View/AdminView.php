@@ -87,7 +87,7 @@ class AdminView {
 			}
 			foreach($this->workspace->scope() as $key => $value) if(!$form->querySelector('[name="' . $key . '"]')) $this->hidden($form, $key, $value);
 			if($form->getAttribute("method") === "post") {
-				$form->setAttribute("action", $this->workspace->url($this->page === "index" ? "" : $this->page));
+				if(!$form->hasAttribute("data-admin-logout")) $form->setAttribute("action", $this->workspace->url($this->page === "index" ? "" : $this->page));
 				if($form->querySelector('[value="template"]')) $this->hidden($form, "template", $this->choice("template", ["verify", "welcome", "security-code", "password-changed"], "security-code"));
 				if($form->querySelector('[value="sender"]')) $this->hidden($form, "sender", $this->choice("sender", array_merge(["new"], array_keys($this->workspace->senders())), "accounts"));
 			}

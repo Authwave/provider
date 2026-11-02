@@ -81,11 +81,12 @@ function go(
 	$audit->create(Action::LOGIN_COMPLETED, [
 		"deploymentId" => $deployment->id,
 	], $user);
+	$developmentLogin = $loginSession->getDataKey("developmentLogin");
 	if(!$isAdmin) {
 		$session->kill();
 	}
 
-	$continueAutomatically = !$isAdmin && !$input->contains("debug");
+	$continueAutomatically = !$isAdmin && !$input->contains("debug") && !$developmentLogin;
 	$binder->bindKeyValue("continueAutomatically", $continueAutomatically);
 	// Let Flux finish on this origin; the rendered link performs the browser
 	// navigation to the client, which must not be followed by fetch/CORS.

@@ -55,6 +55,11 @@ class LoginSession {
 		return $this->session->getString("email");
 	}
 
+	public function resetAuthentication():void {
+		$this->session->remove("email");
+		$this->session->remove(LoginState::class);
+	}
+
 	public function setEmail(string $email):void {
 		if($email !== $this->getEmail()) {
 			$this->setState(LoginState::NOT_LOGGED_IN);

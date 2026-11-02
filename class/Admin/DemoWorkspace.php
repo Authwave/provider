@@ -222,7 +222,7 @@ class DemoWorkspace {
 		$app = $deployment->application;
 		return ["organisations" => [
 			"example" => ["name" => "$app->name organisation", "applications" => [
-				$app->id => ["name" => $app->name, "production" => "production", "deployments" => ["production" => $this->deployment($deployment->title, $deployment->providerHost ?: "login.example.test", (string)$deployment->getClientReturnUri()->withPath("/"), $deployment->clientLoginPath), "staging" => $this->deployment("Staging", "staging-login.example.test", "https://staging.example.test", "/login/")]],
+				$app->id => ["name" => $app->name, "production" => "production", "deployments" => ["production" => $this->deployment($deployment->title, ($deployment->providerHost ?? "") ?: "login.example.test", (string)$deployment->getClientReturnUri()->withPath("/"), $deployment->clientLoginPath), "staging" => $this->deployment("Staging", "staging-login.example.test", "https://staging.example.test", "/login/")]],
 				"operations" => ["name" => "Operations", "production" => "production", "deployments" => ["production" => $this->deployment("Operations", "operations-login.example.test", "https://operations.example.test", "/login/")]],
 			], "settings" => [], "steps" => ["application" => true, "domain" => true, "deploy" => true]],
 			"northstar" => ["name" => "Northstar Studio", "applications" => ["portal" => ["name" => "Customer portal", "production" => "production", "deployments" => ["production" => $this->deployment("Customer portal", "login.northstar.example.test", "https://northstar.example.test", "/sign-in/")]]], "settings" => [], "steps" => ["application" => true]],

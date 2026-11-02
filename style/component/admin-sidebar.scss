@@ -1,5 +1,5 @@
 @use "../variable/break";
-@use "../../node_modules/flair/style/flair";
+@use "../../node_modules/flair/style/lib/flair";
 
 admin-sidebar {
 	display: block;
@@ -51,6 +51,14 @@ admin-sidebar {
 
 	.sidebar-bottom {
 		margin-block-start: var(--theme-space-8);
+	}
+
+	.sidebar-account {
+		justify-content: space-between;
+
+		form {
+			margin: 0;
+		}
 	}
 
 	@media(min-width: break.$medium) {

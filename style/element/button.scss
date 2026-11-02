@@ -1,9 +1,13 @@
-@use "../../node_modules/flair/style/flair";
+@use "../../node_modules/flair/style/lib/flair";
 
 button {
 	@extend %o-button;
+}
 
-	&.primary {
-		@extend %o-button-primary;
+button.primary, body.dir--admin .control.primary {
+	@extend %o-button-primary;
+
+	&:hover:not(:disabled, [aria-disabled="true"]) {
+		border-color: var(--theme-button-primary-border-hover, var(--theme-button-primary-border, var(--theme-color-primary)));
 	}
 }
