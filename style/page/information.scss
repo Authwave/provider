@@ -1,0 +1,18 @@
+@use "../layout/middle-panel";
+@use "../decoration/panel";
+@use "../variable/break";
+
+body.dir--help,
+body.uri--privacy,
+body.uri--terms {
+	@extend %l-middle-panel;
+
+	> main {
+		@extend %d-panel;
+
+		@media(width < break.$small) {
+			border: 0;
+			border-radius: 0;
+		}
+	}
+}

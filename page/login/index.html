@@ -1,25 +1,32 @@
-<login-header />
+<main id="main-content">
+	<header class="auth-heading">
+		<picture>
+			<source media="(prefers-color-scheme: dark)" srcset="/asset/default-logo.svg" data-bind:srcset="darkLogoPath" />
+			<img class="logo" src="/asset/default-logo.svg" alt="{{applicationName}} logo" data-bind:src="logoPath" />
+		</picture>
 
-<form method="post">
-	<h1>Log in</h1>
-	<label>
-		<span>Your e-mail address</span>
-		<input data-bind:value="email" type="email" name="email" autofocus autocomplete="off" />
-	</label>
+		<h1 id="auth-title">Continue to <span data-bind:text="applicationName">Amazing App</span></h1>
+		<p>Enter your email address to log in or create an account.</p>
+	</header>
 
-<!--	<div class="help">-->
-<!--		<a href="/help#forgot-email" target="_blank">Forgot email?</a>-->
-<!--	</div>-->
+	<form method="post">
+		<label>
+			<span>Email address</span>
+			<input type="email" name="email" data-bind:value="email" autocomplete="email" placeholder="e.g. you@example.com" required data-autofocus />
+		</label>
 
-	<p>Please type your email address to log in or sign up to <span data-bind:text="title">the application</span>.</p>
+		<div class="actions">
+			<button type="submit" name="do" value="continue" class="primary">Continue</button>
+		</div>
+	</form>
 
-	<div class="actions">
-		<button name="do" value="continue" class="primary">Continue</button>
-	</div>
+	<footer>
+		<p>
+			<a href="/login/?do=cancel">Cancel</a> and return to <span data-bind:text="applicationName">Amazing App.</span>
+		</p>
+		<p>
+			<a href="/help/">Need help?</a>
+		</p>
+	</footer>
 
-	<div class="cancel">
-		<a href="/" data-bind:href="clientHost">Cancel</a>
-	</div>
-</form>
-
-<!--<login-footer />-->
+</main>

@@ -1,0 +1,32 @@
+@use "break";
+
+:root {
+	--size--login--logo: 12rem;
+	--size--code-input--font: 2rem;
+	--size--code-input--border: 4px;
+	--size--icon: 1.25rem;
+	--size--icon-button: 2.75rem;
+	--size--providers--font: 0.75rem;
+	--size--focus--outline: 4px;
+	--size--focus--outline-active: calc(var(--size--focus--outline) / 2);
+	--size--panel--border: 2px;
+	--size--button--border: 2px;
+	--size--middle-panel--max-inline: 32rem;
+	--size--control--font: 1rem;
+	--size--body--font: 16px;
+	--size--title--font: calc(var(--size--body--font) * 2);
+	--size--label--font: calc(var(--size--body--font) * 0.8);
+
+	@media(min-width: break.$small) {
+		--size--body--font: 18px;
+	}
+	@media(min-width: break.$medium) {
+		--size--body--font: 20px;
+	}
+	@media(min-width: break.$large) {
+		--size--body--font: 22px;
+	}
+	@media(min-width: break.$x-large) {
+		--size--body--font: 24px;
+	}
+}

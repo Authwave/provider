@@ -1,0 +1,44 @@
+@use "../layout/middle-panel";
+@use "../pattern/form-fields";
+@use "../decoration/panel";
+@use "../variable/break";
+
+body.dir--login {
+	@extend %l-middle-panel;
+
+	.auth-heading {
+		text-align: center;
+
+		.logo {
+			display: block;
+			inline-size: var(--size--login--logo);
+			max-inline-size: 100%;
+			block-size: auto;
+			max-block-size: var(--size--login--logo);
+			margin-inline: auto;
+			margin-block-end: var(--space--topper);
+		}
+
+		h1 {
+			margin-block-end: 1cap;
+		}
+	}
+
+	.form-error {
+		color: var(--pal--negative);
+	}
+
+	> main {
+		@extend %d-panel;
+
+		@media(width < break.$small) {
+			border: 0;
+			border-radius: 0;
+		}
+
+		form {
+			@extend %p-form-fields;
+		}
+	}
+
+}

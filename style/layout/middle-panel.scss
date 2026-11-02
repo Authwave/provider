@@ -1,0 +1,26 @@
+@use "../variable/break";
+
+%l-middle-panel {
+	box-sizing: border-box;
+	display: grid;
+	place-items: start center;
+	min-block-size: 100svh;
+
+	> main {
+		box-sizing: border-box;
+		inline-size: 100%;
+		min-inline-size: 0;
+		min-block-size: 100svh;
+		padding: var(--space--topper) var(--space--gap) var(--space--gap);
+	}
+
+	@media(min-width: break.$small) {
+		padding: var(--space--topper);
+
+		> main {
+			max-inline-size: var(--size--middle-panel--max-inline);
+			min-block-size: auto;
+			padding: calc(var(--space--gap) * 2);
+		}
+	}
+}

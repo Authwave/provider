@@ -71,6 +71,7 @@ class ServiceLoader extends DefaultServiceLoader {
 			$this->container->get(Database::class)->queryCollection("email"),
 			$defaultEmailSettings,
 			$this->container->get(Audit::class),
+			ignoreTransportErrors: !$this->config->getBool("app.production"),
 		);
 	}
 }

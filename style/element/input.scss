@@ -1,0 +1,18 @@
+@use "../decoration/control";
+@use "../decoration/focus";
+
+input {
+	&:not([type="checkbox"],[type="radio"],[type="hidden"]) {
+		@extend %d-control;
+	}
+
+	&:is([type="checkbox"], [type="radio"]) {
+		@extend %d-focus;
+		accent-color: var(--pal--theme);
+	}
+
+	&::placeholder {
+		color: var(--pal--control--placeholder);
+		opacity: 1;
+	}
+}

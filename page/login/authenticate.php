@@ -1,7 +1,6 @@
 <?php
 use Authwave\Session\LoginSession;
 use Authwave\User\LoginState;
-use Authwave\User\User;
 use Authwave\User\UserRepository;
 use Gt\DomTemplate\Binder;
 use Gt\Http\Response;
