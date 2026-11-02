@@ -6,7 +6,7 @@ use Gt\Database\Query\QueryCollection;
 
 class AdminAccess {
 	public function __construct(
-		private readonly QueryCollection $db,
+		private readonly QueryCollection $database,
 		private readonly ?string $adminEmail = null,
 	) {}
 
@@ -22,7 +22,7 @@ class AdminAccess {
 			}
 		}
 
-		return $this->db->fetch(
+		return $this->database->fetch(
 			"getByUserAndApplication",
 			$user->id,
 			$user->deployment->application->id,

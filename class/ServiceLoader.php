@@ -12,7 +12,7 @@ use Authwave\Security\AdminAccess;
 use Authwave\Security\Audit;
 use Authwave\User\UserRepository;
 use Gt\Database\Database;
-use Gt\Input\Input;
+use GT\Input\Input;
 use Gt\Session\Session;
 use GT\WebEngine\Service\DefaultServiceLoader;
 

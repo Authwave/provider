@@ -3,11 +3,11 @@ namespace Authwave\Security;
 
 use Authwave\User\User;
 use Gt\Database\Query\QueryCollection;
-use Gt\Ulid\Ulid;
+use GT\Ulid\Ulid;
 
 class Audit {
 	public function __construct(
-		private readonly QueryCollection $db,
+		private readonly QueryCollection $database,
 	) {}
 
 	/** @param null|array<string, string> $detail */
@@ -16,7 +16,7 @@ class Audit {
 		?array $detail,
 		null|User|AnonUser $user = null,
 	):void {
-		$this->db->insert("create", [
+		$this->database->insert("create", [
 			"id" => new Ulid("AUDIT"),
 			"action" => $action->name,
 			"detail" => is_null($detail)

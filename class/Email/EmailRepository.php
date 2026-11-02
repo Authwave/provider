@@ -11,7 +11,7 @@ use DateTime;
 use DateTimeInterface;
 use Gt\Database\Query\QueryCollection;
 use Gt\Logger\Log;
-use Gt\Ulid\Ulid;
+use GT\Ulid\Ulid;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Transport;
@@ -23,13 +23,14 @@ class EmailRepository {
 	const DEFAULT_EMAIL_FROM_NAME = "Authwave";
 
 	public function __construct(
-		private readonly QueryCollection $db,
+		private readonly QueryCollection $database,
 		private readonly EmailSettings $defaultEmailSettings,
 		private readonly Audit $audit,
 		private readonly ?Mailer $mailer = null,
 		private readonly bool $ignoreTransportErrors = false,
 	) {}
 
+	/** @param array<string, string> $kvp */
 	public function schedule(
 		User|AnonUser $user,
 		ApplicationDeployment $deployment,
@@ -38,7 +39,7 @@ class EmailRepository {
 		array $kvp = [],
 		string $fromAddress = self::DEFAULT_EMAIL_FROM_ADDRESS,
 		string $fromName = self::DEFAULT_EMAIL_FROM_NAME,
-		DateTimeInterface $when = null,
+		?DateTimeInterface $when = null,
 	):string {
 		$rendered = (new EmailTemplate())->render($templateName, $kvp);
 		$when ??= new DateTime();
@@ -49,7 +50,7 @@ class EmailRepository {
 			"emailId" => (string)$emailId,
 			"template" => $templateName,
 		], $user);
-		$this->db->insert("schedule", [
+		$this->database->insert("schedule", [
 			"id" => $emailId,
 			"deploymentId" => $deployment->id,
 			"scheduledToSendAt" => $when,
@@ -93,7 +94,7 @@ class EmailRepository {
 	public function sendScheduled():array {
 		$sentEmailIdList = [];
 
-		foreach($this->db->fetchAll("getScheduled") as $row) {
+		foreach($this->database->fetchAll("getScheduled") as $row) {
 			$emailSettings = $this->defaultEmailSettings;
 
 			if($emailSettingsObj = json_decode($row->getString("emailSettings"), true)) {
@@ -118,7 +119,7 @@ class EmailRepository {
 				continue;
 			}
 
-			$this->db->update("markAsSent", [
+			$this->database->update("markAsSent", [
 				"id" => $row->getString("id"),
 				"sentMessageId" => $sentMessageId,
 			]);
@@ -129,6 +130,9 @@ class EmailRepository {
 		return $sentEmailIdList;
 	}
 
+	/** Uses stateless utility/framework APIs.
+	* @SuppressWarnings("PHPMD.StaticAccess")
+	*/
 	public function send(
 		string $fromName,
 		string $fromAddress,

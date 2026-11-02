@@ -8,10 +8,8 @@ use Gt\Cipher\Key;
 use Gt\Config\Config;
 use Gt\Cipher\InitVector;
 use Gt\Http\ResponseStatusException\ClientError\HttpNotFound;
-use Gt\Http\ResponseStatusException\ClientError\HttpBadRequest;
 use Gt\Http\Response;
-use Gt\Http\ServerRequest;
-use Gt\Dom\HTMLDocument;
+use Gt\Http\ResponseStatusException\HttpBadRequest;
 use Gt\Http\Uri;
 use Gt\Session\Session;
 

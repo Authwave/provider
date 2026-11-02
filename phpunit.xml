@@ -1,8 +1,11 @@
 <?xml version="1.0"?>
-<phpunit bootstrap="vendor/autoload.php" colors="true" cacheResult="false">
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/13.4/phpunit.xsd"
+	bootstrap="vendor/autoload.php" colors="true"
+	cacheDirectory="test/phpunit/.phpunit.cache"
+	failOnWarning="true" failOnRisky="true" failOnPhpunitDeprecation="true" failOnPhpunitNotice="true">
 	<testsuites>
-		<testsuite name="unit">
-			<directory>test/unit</directory>
-		</testsuite>
+		<testsuite name="provider"><directory>test/phpunit</directory></testsuite>
 	</testsuites>
+	<source><include><directory>class</directory></include></source>
 </phpunit>

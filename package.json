@@ -1,6 +1,6 @@
 {
 	"scripts": {
-		"test:ui": "vendor/bin/build --default vendor/phpgt/webengine/build.default.json && vendor/bin/phpunit --bootstrap vendor/autoload.php test/ui && node test/ui/browser.mjs && node test/ui/admin-browser.mjs"
+		"test:ui": "vendor/bin/build --default vendor/phpgt/webengine/build.default.json && vendor/bin/phpunit --bootstrap vendor/autoload.php test/phpunit/UI && node test/phpunit/UI/browser.mjs && node test/phpunit/UI/admin-browser.mjs"
 	},
 	"dependencies": {
 		"@phpgt/flux": "github:PhpGt/Flux",

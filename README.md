@@ -37,8 +37,45 @@ Administrators logging in from a client application see “Continue to Applicati
 Application administrators are granted in the application admin screeen, but a super admin can be added to the provider config file (useful for adding the first admin account to self-hosted providers).
 
 
-Running unit tests
-------------------
+Testing
+-------
+
+Use PHP 8.4.1 or newer, Composer, and Chrome/Chromium. Install dependencies and run
+all checks with:
+
+```bash
+composer install
+composer test
+```
+
+The Composer scripts run Behat, PHPUnit, PHPCS, PHPMD, and PHPStan at level 6.
+Each check can also run separately: `composer behat`, `composer phpunit`,
+`composer phpcs`, `composer phpmd`, and `composer phpstan`.
+
+* `test/phpunit` contains the unit and PHP-rendered UI tests, running on PHPUnit 13.
+  These use controlled repositories and sessions; no configured database or mail
+  server is required. Warnings, risky tests, and PHPUnit notices/deprecations fail
+  the suite.
+* `test/behat` is the restarted browser test bed, following api.horse's Mink and
+  Chrome setup. Its initial smoke scenarios visit the real `/logged-out/` page.
+  The runner starts its own PHP server and headless browser on available ports,
+  uses a temporary browser profile, and cleans up after success or failure.
+  Undefined or pending steps fail the suite. It never rebuilds your database.
+  Set `CHROME_BIN` if Chrome/Chromium is not on your PATH; additional Behat
+  arguments are forwarded, for example `composer behat -- --name="fresh browser"`.
+
+`phpcs.xml` and `phpmd.xml` are copied from api.horse. Existing classes have been
+formatted and annotated for those checks, with local PHPMD exceptions for
+stateless framework/utility calls, established public `id` fields, and the demo
+workspace facade. PHPStan uses no baseline or ignored errors.
+
+The supplementary browser regression scripts remain available through
+`npm run test:ui`. They require Node.js and installed npm dependencies, including
+this project's local Flair package, and exercise login and administration pages
+with isolated fixtures. They are separate from the basic Behat smoke coverage.
+
+Manual development login
+------------------------
 
 For manual testing without a client application, open
 `http://localhost:9105/?dev-login=<deployment-id>` on your provider (adjust the
@@ -48,14 +85,6 @@ state, and opens the normal email/password flow. After authentication, the
 success page stays open instead of redirecting to the client. Revisit the URL
 to start another login.
 
-This helper requires `authwave.dev_login=true`, enabled in `config.dev.ini`.
+This helper requires `authwave.dev_login=true` in `config.dev.ini`.
 It is always disabled when `app.production=true`. It still requires the normal
 deployment database and user authentication; it does not bypass credentials.
-
-After installing Composer dependencies, run the provider unit tests with:
-
-```bash
-vendor/bin/phpunit -c phpunit.xml
-```
-
-The login return tests exercise request handling and successful authentication with encrypted messages, using controlled repositories and sessions without requiring a database or browser.

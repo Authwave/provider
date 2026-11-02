@@ -132,7 +132,7 @@ Charts use Apache ECharts through modular npm imports in the single `/script.js`
 
 Reusable Sass layouts/patterns cover the sidebar, stacks/splits, card grids, toolbars, segmented controls, settings panels/disclosures, record lists and responsive tables. Record tables stack all fields into labelled rows on mobile; the authentication table retains its conditional details column. The admin font stays at 16px to keep native controls and breakpoints consistent.
 
-Run `vendor/bin/phpunit test/ui` and `node test/ui/admin-browser.mjs` for isolated checks. Optional `UI_SCREENSHOT_DIR` saves screenshots of each section. Browser fixtures exercise scope changes and demo POST forms through a temporary server; the PHP handler tests cover administrator checks and logout. The fixtures never query the configured database or send email.
+Run `vendor/bin/phpunit test/phpunit/UI` and `node test/phpunit/UI/admin-browser.mjs` for isolated checks. Optional `UI_SCREENSHOT_DIR` saves screenshots of each section. Browser fixtures exercise scope changes and demo POST forms through a temporary server; the PHP handler tests cover administrator checks and logout. The fixtures never query the configured database or send email.
 
 ## Build and verification
 

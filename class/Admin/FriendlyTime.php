@@ -8,7 +8,8 @@ class FriendlyTime {
 		$now ??= new DateTimeImmutable();
 		$date = $date->setTimezone($now->getTimezone());
 		$seconds = max(0, $now->getTimestamp() - $date->getTimestamp());
-		if($seconds < 60) return "Just now";
+		if($seconds < 60) { return "Just now";
+		}
 		if($date->format("Y-m-d") === $now->format("Y-m-d")) {
 			$count = (int)floor($seconds / ($seconds < 3600 ? 60 : 3600));
 			$unit = $seconds < 3600 ? "minute" : "hour";
