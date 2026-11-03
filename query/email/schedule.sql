@@ -1,4 +1,4 @@
-insert into email (
+insert into Email (
 	id,
 	deploymentId,
 	createdAt,

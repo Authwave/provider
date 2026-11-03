@@ -1,4 +1,4 @@
-insert into user (
+insert into User (
 	id,
 	applicationDeploymentId,
 	email

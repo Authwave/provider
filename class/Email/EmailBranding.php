@@ -4,7 +4,7 @@ namespace Authwave\Email;
 
 use Authwave\Model\ApplicationDeployment;
 use Authwave\Model\ApplicationLogo;
-class EmailBranding {
+readonly class EmailBranding {
 
 	// Match the defaults and variable references in style/variable/palette.scss.
 	public const
@@ -24,7 +24,7 @@ class EmailBranding {
 		]
 	;
 	/** @param array<string, string> $defaults */
-	public function __construct(private readonly array $defaults = self::DEFAULTS) {
+	public function __construct(private array $defaults = self::DEFAULTS) {
 	}
 	/** @return array<string, string>
 	* @SuppressWarnings("PHPMD.StaticAccess")
@@ -34,10 +34,12 @@ class EmailBranding {
 		foreach ($defaults as $key => $fallback) {
 			$defaults[$key] = $this->normalise($this->defaults[$key] ?? null) ?? $fallback;
 		}
+
 		$themes = [];
 		foreach ($deployment->application->themes as $theme) {
 			$themes[$theme->colourScheme] = $theme->colours;
 		}
+
 		$values = [];
 		foreach (["light", "dark"] as $scheme) {
 			$colours = $themes[$scheme] ?? [];
@@ -71,6 +73,7 @@ class EmailBranding {
 				$values[$key($name)] = $value;
 			}
 		}
+
 		$logoPath = ApplicationLogo::getPath($deployment->application, preferRaster: true)
 			?? "/asset/default-logo.svg";
 		$darkLogoPath = ApplicationLogo::getPath($deployment->application, "logo_dark",
@@ -89,10 +92,12 @@ class EmailBranding {
 		)) {
 			return null;
 		}
+
 		$hex = substr($colour, 1);
 		if (strlen($hex) <= 4) {
 			$hex = implode("", array_map(fn($digit) => $digit . $digit, str_split($hex)));
 		}
+
 		$rgb = "#" . strtolower(substr($hex, 0, 6));
 		return strlen($hex) === 8 ? $this->mix($background, $rgb, hexdec(substr($hex, 6,
 			2)) / 255) : $rgb;

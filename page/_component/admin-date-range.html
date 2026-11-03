@@ -1,14 +1,11 @@
 <details class="disclosure-menu date-menu">
 	<summary class="control">Custom</summary>
-	<form class="disclosure-content form-fields" method="get" data-flux>
-		<input type="hidden" name="period" data-bind:value="period" />
-		<input type="hidden" name="status" data-bind:value="status" />
-		<input type="hidden" name="method" data-bind:value="method" />
-		<input type="hidden" name="activity" data-bind:value="activity" />
-		<input type="hidden" name="sort" data-bind:value="sort" />
-		<input type="hidden" name="search" data-bind:value="search" />
-		<label><span>From</span><input type="date" name="from" data-bind:value="from" required /></label>
-		<label><span>To</span><input type="date" name="to" data-bind:value="to" required /></label>
-		<button type="submit"><span>Apply dates</span></button>
+	<form class="disclosure-content form-fields" method="get">
+
+		<label><span>From</span><input type="date" name="from" required disabled /></label>
+		<label><span>To</span><input type="date" name="to" required disabled /></label>
+		<div class="actions">
+			<button type="submit" disabled><span>Apply dates</span></button>
+		</div>
 	</form>
 </details>

@@ -5,16 +5,17 @@ use Authwave\Model\ApplicationDeployment;
 use Authwave\Security\Action;
 use Authwave\Security\AnonUser;
 use Authwave\Security\Audit;
+use Authwave\Model\User;
 use Authwave\User\LoginState;
 use Gt\Session\SessionStore;
 
-class LoginSession {
+readonly class LoginSession {
 	const SESSION_STORE_KEY = "AUTHWAVE_PROVIDER_SESSION";
 
 	public function __construct(
 		private SessionStore $session,
-		private readonly Audit $audit,
-		private readonly AnonUser $anonUser,
+		private Audit $audit,
+		private AnonUser $anonUser,
 	) {
 	}
 
@@ -43,10 +44,12 @@ class LoginSession {
 		return $kvp[$key] ?? null;
 	}
 
-	public function clearDataForLogout(ApplicationDeployment $deployment):void {
-		$this->audit->create(Action::LOGOUT_REQUESTED, [
-			"deploymentId" => $deployment->id,
-		], $this->anonUser);
+	public function clearDataForLogout(ApplicationDeployment $deployment, ?User $actor = null):void {
+		$this->audit->create(
+			Action::LOGOUT_REQUESTED,
+			["deploymentId" => $deployment->id],
+			$actor ?? $this->anonUser,
+		);
 		$this->session->remove("email");
 		$this->setState(LoginState::NOT_LOGGED_IN);
 	}
@@ -56,6 +59,7 @@ class LoginSession {
 	}
 
 	public function resetAuthentication():void {
+		$this->setState(LoginState::NOT_LOGGED_IN);
 		$this->session->remove("email");
 		$this->session->remove(LoginState::class);
 	}
@@ -64,14 +68,26 @@ class LoginSession {
 		if($email !== $this->getEmail()) {
 			$this->setState(LoginState::NOT_LOGGED_IN);
 		}
-		$this->audit->create(Action::EMAIL_SUBMITTED, [
-			"deploymentId" => $this->getDeployment()->id,
-			"email" => $email,
-		], $this->anonUser);
+
+		$this->audit->create(Action::EMAIL_SUBMITTED,
+			["email" => $email, "deploymentId" => $this->getDeployment()->id], $this->anonUser);
 		$this->session->set("email", $email);
 	}
 
 	public function setState(LoginState $state):void {
+		if($state !== $this->getState()) {
+			$this->audit->recordChange(
+				Action::AUTHENTICATION_STATE_CHANGED,
+				before: (object)[
+					"state" => $this->getState()->name,
+				],
+				after: (object)[
+					"state" => $state->name,
+				],
+				actor: $this->anonUser,
+			);
+		}
+
 		$this->session->set(LoginState::class, $state);
 	}
 

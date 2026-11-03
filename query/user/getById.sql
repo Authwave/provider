@@ -1,11 +1,11 @@
 select
-	user.id as userId,
-	user.applicationDeploymentId,
-	user.email,
-	user.hash
+	User.id as userId,
+	User.applicationDeploymentId,
+	User.email,
+	User.hash
 
 from
-	user
+	User
 
 where
-	user.id = ?
+	User.id = ?

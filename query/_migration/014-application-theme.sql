@@ -1,4 +1,4 @@
-create table application_theme (
+create table ApplicationTheme (
 	applicationId char(64) not null,
 	colourScheme varchar(5) not null,
 	colours json not null,
@@ -8,7 +8,7 @@ create table application_theme (
 		check (colourScheme in ('light', 'dark')),
 	constraint application_theme__applicationId__fk
 		foreign key (applicationId)
-		references application(id)
+		references Application(id)
 		on update cascade
 		on delete cascade
 );

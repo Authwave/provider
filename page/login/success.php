@@ -33,19 +33,28 @@ function go(
 
 	$deployment = $loginSession->getDeployment();
 	$user = $userRepo->get($deployment, $loginSession->getEmail());
+
 	if(!$user) {
 		$loginSession->clearDataForLogout($deployment);
 		$response->redirect("/login/");
 		return;
 	}
+
 	$isAdmin = $adminAccess->allows($user);
+	$binder->bindKeyValue("isAdmin", $isAdmin);
+
 	if($loginSession->isAdminRequested() || !$loginSession->getDataKey("secretIv")) {
 		$loginSession->clearAdminRequest();
 		$audit->create(Action::LOGIN_COMPLETED, ["deploymentId" => $deployment->id], $user);
-		$response->redirect("/admin/");
+		if($request->getHeaderLine("X-Authwave-Flux") === "1") {
+			$binder->bindKeyValue("returnUri", "/admin/");
+			$binder->bindKeyValue("continueAutomatically", true);
+		}
+		else {
+			$response->redirect("/admin/");
+		}
 		return;
 	}
-	$binder->bindKeyValue("isAdmin", $isAdmin);
 
 	$secretIvB64 = $loginSession->getDataKey("secretIv");
 	$secretIvB64 = strtr($secretIvB64, " ", "+");
@@ -68,10 +77,13 @@ function go(
 	if(!$requestedReturnUri && ($returnQuery = $loginSession->getDataKey("returnQuery"))) {
 		$returnUri = $returnUri->withQuery($returnQuery);
 	}
+
 	$queryString = $returnUri->getQuery();
+
 	if($queryString) {
 		$queryString .= "&";
 	}
+
 	$queryString .= http_build_query([
 		"AUTHWAVE_RESPONSE_DATA" => (string)$cipherText,
 	]);
@@ -82,6 +94,7 @@ function go(
 		"deploymentId" => $deployment->id,
 	], $user);
 	$developmentLogin = $loginSession->getDataKey("developmentLogin");
+
 	if(!$isAdmin) {
 		$session->kill();
 	}

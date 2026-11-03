@@ -1,4 +1,5 @@
 <?php
+
 namespace Authwave\Test\Email;
 
 use Authwave\Email\EmailRepository;
@@ -14,7 +15,7 @@ use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\Transport\TransportInterface;
 
 class EmailRepositoryTest extends TestCase {
-	public function testSecurityCodeTemplateHasReadableHtmlAndPlainText():void {
+	public function testScheduleAuthCode_securityCodeTemplateHasReadableHtmlAndPlainText():void {
 		chdir(dirname(__DIR__, 3));
 		$db = $this->createMock(QueryCollection::class);
 		$db->expects(self::once())->method("insert")->with("schedule", self::callback(function(array $data):bool {
@@ -29,14 +30,25 @@ class EmailRepositoryTest extends TestCase {
 			self::assertStringNotContainsString("style=", $data["textContent"]);
 			return true;
 		}));
-		$repository = $this->getMockBuilder(EmailRepository::class)
-			->setConstructorArgs([$db, new EmailSettings("localhost", 1025, "", ""), $this->createStub(Audit::class)])
+		$audit = $this->createMock(Audit::class);
+		$audit->expects(self::once())->method("recordChange")->with(
+			\Authwave\Security\Action::EMAIL_SCHEDULED,
+			null, self::callback(function(object $detail):bool {
+				self::assertSame("recipient@example.test", $detail->recipient);
+				self::assertSame("deployment", $detail->deploymentId);
+				$json = json_encode($detail, JSON_THROW_ON_ERROR);
+				self::assertStringNotContainsString("01234", $json);
+				self::assertStringNotContainsString("secret", $json);
+				return true;
+			}), self::isInstanceOf(\Authwave\Model\User::class));
+		$sut = $this->getMockBuilder(EmailRepository::class)
+			->setConstructorArgs([$db, new EmailSettings("localhost", 1025, "", ""), $audit])
 			->onlyMethods(["sendScheduled"])->getMock();
-		$repository->expects(self::once())->method("sendScheduled")->willReturn([]);
+		$sut->expects(self::once())->method("sendScheduled")->willReturn([]);
 		$app = new \Authwave\Model\Application("app", "Example App", "sender@example.test");
 		$deployment = new \Authwave\Model\ApplicationDeployment("deployment", $app, "Example App", "secret", "client.example.test", "/", "login.example.test");
-		$user = new \Authwave\User\User("user", $deployment, "recipient@example.test");
-		$repository->scheduleAuthCode($user, $deployment, $user->email, $app->name, "01234", $app->emailSendFrom);
+		$user = new \Authwave\Model\User("user", $deployment, "recipient@example.test");
+		$sut->scheduleAuthCode($user, $deployment, $user->email, $app->name, "01234", $app->emailSendFrom);
 	}
 
 	private function repository(bool $ignoreErrors, ?RuntimeException $error = null):EmailRepository {
@@ -75,24 +87,25 @@ class EmailRepositoryTest extends TestCase {
 			$this->createStub(Audit::class), new Mailer($transport), $ignoreErrors);
 	}
 
-	public function testDevelopmentContinuesAfterTransportFailure():void {
-		$repository = $this->repository(true, new TransportException("SMTP authentication failed"));
-		self::assertSame([], $repository->sendScheduled());
+	public function testSendScheduled_developmentContinuesAfterTransportFailure():void {
+		$sut = $this->repository(true, new TransportException("SMTP authentication failed"));
+		self::assertSame([], $sut->sendScheduled());
 	}
 
-	public function testProductionPropagatesTransportFailure():void {
-		$repository = $this->repository(false, new TransportException("Connection refused"));
+	public function testSendScheduled_productionPropagatesTransportFailure():void {
+		$sut = $this->repository(false, new TransportException("Connection refused"));
 		$this->expectException(TransportException::class);
-		$repository->sendScheduled();
+		$sut->sendScheduled();
 	}
 
-	public function testDevelopmentStillSendsWhenTransportWorks():void {
-		self::assertSame(["test-email"], $this->repository(true)->sendScheduled());
+	public function testSendScheduled_developmentStillSendsWhenTransportWorks():void {
+		$sut = $this->repository(true);
+		self::assertSame(["test-email"], $sut->sendScheduled());
 	}
 
-	public function testDevelopmentPropagatesOtherErrors():void {
-		$repository = $this->repository(true, new RuntimeException("Unexpected failure"));
+	public function testSendScheduled_developmentPropagatesOtherErrors():void {
+		$sut = $this->repository(true, new RuntimeException("Unexpected failure"));
 		$this->expectException(RuntimeException::class);
-		$repository->sendScheduled();
+		$sut->sendScheduled();
 	}
 }

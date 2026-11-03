@@ -24,9 +24,8 @@ function sequence() {
 let mode = readPreference();
 
 function applyPreference() {
-	// Keep the effective scheme available to provider branding and charts.
+	// Keep the effective scheme available to provider branding.
 	root.dataset.colorScheme = mode === "system" ? (preference.matches ? "dark" : "light") : mode;
-	document.dispatchEvent(new Event("authwave:color-scheme-change"));
 
 	for(const button of document.querySelectorAll("[data-theme-toggle]")) {
 		const order = sequence();

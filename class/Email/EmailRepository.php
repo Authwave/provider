@@ -6,7 +6,7 @@ use Authwave\Model\EmailSettings;
 use Authwave\Security\Audit;
 use Authwave\Security\Action;
 use Authwave\Security\AnonUser;
-use Authwave\User\User;
+use Authwave\Model\User;
 use DateTime;
 use DateTimeInterface;
 use Gt\Database\Query\QueryCollection;
@@ -18,16 +18,16 @@ use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 
-class EmailRepository {
+readonly class EmailRepository {
 	const DEFAULT_EMAIL_FROM_ADDRESS = "support@authwave.com";
 	const DEFAULT_EMAIL_FROM_NAME = "Authwave";
 
 	public function __construct(
-		private readonly QueryCollection $database,
-		private readonly EmailSettings $defaultEmailSettings,
-		private readonly Audit $audit,
-		private readonly ?Mailer $mailer = null,
-		private readonly bool $ignoreTransportErrors = false,
+		private QueryCollection $database,
+		private EmailSettings $defaultEmailSettings,
+		private Audit $audit,
+		private ?Mailer $mailer = null,
+		private bool $ignoreTransportErrors = false,
 	) {}
 
 	/** @param array<string, string> $kvp */
@@ -45,11 +45,6 @@ class EmailRepository {
 		$when ??= new DateTime();
 
 		$emailId = new Ulid();
-		$this->audit->create(Action::EMAIL_SCHEDULED, [
-			"deploymentId" => $deployment->id,
-			"emailId" => (string)$emailId,
-			"template" => $templateName,
-		], $user);
 		$this->database->insert("schedule", [
 			"id" => $emailId,
 			"deploymentId" => $deployment->id,
@@ -61,6 +56,17 @@ class EmailRepository {
 			"textContent" => $rendered["text"],
 			"htmlContent" => $rendered["html"],
 		]);
+		$this->audit->recordChange(
+			Action::EMAIL_SCHEDULED,
+			before: null,
+			after: (object)[
+				"emailId" => (string)$emailId,
+				"deploymentId" => $deployment->id,
+				"template" => $templateName,
+				"recipient" => $toAddress,
+			],
+			actor: $user,
+		);
 
 // TODO: Move this to a background task.
 		$this->sendScheduled();
@@ -115,6 +121,7 @@ class EmailRepository {
 				$row->getString("htmlContent"),
 				$emailSettings,
 			);
+
 			if($sentMessageId === null) {
 				continue;
 			}
@@ -178,6 +185,7 @@ class EmailRepository {
 
 			return null;
 		}
+
 		return $ulid;
 	}
 }

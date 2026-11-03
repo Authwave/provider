@@ -1,11 +1,11 @@
 <?php
 namespace Authwave\Security;
 
-/** Retains the public id field and named parameter contract.
- * @SuppressWarnings("PHPMD.ShortVariable")
+/**
+ * Retains the public id field and named parameter contract.
  */
-class AnonUser {
-	public readonly string $id;
+readonly class AnonUser {
+	public string $id;
 
 	/** Retains the public id field and named parameter contract.
 	* @SuppressWarnings("PHPMD.ShortVariable")

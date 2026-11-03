@@ -1,71 +1,71 @@
 set foreign_key_checks = 0;
 
-alter table application
+alter table Application
     drop foreign key application_production_application_deployment_id_fk;
 
-alter table email
+alter table Email
     drop foreign key email_application_deployment_id_fk;
 
-alter table user_auth_code
-    drop foreign key user_auth_code_ibfk_1;
+alter table UserAuthCode
+    drop foreign key UserAuthCode_ibfk_1;
 
-alter table user
-    drop foreign key user_ibfk_1;
+alter table User
+    drop foreign key User_ibfk_1;
 
-alter table application_deployment
-    drop foreign key application_deployment_ibfk_1;
+alter table ApplicationDeployment
+    drop foreign key ApplicationDeployment_ibfk_1;
 
-alter table application
+alter table Application
     modify id char(64) not null;
 
-alter table application_deployment
+alter table ApplicationDeployment
     modify id char(64) not null,
     modify applicationId char(64) not null;
 
-alter table user
+alter table User
     modify id char(64) not null,
     modify applicationDeploymentId char(64) not null;
 
-alter table user_auth_code
+alter table UserAuthCode
     modify id char(64) not null,
     modify userId char(64) not null;
 
-alter table email
+alter table Email
     modify id char(64) not null,
     modify deploymentId char(64) not null;
 
-alter table application
+alter table Application
     modify productionApplicationDeploymentId char(64) null;
 
-alter table application_deployment
+alter table ApplicationDeployment
     add constraint application_deployment__applicationId__fk
         foreign key (applicationId)
-        references application(id)
+        references Application(id)
         on update cascade
         on delete cascade;
 
-alter table user
+alter table User
     add constraint user__applicationDeploymentId__fk
         foreign key (applicationDeploymentId)
-        references application_deployment(id)
+        references ApplicationDeployment(id)
         on update cascade
         on delete cascade;
 
-alter table user_auth_code
+alter table UserAuthCode
     add constraint user_auth_code__userId__fk
         foreign key(userId)
-        references user(id)
+        references User(id)
         on update cascade
         on delete cascade;
 
-alter table email
+alter table Email
     add constraint email__deploymentId__fk
-        foreign key (deploymentId) references application_deployment (id)
+        foreign key (deploymentId) references ApplicationDeployment (id)
             on update cascade on delete cascade;
 
-alter table application
+alter table Application
     add constraint application__productionApplicationDeploymentId__fk
-        foreign key (productionApplicationDeploymentId) references application_deployment (id)
+        foreign key (productionApplicationDeploymentId) references ApplicationDeployment (id)
             on update cascade on delete set null;
 
 set foreign_key_checks = 1;

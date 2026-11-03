@@ -1,50 +1,61 @@
 <?php
-use Authwave\Admin\DemoWorkspace;
-use Authwave\View\AdminView;
-use Gt\Dom\Element;
-use Gt\DomTemplate\Binder;
+use Authwave\Admin\Onboarding\AdminArea;
+use Authwave\Admin\Onboarding\Onboarding;
+use Gt\Config\Config;
+use Gt\Http\Request;
+use Gt\Session\Session;
+use GT\Dom\Element;
+use GT\DomTemplate\Binder;
 use Gt\Http\Uri;
-use Gt\Input\Input;
-use Authwave\Session\LoginSession;
-use Authwave\Model\ApplicationRepository;
 use Gt\Http\Response;
 
-function go_before(LoginSession $login, ApplicationRepository $applications, Uri $uri, Response $response):void {
-	// Components run before page/_common.php can establish the deployment for a fresh session.
-	if($login->getDeployment()) return;
-	$host = $uri->getHost();
-	if($port = $uri->getPort()) {
-		if($port !== 443) $host .= ":$port";
-	}
-	$login->setDeploymentForLogin($applications->getDeploymentByProviderHost($host));
-	$login->requestAdmin();
-	$response->redirect("/login/");
+function go_before(
+	AdminArea $area,
+	Uri $uri,
+	Response $response,
+):void {
+	$area->enter($uri, $response);
 }
 
-function go(Element $element, Binder $binder, Input $input, DemoWorkspace $workspace, Uri $uri):void {
-	$view = new AdminView($element, $binder, $input, $workspace, $uri);
-	$pages = ["dashboard" => "", "security" => "security", "emails" => "emails", "applications" => "applications", "customisation" => "customisation", "users" => "users", "integrations" => "integrations", "billing" => "billing", "logout" => "logout", "organisation" => "organisation"];
-	foreach($pages as $key => $page) $binder->bindKeyValue($key . "Url", $workspace->url($page));
-	foreach($element->querySelectorAll("[data-nav]") as $link) {
-		$link->removeAttribute("aria-current");
-		if($link->getAttribute("data-nav") === ($view->page === "index" ? "dashboard" : $view->page)) $link->setAttribute("aria-current", "page");
+function go(Element $element, Binder $binder, Uri $uri, Onboarding $onboarding):void {
+	$binder->bindKeyValue("needsApplication", $onboarding->needsApplication());
+	$binder->bindKeyValue("completedCount", $onboarding->completedCount());
+	$binder->bindList($onboarding->steps(), templateName: "setup-steps");
+	$path = rtrim($uri->getPath(), "/");
+	$scopePath = $path . "/";
+
+	if(str_starts_with($path, "/admin/applications/")) {
+		$scopePath = "/admin/applications/";
 	}
-	$rows = $workspace->setupSteps();
-	$count = count(array_filter($rows, fn($row) => $row["stepComplete"]));
-	$nextStep = current(array_filter($rows, fn($row) => !$row["stepComplete"]));
-	$view->keys(["setupCount" => $count, "setupProgress" => "$count of 7 complete", "setupComplete" => $count === 7, "setupUrl" => $nextStep ? $nextStep["stepUrl"] : $workspace->url("applications")]);
-	$view->list("sidebar-setup-steps", $rows);
-	$view->forms();
+
+	$element->querySelector("[data-scope-form]")->setAttribute("action", $scopePath);
+
+	if($path === "/integrations/help") {
+		$path = "/admin/integrations";
+	}
+
+	foreach($element->querySelectorAll("[data-nav][href]") as $link) {
+		$target = rtrim($link->getAttribute("href"), "/");
+		$link->removeAttribute("aria-current");
+
+		if($path === $target || ($target !== "/admin" && str_starts_with($path, $target . "/"))) {
+			$link->setAttribute("aria-current", "page");
+		}
+	}
 }
 
 function do_logout(
-	\Gt\Http\Request $request,
-	\Gt\Http\Response $response,
-	\Gt\Session\Session $session,
-	\Gt\Config\Config $config,
-	LoginSession $loginSession,
-	\Authwave\User\UserRepository $userRepo,
-	\Authwave\Security\AdminAccess $adminAccess,
+	AdminArea $area,
+	Request $request,
+	Response $response,
+	Session $session,
+	Config $config,
 ):void {
-	\Authwave\Admin\LogoutAction::submit($request, $response, $session, $config, $loginSession, $userRepo, $adminAccess);
+	if($request->getMethod() !== "POST"
+	|| rtrim($request->getUri()->getPath(), "/") !== "/admin/logout") {
+		return;
+	}
+
+	$area->logout($session);
+	$response->redirect($config->getString("authwave.logout_redirect") ?: "/logged-out/");
 }

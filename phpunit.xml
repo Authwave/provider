@@ -5,7 +5,8 @@
 	cacheDirectory="test/phpunit/.phpunit.cache"
 	failOnWarning="true" failOnRisky="true" failOnPhpunitDeprecation="true" failOnPhpunitNotice="true">
 	<testsuites>
-		<testsuite name="provider"><directory>test/phpunit</directory></testsuite>
+		<testsuite name="unit"><directory>test/phpunit</directory></testsuite>
+		<testsuite name="integration"><directory>test/integration</directory></testsuite>
 	</testsuites>
 	<source><include><directory>class</directory></include></source>
 </phpunit>

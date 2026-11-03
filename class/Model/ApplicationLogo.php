@@ -2,7 +2,7 @@
 
 namespace Authwave\Model;
 
-class ApplicationLogo {
+readonly class ApplicationLogo {
 
 	public static function getPath(
 		Application $application,
@@ -25,6 +25,7 @@ class ApplicationLogo {
 				return "/" . implode("/", array_map("rawurlencode", explode("/", $path)));
 			}
 		}
+
 		return null;
 	}
 }

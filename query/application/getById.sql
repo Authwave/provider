@@ -1,25 +1,26 @@
 select
-	application.id as applicationId,
-	application.name,
-	application.emailSendFrom,
-	application.emailSettings,
+	Application.id as applicationId,
+	Application.name,
+	Application.emailSendFrom,
+	Application.emailSettings,
+	Application.productionApplicationDeploymentId,
 	light_theme.colours as lightThemeColours,
 	dark_theme.colours as darkThemeColours
 
 from
-	application
+	Application
 
 left join
-	application_theme as light_theme
+	ApplicationTheme as light_theme
 on
-	light_theme.applicationId = application.id
+	light_theme.applicationId = Application.id
 	and light_theme.colourScheme = 'light'
 
 left join
-	application_theme as dark_theme
+	ApplicationTheme as dark_theme
 on
-	dark_theme.applicationId = application.id
+	dark_theme.applicationId = Application.id
 	and dark_theme.colourScheme = 'dark'
 
 where
-	application.id = ?
+	Application.id = ?

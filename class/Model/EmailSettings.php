@@ -1,7 +1,7 @@
 <?php
 namespace Authwave\Model;
 
-class EmailSettings {
+readonly class EmailSettings {
 	public function __construct(
 		public ?string $host,
 		public ?int $port,

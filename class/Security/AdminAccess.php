@@ -1,13 +1,13 @@
 <?php
 namespace Authwave\Security;
 
-use Authwave\User\User;
+use Authwave\Model\User;
 use Gt\Database\Query\QueryCollection;
 
-class AdminAccess {
+readonly class AdminAccess {
 	public function __construct(
-		private readonly QueryCollection $database,
-		private readonly ?string $adminEmail = null,
+		private QueryCollection $database,
+		private ?string $adminEmail = null,
 	) {}
 
 	public function allows(?User $user):bool {
@@ -17,6 +17,7 @@ class AdminAccess {
 
 		foreach(explode(",", $this->adminEmail ?? "") as $email) {
 			$email = trim($email);
+
 			if($email !== "" && strcasecmp($user->email, $email) === 0) {
 				return true;
 			}

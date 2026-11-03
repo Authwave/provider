@@ -12,9 +12,9 @@ foreach(["index", "authenticate", "security-check", "success", "access-denied"] 
 	$style = $view->document->createElement("style");
 	$style->textContent = (new Authwave\Model\ApplicationTheme("light", [
 		"primary" => "#123456", "pageBackground" => "#f0f1f2", "buttonPrimaryText" => "#fff",
-	]))->toCss() . "\n" . (new Authwave\Model\ApplicationTheme("dark", [
+	], "app"))->toCss() . "\n" . (new Authwave\Model\ApplicationTheme("dark", [
 		"primary" => "#abcdef", "pageBackground" => "#101112", "buttonPrimaryText" => "#000",
-	]))->toCss();
+	], "app"))->toCss();
 	$view->document->head->appendChild($style);
 	foreach([
 		"title" => "Test application - Login",

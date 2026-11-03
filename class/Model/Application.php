@@ -1,16 +1,17 @@
 <?php
 namespace Authwave\Model;
 
-class Application {
+readonly class Application {
 	/** @param ApplicationTheme[] $themes
 	* @SuppressWarnings("PHPMD.ShortVariable")
 	*/
 	public function __construct(
-		public readonly string $id,
-		public readonly string $name,
-		public readonly string $emailSendFrom,
-		public readonly ?EmailSettings $emailSettings = null,
-		public readonly array $themes = [],
+		public string $id,
+		public string $name,
+		public ?string $emailSendFrom,
+		public ?EmailSettings $emailSettings = null,
+		public array $themes = [],
+		public ?string $productionApplicationDeploymentId = null,
 	) {}
 	/** @return ApplicationTheme[] */
 	public function getThemes():array {

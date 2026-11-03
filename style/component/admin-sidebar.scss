@@ -1,11 +1,15 @@
-@use "../variable/break";
 @use "../../node_modules/flair/style/lib/flair";
 
 admin-sidebar {
-	display: block;
-	position: relative;
-	border-block-end: var(--theme-divider-width, var(--theme-border-width)) solid var(--theme-color-border);
-	background: var(--theme-color-surface);
+	display: contents;
+
+	> aside {
+		display: block;
+		position: relative;
+		min-inline-size: 0;
+		border-block-end: var(--theme-divider-width, var(--theme-border-width)) solid var(--theme-color-border);
+		background: var(--theme-color-surface);
+	}
 
 	.sidebar-header {
 		justify-content: center;
@@ -51,6 +55,10 @@ admin-sidebar {
 
 	.sidebar-bottom {
 		margin-block-start: var(--theme-space-8);
+
+		.setup-card {
+			margin-block: 0;
+		}
 	}
 
 	.sidebar-account {
@@ -61,14 +69,29 @@ admin-sidebar {
 		}
 	}
 
-	@media(min-width: break.$medium) {
-		min-block-size: 100svh;
-		border-block-end: 0;
-		border-inline-end: var(--theme-divider-width, var(--theme-border-width)) solid var(--theme-color-border);
+	@media(min-width: flair.$break-shell) {
+		> aside {
+			display: flex;
+			flex-direction: column;
+			position: fixed;
+			inset-block-start: 0;
+			inset-inline-start: 0;
+			inline-size: var(--theme-sidebar-width);
+			block-size: 100svh;
+			z-index: 1;
+			overflow-y: auto;
+			overscroll-behavior: contain;
+			border-block-end: 0;
+			border-inline-end: var(--theme-divider-width, var(--theme-border-width)) solid var(--theme-color-border);
+		}
 		.sidebar-header {
+			flex: none;
 			padding-inline: var(--theme-space-4);
 		}
 		.sidebar-menu {
+			display: flex;
+			flex-direction: column;
+			flex: 1;
 			> summary {
 				display: none;
 			}
@@ -76,13 +99,15 @@ admin-sidebar {
 			// Keep the same disclosure visible on desktop without JS or an open attribute.
 			&::details-content {
 				content-visibility: visible;
-				display: block;
+				display: flex;
+				flex: 1;
 			}
 
 			> .sidebar-content {
 				display: flex;
 				flex-direction: column;
-				min-block-size: calc(100svh - var(--authwave-size-sidebar-header));
+				flex: 1;
+				min-block-size: 0;
 				box-sizing: border-box;
 			}
 		}

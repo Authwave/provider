@@ -1,7 +1,106 @@
 @use "../../node_modules/flair/style/lib/flair";
 
+delete-dialog, delete-confirmation {
+	display: contents;
+}
+
 body.dir--admin {
-	admin-header, admin-page-heading, admin-top-usage, admin-new-users, admin-abandoned-users {
+
+	.actions {
+		@extend %p-form-actions;
+	}
+
+	.delete-dialog {
+		@extend %o-dialog;
+	}
+
+	.breadcrumbs {
+		@extend %p-breadcrumbs;
+	}
+
+	.application-heading {
+		font-size: var(--theme-heading-large-size, inherit);
+		font-weight: var(--theme-heading-weight, 700);
+
+		h1 {
+			@extend %p-toolbar;
+			align-items: baseline;
+			gap: var(--theme-space-2);
+			font: inherit;
+
+			> span {
+				min-inline-size: 0;
+				overflow-wrap: anywhere;
+			}
+		}
+
+		a {
+			@extend %o-link;
+			font: inherit;
+		}
+	}
+
+	application-settings {
+		display: block;
+	}
+
+	.deployment-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+
+		> li {
+			text-align: center;
+
+			> details {
+				text-align: start;
+			}
+		}
+
+		.new-deployment-icon {
+			display: none;
+		}
+
+		> [data-new="1"] > details {
+			display: inline-block;
+			max-inline-size: 100%;
+
+			&:not([open]) > summary {
+				@extend %o-button-primary;
+			}
+
+			&[open] {
+				display: block;
+			}
+
+			> summary {
+				display: flex;
+				align-items: center;
+				gap: var(--theme-space-2);
+				list-style: none;
+
+				&::-webkit-details-marker {
+					display: none;
+				}
+
+				> .new-deployment-icon {
+					display: inline-flex;
+					--theme-icon-gap: 0;
+				}
+			}
+		}
+
+		> [data-new="1"] .existing-deployment-field {
+			display: none;
+		}
+
+		form {
+			padding: var(--theme-space-4);
+		}
+	}
+
+	admin-header, admin-top-usage, admin-new-users, admin-abandoned-users,
+	admin-activity-filters {
 		display: contents;
 	}
 
@@ -28,6 +127,37 @@ body.dir--admin {
 
 	.settings-panel {
 		@extend %o-settings-panel;
+		inline-size: 100%;
+		max-inline-size: var(--authwave-size-settings-panel-max, 48rem);
+	}
+
+	.card-grid > .settings-panel {
+		max-inline-size: none;
+	}
+
+	.applications-layout {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		gap: var(--theme-space-6);
+
+		> application-list, > application-deployments {
+			flex: 2 1 36rem;
+			min-inline-size: 0;
+
+			&:has(> section[hidden]) {
+				display: none;
+			}
+
+			> .settings-panel {
+				max-inline-size: none;
+			}
+		}
+
+		> application-create, > application-settings {
+			flex: 1 1 20rem;
+			min-inline-size: 0;
+		}
 	}
 
 	.settings-panel.stack > footer {
@@ -73,6 +203,11 @@ body.dir--admin {
 	.record-table {
 		@extend %p-record-table;
 		@include flair.record-table-columns;
+
+		> tbody > tr:nth-child(even) {
+			background: color-mix(in srgb,
+				var(--theme-table-stripe-background, var(--theme-color-surface-disabled)) 40%, transparent);
+		}
 	}
 
 	.summary-table {
@@ -249,4 +384,27 @@ body.dir--admin {
 	.control.muted-accent {
 		--theme-button-background: var(--theme-muted-accent-background);
 	}
+}
+
+body.dir--admin {
+	setup-guide {
+		display: contents;
+	}
+
+	.onboarding-note:target {
+		border-color: var(--theme-color-primary);
+		animation: onboarding-attention .35s ease-in-out;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.onboarding-note:target {
+			animation: none;
+		}
+	}
+}
+
+@keyframes onboarding-attention {
+	0%, 100% { translate: 0; }
+	25%, 75% { translate: -.2rem; }
+	50% { translate: .2rem; }
 }

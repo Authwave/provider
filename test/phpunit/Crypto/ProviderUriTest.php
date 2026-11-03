@@ -1,4 +1,5 @@
 <?php
+
 namespace Authwave\Test\Crypto;
 
 use Authwave\Crypto\ProviderUri;
@@ -7,15 +8,15 @@ use PHPUnit\Framework\TestCase;
 
 class ProviderUriTest extends TestCase {
 	#[\PHPUnit\Framework\Attributes\DataProvider("returnDestinations")]
-	public function testReturnDestination(?string $requested, ?string $expected):void {
+	public function testGetReturnUri_returnDestination(?string $requested, ?string $expected):void {
 		$query = ["c" => "cipher", "i" => "iv", "d" => "deployment"];
 		if(!is_null($requested)) {
 			$query["u"] = bin2hex($requested);
 		}
-		$uri = new ProviderUri(new Uri("https://login.example.test/?" . http_build_query($query)));
+		$sut = new ProviderUri(new Uri("https://login.example.test/?" . http_build_query($query)));
 		$default = new Uri("https://app.example.test/callback");
-		self::assertTrue($uri->isLoginAttempt());
-		$actual = $uri->getReturnUri($default);
+		self::assertTrue($sut->isLoginAttempt());
+		$actual = $sut->getReturnUri($default);
 		self::assertSame($expected, is_null($actual) ? null : (string)$actual);
 	}
 
@@ -42,17 +43,17 @@ class ProviderUriTest extends TestCase {
 	}
 
 	#[\PHPUnit\Framework\Attributes\DataProvider("malformedEncoding")]
-	public function testMalformedHexIsIgnored(mixed $encoded):void {
-		$uri = new ProviderUri(new Uri("https://login.example.test/?" . http_build_query(["u" => $encoded])));
-		self::assertNull($uri->getReturnUri(new Uri("https://app.example.test/callback")));
+	public function testGetReturnUri_malformedHexIsIgnored(mixed $encoded):void {
+		$sut = new ProviderUri(new Uri("https://login.example.test/?" . http_build_query(["u" => $encoded])));
+		self::assertNull($sut->getReturnUri(new Uri("https://app.example.test/callback")));
 	}
 
 	public static function malformedEncoding():array {
 		return [["0"], ["zz"], [["value"]]];
 	}
 
-	public function testMatchingNonDefaultPortIsPreserved():void {
-		$uri = new ProviderUri(new Uri("https://login.example.test/?u=" . bin2hex("https://app.example.test:8443/members")));
-		self::assertSame("https://app.example.test:8443/members", (string)$uri->getReturnUri(new Uri("https://app.example.test:8443/callback")));
+	public function testGetReturnUri_matchingNonDefaultPortIsPreserved():void {
+		$sut = new ProviderUri(new Uri("https://login.example.test/?u=" . bin2hex("https://app.example.test:8443/members")));
+		self::assertSame("https://app.example.test:8443/members", (string)$sut->getReturnUri(new Uri("https://app.example.test:8443/callback")));
 	}
 }

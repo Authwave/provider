@@ -66,8 +66,10 @@ function do_cancel(
 	$audit->create(Action::LOGIN_CANCELLED, [
 		"deploymentId" => $deployment->id,
 	], $anonUser);
+
 	if(strtok($deployment->getClientReturnUri()->getHost(), ":") !== "localhost") {
 		$session->kill();
 	}
+
 	$response->redirect($deployment->getClientReturnUri()->withQueryValue("do", "cancel"));
 }

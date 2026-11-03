@@ -1,78 +1,70 @@
-<aside aria-label="Application sidebar"><admin-sidebar data-flux="update" /></aside>
 <main data-flux="update-link" id="main-content" class="stack">
 	<admin-header />
-	<section id="report" data-flux="update" data-bind:hidden="?!hasApplications" class="report" aria-labelledby="overview-title">
+	<p class="notice" role="note">This screen is not connected yet. Its controls are unavailable.</p>
+	<section id="report" class="report" aria-labelledby="overview-title">
 		<div class="report-layout">
 			<div class="report-chart stack">
 				<header>
 					<div class="toolbar">
 						<h2 id="overview-title">Overview</h2>
-						<span class="trend" data-icon="trending-up">7.4%</span>
+
 						<div class="toolbar toolbar-end report-controls">
 							<admin-comparison />
 							<div class="segmented-control">
-								<form method="get" data-flux aria-label="Reporting period">
-									<input type="hidden" name="from" value="" />
-									<input type="hidden" name="to" value="" />
-									<input type="hidden" name="status" data-bind:value="status" />
-									<input type="hidden" name="method" data-bind:value="method" />
-									<input type="hidden" name="activity" data-bind:value="activity" />
-									<input type="hidden" name="sort" data-bind:value="sort" />
-									<input type="hidden" name="search" data-bind:value="search" />
-									<button type="submit" name="period" value="30d" data-choice aria-pressed="true"><span>30 days</span></button>
-									<button type="submit" name="period" value="7d" data-choice aria-pressed="false"><span>7 days</span></button>
-									<button type="submit" name="period" value="24h" data-choice aria-pressed="false"><span>Today</span></button>
+								<form method="get" aria-label="Reporting period">
+
+									<button type="submit" name="period" value="30d" aria-pressed="true" disabled><span>30 days</span></button>
+									<button type="submit" name="period" value="7d" aria-pressed="false" disabled><span>7 days</span></button>
+									<button type="submit" name="period" value="24h" aria-pressed="false" disabled><span>Today</span></button>
 								</form>
 								<admin-date-range class="segment-menu" />
 							</div>
 						</div>
 					</div>
-					<p>An overview of activity <span data-bind:text="periodText">for the last 30 days</span></p>
+					<p>An overview of activity <span>—</span></p>
 				</header>
-				<admin-chart />
+				<div class="chart-placeholder" aria-hidden="true"></div>
 			</div>
 			<dl class="metrics">
 				<div>
 					<dt>Total usage</dt>
-					<dd><strong data-bind:text="usageTotal">4,862</strong><span class="trend" data-icon="trending-up">9.2%</span></dd>
+					<dd><strong>—</strong></dd>
 				</div>
 				<div>
 					<dt>New users</dt>
-					<dd><strong data-bind:text="userTotal">140</strong><span class="trend" data-icon="trending-up">6.6%</span></dd>
+					<dd><strong>—</strong></dd>
 				</div>
 				<div>
 					<dt>Security codes sent</dt>
-					<dd><strong data-bind:text="securityCodeTotal">2,528</strong><span class="trend" data-icon="trending-up">4.3%</span></dd>
+					<dd><strong>—</strong></dd>
 				</div>
 				<div>
 					<dt>Password changes</dt>
-					<dd><strong data-bind:text="passwordChangeTotal">88</strong><span class="trend" data-trend="down" data-icon="trending-down" aria-label="Down 2.1%">2.1%</span></dd>
+					<dd><strong>—</strong></dd>
 				</div>
 				<div>
 					<dt>Login success ratio</dt>
-					<dd><strong data-bind:text="successfulLoginRatio">96%</strong><span class="trend" data-icon="trending-up">1.2%</span></dd>
+					<dd><strong>—</strong></dd>
 				</div>
 				<div>
 					<dt>Provider logins</dt>
-					<dd><strong data-bind:text="providerLoginTotal">1,361</strong><span class="trend" data-icon="trending-up">7.8%</span></dd>
+					<dd><strong>—</strong></dd>
 				</div>
 			</dl>
 		</div>
 		<admin-chart-data />
 	</section>
-	<section data-flux="update" data-bind:hidden="?!hasApplications" id="activity" class="activity-panel" aria-labelledby="activity-title">
+	<section id="activity" class="activity-panel" aria-labelledby="activity-title">
 		<header class="panel-heading">
 			<h2 id="activity-title">Activity</h2>
 		</header>
-		<div class="toolbar panel-body activity-controls">
-			<admin-activity-filters />
-		</div>
+		<admin-activity-filters />
 		<div class="table-scroll">
 			<table class="activity-table">
-				<caption class="visually-hidden">Sample authentication activity</caption>
+				<caption class="visually-hidden">Authentication activity</caption>
 				<thead>
 					<tr>
-						<th scope="col" class="selection-cell"><input type="checkbox" aria-label="Select all authentications" /></th>
+						<th scope="col" class="selection-cell"><input type="checkbox" aria-label="Select all authentications" disabled /></th>
 						<th scope="col"><span class="compact-label">Auth ID</span><span class="full-label">Authentication ID</span></th>
 						<th scope="col">Date</th>
 						<th scope="col" data-priority="secondary">Status</th>
@@ -81,24 +73,17 @@
 					</tr>
 				</thead>
 				<tbody>
-					<tr data-list="activity">
-						<td class="selection-cell"><input type="checkbox" aria-label="Select authentication {{authId}}" /></td>
-						<th scope="row" data-bind:text="authId">#26678</th>
-						<td data-bind:text="activityDate">5 Oct 2026</td>
-						<td data-priority="secondary"><span class="status" data-bind:data-status="statusValue" data-bind:text="statusLabel">Success</span></td>
-						<td data-priority="secondary"><span class="identity"><span class="avatar" aria-hidden="true"><email-avatar /></span><strong data-bind:text="userEmail">sienna@example.com</strong></span></td>
-						<td data-priority="disclosure"><details class="disclosure-menu row-menu"><summary data-icon="dots-vertical"><span class="visually-hidden">Authentication details</span></summary><div class="disclosure-content"><strong data-bind:text="authId">#26678</strong><p><span class="status" data-bind:data-status="statusValue" data-bind:text="statusLabel">Success</span></p><p data-bind:text="userEmail">sienna@example.com</p><p>Method: <span data-bind:text="methodValue">email</span></p></div></details></td>
-					</tr>
+
 				</tbody>
 			</table>
 		</div>
-		<p class="panel-body" data-bind:hidden="?hasActivities">No activity matches these filters. Try another period or reset the filters.</p>
+		<p class="panel-body">Activity reporting is not connected yet.</p>
 		<footer class="toolbar panel-body">
-			<span data-bind:text="paginationLabel">Page 1 of 4</span>
-			<nav class="toolbar" aria-label="Activity pages"><a class="control" data-flux="link" data-bind:href="previousPage" data-bind:hidden="?!hasPrevious" data-icon="chevron-left">Previous</a><a class="control" data-flux="link" data-bind:href="nextPage" data-bind:hidden="?!hasNext" data-icon="chevron-right" data-icon-right>Next</a></nav>
+			<span>—</span>
+			<nav class="actions" aria-label="Activity pages"><a class="control" data-icon="chevron-left" aria-disabled="true">Previous</a><a class="control" data-icon="chevron-right" data-icon-right aria-disabled="true">Next</a></nav>
 		</footer>
 	</section>
-	<div class="card-grid" data-bind:hidden="?!hasApplications">
+	<div class="card-grid">
 		<admin-top-usage />
 		<admin-new-users />
 		<admin-abandoned-users />

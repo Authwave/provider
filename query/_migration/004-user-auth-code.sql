@@ -1,4 +1,4 @@
-create table user_auth_code (
+create table UserAuthCode (
 	id varchar(32) not null primary key ,
 	userId varchar(32) not null,
 	code varchar(8) not null,
@@ -6,7 +6,7 @@ create table user_auth_code (
 	hash varchar(128) null,
 
 	foreign key(userId)
-		references user(id)
+		references User(id)
 		on update cascade
 		on delete cascade
 )

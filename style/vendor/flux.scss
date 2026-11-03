@@ -1,6 +1,15 @@
 @use "../variable/icon" as variable;
 @use "../animation/flux-loader-spin";
 
+// Apply Flux's autosave presentation before its deferred script starts.
+// Without scripting, retain the ordinary HTTP submit button.
+@media (scripting: enabled) {
+	[data-flux="autosave"], body.dir--admin .actions > [data-flux="autosave"],
+	.actions:has(> [data-flux="autosave"]:only-child) {
+		display: none;
+	}
+}
+
 form[data-flux] {
 	&.flux-form-waiting {
 		cursor: wait;

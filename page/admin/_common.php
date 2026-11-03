@@ -1,48 +1,28 @@
 <?php
-use Authwave\Security\AdminAccess;
-use Authwave\Session\LoginSession;
-use Authwave\User\LoginState;
-use Authwave\User\UserRepository;
-use Gt\DomTemplate\Binder;
+use Authwave\Admin\Onboarding\AdminArea;
+use Authwave\Admin\Application\ApplicationCatalogue;
+use GT\DomTemplate\Binder;
 use Gt\Http\Response;
-use Authwave\Security\AdminAccessDenied;
+use Gt\Http\Uri;
 
 function go(
-	LoginSession $loginSession,
-	UserRepository $userRepo,
-	AdminAccess $adminAccess,
+	AdminArea $area,
+	Uri $uri,
 	Response $response,
 	Binder $binder,
 ):void {
-	if($loginSession->getState() !== LoginState::LOGGED_IN) {
-		$loginSession->requestAdmin();
-		$response->redirect("/login/");
-		return;
-	}
-
-	$user = $userRepo->get($loginSession->getDeployment(), $loginSession->getEmail());
-	if(!$adminAccess->allows($user)) {
-		throw new AdminAccessDenied("Administrator access is required.");
-	}
-
-	$loginSession->clearAdminRequest();
+	$area->enter($uri, $response);
 	$binder->bindKeyValue("title", "User Administration");
 }
 
-function do_demo(
-	\Gt\Http\Request $request,
-	\Gt\Input\Input $input,
-	LoginSession $loginSession,
-	UserRepository $userRepo,
-	AdminAccess $adminAccess,
-	\Authwave\Admin\DemoWorkspace $workspace,
-	Response $response,
-):void {
-	\Authwave\Admin\DemoAction::submit($request, $input, $loginSession, $userRepo, $adminAccess, $workspace, $response);
-}
-
-function go_after(Binder $binder, \Gt\Http\Uri $uri):void {
+function go_after(Binder $binder, Uri $uri, ApplicationCatalogue $applications):void {
 	$page = basename(rtrim($uri->getPath(), "/"));
+
+	if(str_starts_with($uri->getPath(), "/admin/applications/")) {
+		$page = "applications";
+	}
+
 	$title = $page === "admin" ? "Dashboard" : ucfirst($page);
 	$binder->bindKeyValue("title", "$title - Administration");
+	$binder->bindKeyValue("scopeLabel", $applications->selected()?->name ?? "No applications");
 }

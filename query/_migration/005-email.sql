@@ -1,4 +1,4 @@
-create table email (
+create table Email (
 	id varchar(32) not null primary key,
 	sentAt datetime null,
 	sentMessageId varchar(256) null,

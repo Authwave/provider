@@ -1,9 +1,9 @@
 <details class="disclosure-menu">
 	<summary class="control">Comparison</summary>
-	<form class="disclosure-content form-fields" method="get" data-flux>
+	<form class="disclosure-content form-fields" method="get">
 		<label>
 			<span>Comparison period</span>
-			<select name="reportComparison" data-filter="reportComparison">
+			<select name="reportComparison" disabled>
 				<option value="previous">Last period</option>
 				<option value="previous-1">Last period - 1</option>
 				<option value="month">Same point last month</option>
@@ -11,6 +11,8 @@
 				<option value="year">Previous year</option>
 			</select>
 		</label>
-		<button type="submit" data-flux="autosave"><span>Apply comparison</span></button>
+		<div class="actions">
+			<button type="submit" disabled><span>Apply comparison</span></button>
+		</div>
 	</form>
 </details>

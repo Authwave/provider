@@ -1,0 +1,15 @@
+<section class="settings-panel stack" data-flux="update">
+	<h2>Create an application</h2>
+	<p role="status" hidden data-bind:hidden="?!success" data-bind:text="success"></p>
+	<p role="alert" hidden data-bind:hidden="?!error" data-bind:text="error"></p>
+
+	<form method="post" action="/admin/applications/" class="form-fields stack compact">
+		<label>
+			<span>Application name</span>
+			<input name="name" required maxlength="128" data-bind:value="name" autocomplete="off" />
+		</label>
+		<div class="actions">
+			<button type="submit" name="do" value="create" class="primary">Create application</button>
+		</div>
+	</form>
+</section>

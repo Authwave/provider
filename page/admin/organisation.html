@@ -1,14 +1,18 @@
-<aside aria-label="Application sidebar"><admin-sidebar data-flux="update" /></aside>
 <main data-flux="update-link" id="main-content" class="stack">
 	<admin-header />
-	<admin-page-heading />
-	<section data-flux="update" class="settings-panel stack">
+	<header class="stack compact">
+		<h1>Organisation</h1>
+		<p data-bind:text="scopeLabel">No applications</p>
+	</header>
+	<p class="notice" role="note">This screen is not connected yet. Its controls are unavailable.</p>
+	<section class="settings-panel stack">
 		<h2>Create an organisation</h2>
 		<form method="post" class="form-fields stack compact">
-			<input type="hidden" name="do" value="demo" />
-			<input type="hidden" name="operation" value="create-organisation" />
-			<label><span>Organisation name</span><input type="text" name="name" data-setting="name" required maxlength="100" /></label>
-			<button type="submit" class="primary">Create demo organisation</button>
+
+			<label><span>Organisation name</span><input type="text" name="name" required maxlength="100" disabled /></label>
+			<div class="actions">
+				<button type="submit" class="primary" disabled>Create organisation</button>
+			</div>
 		</form>
 	</section>
 </main>

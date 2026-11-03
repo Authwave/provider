@@ -1,7 +1,9 @@
-<aside aria-label="Application sidebar"><admin-sidebar data-flux="update" /></aside>
 <main data-flux="update-link" id="main-content" class="stack">
 	<admin-header />
-	<admin-page-heading />
+	<header class="stack compact">
+		<h1>Integrations</h1>
+		<p data-bind:text="scopeLabel">No applications</p>
+	</header>
 	<section data-flux="update" class="settings-panel stack">
 		<h2>Client libraries</h2>
 		<div class="card-grid">
@@ -11,7 +13,7 @@
 	</section>
 	<section data-flux="update" class="settings-panel stack" id="php-example">
 		<h2>PHP integration example</h2>
-		<p>Illustrative configuration using a demo deployment. Replace the demo values when connecting your client.</p>
+		<p>Illustrative configuration using a deployment. Replace the deployment values when connecting your client.</p>
 		<pre><code>use Authwave\Authenticator;
 require __DIR__ . "/vendor/autoload.php";
 
@@ -42,6 +44,6 @@ if ($auth-&gt;isLoggedIn()) {
 			<li>Redirect sign-in requests through the Authwave client.</li>
 			<li>Handle the encrypted callback, create your application session and test logout.</li>
 		</ol>
-		<a class="control" data-bind:href="applicationsUrl">Open applications</a>
+		<a class="control" href="/admin/applications/">Open applications</a>
 	</section>
 </main>

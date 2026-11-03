@@ -3,6 +3,7 @@
 namespace Authwave\User;
 
 use Authwave\Email\EmailRepository;
+use Authwave\Model\User;
 use Authwave\Model\ApplicationDeployment;
 use Authwave\Model\ApplicationRepository;
 use Authwave\Security\Audit;
@@ -11,25 +12,29 @@ use Gt\Database\Query\QueryCollection;
 use Gt\Database\Result\Row;
 use Gt\Logger\Log;
 use GT\Ulid\Ulid;
-class UserRepository {
+readonly class UserRepository {
 
 	public function __construct(
-		private readonly QueryCollection $database,
-		private readonly ApplicationRepository $applicationRepo,
-		private readonly EmailRepository $emailer,
-		private readonly Audit $audit
+		private QueryCollection $database,
+		private ApplicationRepository $applicationRepo,
+		private EmailRepository $emailer,
+		private Audit $audit
 	) {
 	}
-	public function get(ApplicationDeployment $deployment, string $email): ?User {
-		return $this->rowToUser(
-			$this->database->fetch("getByDeploymentAndEmail", $deployment->id, $email),
-			$deployment
-		);
+	public function get(ApplicationDeployment $deployment, string $email):?User {
+		$userId = $this->database->fetchString("getIdByDeploymentAndEmail", $deployment->id, $email);
+
+		return $this->getById($userId);
 	}
+
 	/** Retains the public id field and named parameter contract.
 	* @SuppressWarnings("PHPMD.ShortVariable")
 	*/
-	private function getById(string $id): ?User {
+	public function getById(?string $id):?User {
+		if($id === null) {
+			return null;
+		}
+
 		return $this->rowToUser($this->database->fetch("getById", $id));
 	}
 	public function checkLogin(User $user, string $password): bool {
@@ -57,7 +62,16 @@ class UserRepository {
 			]
 		);
 		$user = new User((string) $userId, $deployment, $email);
-		$this->audit->create(Action::USER_CREATED, ["deploymentId" => $deployment->id], $user);
+		$this->audit->recordChange(
+			Action::USER_CREATED,
+			before: null,
+			after: (object)[
+				"userId" => $user->id,
+				"deploymentId" => $deployment->id,
+				"email" => $email,
+			],
+			actor: $user,
+		);
 		$this->generateAuthCode($deployment, $userId, $password);
 		return $user;
 	}
@@ -77,6 +91,7 @@ class UserRepository {
 		if ($newPassword) {
 			$hash = password_hash($newPassword, PASSWORD_DEFAULT);
 		}
+
 		$code = str_pad((string) rand(1000, 99999), 5, "0", STR_PAD_LEFT);
 		Log::info("Generated new security code for user {$userId}");
 		$user = $this->getById($userId);
@@ -100,7 +115,7 @@ class UserRepository {
 			$user->email,
 			$user->deployment->application->name,
 			$code,
-			$user->deployment->application->emailSendFrom
+			$user->deployment->application->emailSendFrom ?? EmailRepository::DEFAULT_EMAIL_FROM_ADDRESS
 		);
 	}
 	public function getLatestAuthCode(string $userId): ?string {
@@ -117,6 +132,7 @@ class UserRepository {
 		if ($success) {
 			$this->consumeAuthCode($user->id, $expectedAuthCode);
 		}
+
 		return $success;
 	}
 	/** Uses stateless utility/framework APIs.
@@ -126,9 +142,17 @@ class UserRepository {
 		if (!$authCode) {
 			return;
 		}
+
+		$previousHash = $this->database->fetchString("getHashById", $userId);
 		$this->database->update("setHashFromAuthCode", $userId, $authCode);
+		$currentHash = $this->database->fetchString("getHashById", $userId);
+
+		if($previousHash !== $currentHash) {
+			$this->audit->create(Action::PASSWORD_CHANGED, null, $this->getById($userId));
+		}
+
 		$this->database->delete("consumeUserAuthToken", $userId, $authCode);
-		Log::info("Consumed token {$authCode} for user {$userId}");
+		Log::info("Consumed security token for user {$userId}");
 	}
 	/** Uses stateless utility/framework APIs.
 	* @SuppressWarnings("PHPMD.StaticAccess")
@@ -137,14 +161,19 @@ class UserRepository {
 		$numCleaned = $this->database->delete("deleteOldAuthCodes");
 		Log::info("Cleaned {$numCleaned} old tokens");
 	}
-	private function rowToUser(?Row $row, ?ApplicationDeployment $deployment = null): ?User {
+	private function rowToUser(?Row $row): ?User {
 		if (!$row) {
 			return null;
 		}
-		if (!$deployment) {
-			$deployment =
-				$this->applicationRepo->getDeploymentById($row->getString("applicationDeploymentId"));
+		$deployment = $this->applicationRepo->getDeploymentById(
+			$row->getString("applicationDeploymentId"),
+		);
+
+		if($deployment === null) {
+			return null;
 		}
-		return new User($row->getString("userId"), $deployment, $row->getString("email"));
+
+		return new User($row->getString("userId"), $deployment,
+			$row->getString("email"), $row->getString("hash"));
 	}
 }

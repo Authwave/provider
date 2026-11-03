@@ -4,21 +4,22 @@ namespace Authwave\Model;
 use Gt\Http\Uri;
 use Psr\Http\Message\UriInterface;
 
-class ApplicationDeployment {
+readonly class ApplicationDeployment {
+	public string $applicationId;
+
 	/** Retains the public id field and named parameter contract.
 	* @SuppressWarnings("PHPMD.ShortVariable")
 	*/
 	public function __construct(
-		public readonly string $id,
-		public readonly Application $application,
-//		#[DefaultValue("default")]
-		public readonly string $title,
-		public readonly string $secret,
-		public readonly string $clientHost,
-//		#[DefaultValue("/")]
-		public readonly string $clientLoginPath,
-		public readonly string $providerHost = "",
+		public string $id,
+		public Application $application,
+		public string $title,
+		public string $secret,
+		public string $clientHost,
+		public string $clientLoginPath,
+		public string $providerHost = "",
 	) {
+		$this->applicationId = $application->id;
 	}
 
 	public function getClientReturnUri():UriInterface {

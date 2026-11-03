@@ -1,30 +1,35 @@
-<aside aria-label="Application sidebar"><admin-sidebar data-flux="update" /></aside>
 <main data-flux="update-link" id="main-content" class="stack">
 	<admin-header />
-	<admin-page-heading />
+	<header class="stack compact">
+		<h1>Users</h1>
+		<p data-bind:text="scopeLabel">No applications</p>
+	</header>
+	<p class="notice" role="note">This screen is not connected yet. Its controls are unavailable.</p>
 	<div class="card-grid">
-		<section data-flux="update" class="settings-panel stack">
+		<section class="settings-panel stack">
 			<h2>Currently logged in</h2>
-			<p class="metric" data-bind:text="onlineCount">6</p>
+			<p class="metric">—</p>
 			<ul class="record-list">
-				<li data-list="online-users"><span class="identity"><span class="avatar" aria-hidden="true"><email-avatar /></span><span data-bind:text="userEmail"></span></span><span data-bind:text="userDevice"></span></li>
+
 			</ul>
 		</section>
-		<section data-flux="update" class="settings-panel stack">
+		<section class="settings-panel stack">
 			<h2>Latest login failures</h2>
 			<ul class="record-list">
-				<li data-list="failed-users"><span class="identity"><span class="avatar" aria-hidden="true"><email-avatar /></span><span data-bind:text="userEmail"></span></span><span data-bind:text="userApplication"></span></li>
+
 			</ul>
 		</section>
 	</div>
-	<section data-flux="update" class="settings-panel stack">
+	<section class="settings-panel stack">
 		<h2>All users</h2>
 		<form method="get" class="filter-grid">
-			<label><span>Search users</span><input type="search" name="search" data-bind:value="search" placeholder="Email address" /></label>
-			<label><span>Status</span><select name="userStatus" data-filter="userStatus"><option value="all">All users</option><option value="online">Online now</option><option value="failed">Recent login failure</option><option value="abandoned">Abandoned</option></select></label>
-			<label><span>Sort by</span><select name="userSort" data-filter="userSort"><option value="logins">Sign-in count</option><option value="created">Created date</option><option value="email">Email address</option></select></label>
-			<label class="checkbox-field"><input type="checkbox" name="reveal" value="yes" data-bind:checked="?revealEmails" /><span>Show email addresses</span></label>
-			<button type="submit">Apply filters</button>
+			<label><span>Search users</span><input type="search" name="search" placeholder="Email address" disabled /></label>
+			<label><span>Status</span><select name="userStatus" disabled><option value="all">All users</option><option value="online">Online now</option><option value="failed">Recent login failure</option><option value="abandoned">Abandoned</option></select></label>
+			<label><span>Sort by</span><select name="userSort" disabled><option value="logins">Sign-in count</option><option value="created">Created date</option><option value="email">Email address</option></select></label>
+			<label class="checkbox-field"><input type="checkbox" name="reveal" value="yes" disabled /><span>Show email addresses</span></label>
+			<div class="actions">
+				<button type="submit" disabled>Apply filters</button>
+			</div>
 		</form>
 		<div class="table-scroll">
 			<table class="record-table">
@@ -40,29 +45,22 @@
 					</tr>
 				</thead>
 				<tbody>
-					<tr data-list="users">
-						<td data-label="Email"><span class="identity"><span class="avatar" aria-hidden="true"><email-avatar /></span><span data-bind:text="userEmail">Sample</span></span></td>
-						<td data-label="Application" data-bind:text="userApplication">Sample</td>
-						<td data-label="Log-ins" data-bind:text="userLogins">Sample</td>
-						<td data-label="Created" data-bind:text="userCreated">Sample</td>
-						<td data-label="Last seen" data-bind:text="userLastSeen">Sample</td>
-						<td data-label="Country" data-bind:text="userCountry">Sample</td>
-						<td data-label="Device" data-bind:text="userDevice">Sample</td>
-					</tr>
+
 				</tbody>
 			</table>
 		</div>
-		<p data-bind:hidden="?hasUsers">No users match these filters.</p>
-		<p data-bind:text="userPagination"></p>
-		<nav class="toolbar" aria-label="User pages"><a class="control" data-bind:href="userPrevious" data-bind:hidden="?!hasUserPrevious">Previous</a><a class="control" data-bind:href="userNext" data-bind:hidden="?!hasUserNext">Next</a></nav>
+		<p>No users match these filters.</p>
+		<p>—</p>
+		<nav class="actions" aria-label="User pages"><a class="control" aria-disabled="true">Previous</a><a class="control" aria-disabled="true">Next</a></nav>
 	</section>
-	<section data-flux="update" class="settings-panel stack" id="add-user">
+	<section class="settings-panel stack" id="add-user">
 		<h2>Add a user</h2>
 		<form method="post" class="form-fields stack compact">
-			<input type="hidden" name="do" value="demo" />
-			<input type="hidden" name="operation" value="create-user" />
-			<label><span>Email address</span><input type="email" name="email" required /></label>
-			<button type="submit" class="primary">Add demo user</button>
+
+			<label><span>Email address</span><input type="email" name="email" required disabled /></label>
+			<div class="actions">
+				<button type="submit" class="primary" disabled>Add user</button>
+			</div>
 		</form>
 	</section>
 </main>

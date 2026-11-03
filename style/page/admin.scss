@@ -171,7 +171,6 @@ body.dir--admin {
 	}
 
 	.setup-card {
-		margin-block-start: var(--theme-space-4);
 		padding: var(--theme-space-4);
 		border: var(--theme-surface-border);
 		border-radius: var(--theme-surface-radius);
@@ -277,8 +276,8 @@ body.dir--admin {
 		--theme-split-main-max: var(--authwave-size-report-chart-max);
 	}
 
-	.report-layout[data-metrics-beside-chart] > .metrics {
-		margin-block-end: var(--authwave-space-chart-labels, 0px);
+	.chart-placeholder {
+		block-size: var(--authwave-size-chart);
 	}
 
 	.report-chart {

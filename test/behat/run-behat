@@ -70,6 +70,9 @@ cleanup() {
 	if [[ -n "${CHROME_PROFILE_DIR:-}" && -d "${CHROME_PROFILE_DIR:-}" ]]; then
 		rm -rf "$CHROME_PROFILE_DIR" 2>/dev/null || true
 	fi
+	if [[ -n "${BEHAT_DATABASE:-}" && -f "$BEHAT_DATABASE.snapshot" ]]; then
+		cp "$BEHAT_DATABASE.snapshot" "$BEHAT_DATABASE"
+	fi
 	if [[ -n "${TEST_RUN_DIR:-}" ]]; then rm -rf "$TEST_RUN_DIR"; fi
 }
 
@@ -81,6 +84,13 @@ cd "$ROOT_DIR"
 mkdir -p www
 TEST_RUN_DIR="$(mktemp -d /tmp/authwave-behat.XXXXXX)"
 
+export BEHAT_DATABASE="$TEST_RUN_DIR/provider.sqlite"
+export database_driver=sqlite
+export database_schema="$BEHAT_DATABASE"
+export authwave_admin_email=admin@example.test
+export session_path="$TEST_RUN_DIR/sessions"
+php -r 'require "vendor/autoload.php"; require "test/behat/database/DatabaseState.php"; new Authwave\Test\Behat\DatabaseState(getenv("BEHAT_DATABASE"), "test/behat/database");'
+
 export BEHAT_BASE_URL="http://${APP_HOST}:${APP_PORT}"
 export BEHAT_CHROME_API_URL="http://${CHROME_HOST}:${CHROME_PORT}"
 
@@ -89,10 +99,15 @@ APP_PID=$!
 wait_for_port "$APP_HOST" "$APP_PORT" "PHP application"
 
 CHROME_PROFILE_DIR="$(mktemp -d /tmp/authwave-behat-chrome.XXXXXX)"
+SCRIPT_FLAGS=()
+if [[ "${BEHAT_JAVASCRIPT:-0}" != "1" ]]; then
+	SCRIPT_FLAGS=(--blink-settings=scriptEnabled=false)
+fi
 "$CHROME_BIN" \
 	--headless=new \
 	--disable-dev-shm-usage \
 	--disable-gpu \
+	"${SCRIPT_FLAGS[@]}" \
 	--no-first-run \
 	--no-default-browser-check \
 	--no-sandbox \

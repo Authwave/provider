@@ -1,0 +1,29 @@
+<section class="settings-panel stack" data-flux="update">
+	<h2>Deployments</h2>
+	<p data-bind:hidden="?hasDeployments">No deployments are assigned to this application yet.</p>
+	<ul class="deployment-list stack">
+		<li data-list="deployment-panels" data-bind:data-new="isNew">
+			<details class="settings-disclosure" name="application-deployments" data-bind:id="panelId" data-bind:open="?isOpen">
+				<summary><span class="new-deployment-icon" data-icon="plus" aria-hidden="true"></span><span data-bind:text="summary">Create a deployment</span></summary>
+				<form method="post" class="form-fields stack compact">
+					<label class="existing-deployment-field"><span>ID</span>
+						<input name="deploymentId" readonly data-bind:value="identifier" />
+					</label>
+					<label><span>Deployment name</span>
+						<input name="deploymentName" required maxlength="32" placeholder="e.g. Development, Staging, Production" data-bind:value="name" />
+					</label>
+					<label class="existing-deployment-field"><span>API key</span>
+						<input readonly data-bind:value="apiKey" autocomplete="off" spellcheck="false" />
+					</label>
+					<label><span>Host</span><input name="host" required maxlength="256" placeholder="account.example.com" data-bind:value="host" /></label>
+					<label><span>Client URL</span><input name="clientUrl" type="url" required maxlength="256" placeholder="https://www.example.com" data-bind:value="clientUrl" /></label>
+					<label><span>Client login path</span><input name="clientLoginPath" required maxlength="256" placeholder="/login/" data-bind:value="clientLoginPath" /></label>
+					<div class="actions">
+						<button type="submit" name="do" value="save-deployment" data-bind:class=":isNew primary" data-bind:text="submitLabel">Create deployment</button>
+						<button type="submit" name="do" value="delete-deployment" formnovalidate class="existing-deployment-field" data-bind:data-confirm-delete="identifier" data-bind:data-delete-name="name">Delete deployment</button>
+					</div>
+				</form>
+			</details>
+		</li>
+	</ul>
+</section>

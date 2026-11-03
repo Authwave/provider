@@ -1,4 +1,4 @@
-update email
+update Email
 set
 	sentAt = now(),
 	sentMessageId = :sentMessageId

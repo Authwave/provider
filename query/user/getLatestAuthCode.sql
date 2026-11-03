@@ -1,7 +1,7 @@
 select
 	code
 from
-	user_auth_code
+	UserAuthCode
 
 where
 	userId = ?

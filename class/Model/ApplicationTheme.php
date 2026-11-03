@@ -3,7 +3,7 @@
 namespace Authwave\Model;
 
 use InvalidArgumentException;
-class ApplicationTheme {
+readonly class ApplicationTheme {
 
 	public const
 		COLOUR_PROPERTIES = [
@@ -46,14 +46,18 @@ class ApplicationTheme {
 		]
 	;
 	/** @param array<string, mixed> $colours */
-	public function __construct(public readonly string $colourScheme, public readonly array $colours) {
+	public function __construct(
+		public string $colourScheme,
+		public array $colours,
+		public string $applicationId,
+	) {
 		if (!in_array($colourScheme, ["light", "dark"], true)) {
 			throw new InvalidArgumentException("Unknown colour scheme: {$colourScheme}");
 		}
 	}
-	public static function fromJson(string $colourScheme, string $json): self {
+	public static function fromJson(string $colourScheme, string $json, string $applicationId): self {
 		$colours = json_decode($json, true);
-		return new self($colourScheme, is_array($colours) ? $colours : []);
+		return new self($colourScheme, is_array($colours) ? $colours : [], $applicationId);
 	}
 	public function toCss(): string {
 		$declarations = [];
@@ -70,6 +74,7 @@ class ApplicationTheme {
 		if (!$declarations) {
 			return "";
 		}
+
 		return ':root[data-flair-theme="bright"]'
 			. "[data-color-scheme=\"{$this->colourScheme}\"] { "
 			. implode(" ", $declarations) . " }";

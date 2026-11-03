@@ -6,7 +6,7 @@ use Authwave\Model\ApplicationDeployment;
 use Authwave\Model\ApplicationLogo;
 use GT\Dom\HTMLDocument;
 use GT\DomTemplate\Binder;
-class LoginBranding {
+readonly class LoginBranding {
 
 	public function apply(
 		HTMLDocument $document,

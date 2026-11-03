@@ -1,7 +1,7 @@
 select
 	userId
 from
-	user_admin
+	UserAdmin
 where
 	userId = ?
 and

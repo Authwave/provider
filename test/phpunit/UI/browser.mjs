@@ -102,6 +102,17 @@ try {
 	await send("Runtime.enable");
 	await send("Network.enable");
 	await send("Emulation.setFocusEmulationEnabled", {enabled: true});
+	responseFixtures.set("/autosave-before-flux.html", {
+		html: '<link rel="stylesheet" href="/style.css"><form><button data-flux="autosave">Apply scope</button></form>',
+	});
+	for(const scriptsEnabled of [true, false]) {
+		await send("Emulation.setScriptExecutionDisabled", {value: !scriptsEnabled});
+		await send("Page.navigate", {url: `${origin}/autosave-before-flux.html`});
+		await waitFor('location.pathname === "/autosave-before-flux.html" && document.readyState === "complete" && !!document.querySelector("button")');
+		assert.equal(await evaluate('getComputedStyle(document.querySelector("button")).display === "none"'),
+			scriptsEnabled, "Autosave controls hide before Flux loads and remain available without JavaScript");
+	}
+	await send("Emulation.setScriptExecutionDisabled", {value: false});
 	for(const width of [280, 320, 390, 640, 1280]) {
 		await send("Emulation.setDeviceMetricsOverride", {width, height: 844, deviceScaleFactor: 1, mobile: width < 600});
 		for(const mode of ["light", "dark"]) {

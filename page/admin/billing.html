@@ -1,28 +1,31 @@
-<aside aria-label="Application sidebar"><admin-sidebar data-flux="update" /></aside>
 <main data-flux="update-link" id="main-content" class="stack">
 	<admin-header />
-	<admin-page-heading />
-	<section data-flux="update" class="settings-panel stack">
+	<header class="stack compact">
+		<h1>Billing</h1>
+		<p data-bind:text="scopeLabel">No applications</p>
+	</header>
+	<p class="notice" role="note">This screen is not connected yet. Its controls are unavailable.</p>
+	<section class="settings-panel stack">
 		<h2>Current plan</h2>
-		<p class="metric" data-bind:text="currentPlan">Growth</p>
-		<p data-bind:text="nextPayment">Next payment on 1 November</p>
-		<p data-bind:text="planPrice">£29 per month</p>
+		<p class="metric">—</p>
+		<p>—</p>
+		<p>—</p>
 	</section>
-	<section data-flux="update" class="settings-panel stack">
+	<section class="settings-panel stack">
 		<h2>Usage</h2>
-		<label for="usage">Monthly authenticated users</label>
-		<progress id="usage" max="100" data-bind:value="usagePercent"></progress>
-		<strong data-bind:text="usageLabel">4,862 / 10,000 · 49%</strong>
-		<p>Your demo billing period resets on the first day of next month.</p>
+		<p>Monthly authenticated users</p>
+		<strong>—</strong>
+		<p>Your billing period resets on the first day of next month.</p>
 	</section>
-	<section data-flux="update" class="settings-panel stack">
+	<section class="settings-panel stack">
 		<h2>Change plan</h2>
 		<form method="post" class="form-fields stack compact">
-			<input type="hidden" name="do" value="demo" />
-			<input type="hidden" name="operation" value="plan" />
-			<label><span>Plan</span><select name="plan" data-setting="plan"><option value="Starter">Starter — £0 / month, 1,000 users</option><option value="Growth">Growth — £29 / month, 10,000 users</option><option value="Scale">Scale — £99 / month, 50,000 users</option></select></label>
-			<p>This only changes your demo plan. No charge is made.</p>
-			<button type="submit" class="primary">Change demo plan</button>
+
+			<label><span>Plan</span><select name="plan" disabled><option>Not available yet</option></select></label>
+			<p>This only changes your plan. No charge is made.</p>
+			<div class="actions">
+				<button type="submit" class="primary" disabled>Change plan</button>
+			</div>
 		</form>
 	</section>
 </main>

@@ -1,52 +1,73 @@
 <?php
-
 use Authwave\Crypto\ProviderUri;
 use Authwave\Session\LoginSession;
 use Authwave\Model\ApplicationRepository;
-use Gt\Cipher\EncryptedUri;
-use Gt\Cipher\Key;
-use Gt\Config\Config;
-use Gt\Cipher\InitVector;
+use Authwave\Security\{Audit, AnonUser, Action};
+use Authwave\User\UserRepository;
+use Authwave\UI\TableLink;
+use GT\Cipher\EncryptedUri;
+use GT\Cipher\Key;
+use GT\Cipher\InitVector;
+use GT\Config\Config;
 use Gt\Http\ResponseStatusException\ClientError\HttpNotFound;
 use Gt\Http\Response;
 use Gt\Http\ResponseStatusException\HttpBadRequest;
 use Gt\Http\Uri;
+use Gt\Http\Request;
 use Gt\Session\Session;
+use GT\Dom\HTMLDocument;
+
+function go_before(Audit $audit, Request $request, LoginSession $login,
+	UserRepository $users, AnonUser $anonymous):void {
+	// Keep an audit trail of every request.
+	$audit->recordRequest($request, $login, $users, $anonymous);
+}
 
 function go(
-	ApplicationRepository $appRepo,
+	ApplicationRepository $applicationRepository,
 	Uri $uri,
 	LoginSession $loginSession,
 	Session $session,
 	Response $response,
 	Config $config,
+	HTMLDocument $document,
+	Audit $audit,
+	AnonUser $anonymous,
 ):void {
-	if(rtrim($uri->getPath(), "/") === "/logged-out") return;
-	parse_str($uri->getQuery(), $query);
-	if(isset($query["dev-login"])) {
-		if($config->isProduction() || !$config->getBool("authwave.dev_login")) {
+	foreach($document->querySelectorAll("table:has(a[data-table-link])") as $table) {
+		new TableLink($table);
+	}
+
+	if($uri->getPath() === "/logged-out/") {
+		return;
+	}
+
+	if($deploymentId = $uri->getQueryValue("dev-login")) {
+		if($config->isProduction()) {
 			throw new HttpNotFound();
 		}
 
-		$deploymentId = $query["dev-login"];
-		if(!is_string($deploymentId) || $deploymentId === "") {
+		if(!is_string($deploymentId)) {
 			throw new HttpBadRequest();
 		}
-		$deployment = $appRepo->getDeploymentById($deploymentId);
+
+		$deployment = $applicationRepository->getDeploymentById($deploymentId) ?? throw new HttpNotFound();
 		$loginSession->setDeploymentForLogin($deployment);
 		$loginSession->resetAuthentication();
 		$loginSession->setData([
-			"action" => "login",
 			"secretIv" => (string)new InitVector(),
-			"developmentLogin" => "1",
+// Prevents automatic navigation to the client after authentication:
+			"developmentLogin" => true,
 		]);
+
 		$response->redirect("/login/");
 		return;
 	}
 
 	$providerUri = new ProviderUri($uri);
+
 	if($deploymentId = $providerUri->getDeploymentId()) {
-		$deployment = $appRepo->getDeploymentById($deploymentId);
+		$deployment = $applicationRepository->getDeploymentById($deploymentId) ?? throw new HttpNotFound();
 
 		$enc = new EncryptedUri(
 			$uri,
@@ -58,10 +79,12 @@ function go(
 
 		if($data["action"] === "login") {
 			$loginSession->setDeploymentForLogin($deployment);
-			unset($data["returnUri"]);
+			unset($data["returnUri"], $data["action"]);
+
 			if($returnUri = $providerUri->getReturnUri($deployment->getClientReturnUri())) {
 				$data["returnUri"] = (string)$returnUri;
 			}
+
 			$loginSession->setData($data);
 			$response->redirect("/");
 		}
@@ -71,6 +94,7 @@ function go(
 
 			if(isset($data["redirectTo"])) {
 				$redirectUri = new Uri($data["redirectTo"]);
+
 				if(!$redirectUri->getHost()) {
 					$clientReturnUri = new Uri($deployment->getClientReturnUri());
 					$redirectUri = $clientReturnUri
@@ -83,7 +107,7 @@ function go(
 			}
 			else {
 				$response->redirect(
-					(new Uri($deployment->getClientReturnUri()))
+					new Uri($deployment->getClientReturnUri())
 						->withQueryValue("do", "logout")
 				);
 			}
@@ -92,15 +116,23 @@ function go(
 	elseif(!$loginSession->getDeployment()) {
 		$host = $uri->getHost();
 		$port = $uri->getPort();
+
 		if($port && $port !== 443) {
 			$host .= ":$port";
 		}
 
-		$deployment = $appRepo->getDeploymentByProviderHost($host);
+		$deployment = $applicationRepository->getDeploymentByProviderHost($host) ?? throw new HttpNotFound();
+
 		if($uri->getPath() === "/admin" || str_starts_with($uri->getPath(), "/admin/")) {
 			$loginSession->setDeploymentForLogin($deployment);
 			return;
 		}
-		$appRepo->redirectToDeployment($deployment, $host, $response);
+
+		$applicationRepository->redirectDeployment(
+			$deployment,
+			$host,
+			$anonymous,
+			$response->redirect(...),
+		);
 	}
 }

@@ -1,9 +1,9 @@
-<section id="admin-abandoned-users" data-flux="update" class="settings-panel stack" aria-labelledby="abandoned-users-title">
+<section id="admin-abandoned-users" class="settings-panel stack" aria-labelledby="abandoned-users-title">
 	<h2 id="abandoned-users-title">Abandoned users</h2>
 	<p class="muted">Signups that were started but not completed.</p>
 	<ul class="record-list">
-		<li data-list="abandoned-users"><span class="identity"><span class="avatar" aria-hidden="true"><email-avatar /></span><span data-bind:text="userEmail">Sample</span></span><time data-bind:datetime="signupTime" data-bind:title="signupTimeTitle" data-bind:text="signupTimeText">3 hours ago</time></li>
+
 	</ul>
-	<p class="muted" data-bind:hidden="?hasAbandonedUsers">No unfinished signups.</p>
-	<footer><a class="card-link" data-bind:href="abandonedUsersUrl"><span>See all abandoned users</span><span data-icon="arrow-right" aria-hidden="true"></span></a></footer>
+	<p class="muted">Signup reporting is not connected yet.</p>
+	<footer><a class="card-link" aria-disabled="true"><span>See all abandoned users</span><span data-icon="arrow-right" aria-hidden="true"></span></a></footer>
 </section>
