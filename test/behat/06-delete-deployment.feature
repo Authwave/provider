@@ -22,7 +22,7 @@ Feature: Deleting deployments with an audit trail
     When I go to "/admin/applications/managed/"
     And I complete the "Create a deployment" deployment form:
       | Deployment name   | Staging                   |
-      | Host              | staging-login.example.test|
+      | Authwave host              | staging-login.example.test|
       | Client URL        | https://staging.example.test |
       | Client login path | /login/                   |
     And I save deployment "Create a deployment"

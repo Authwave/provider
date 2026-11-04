@@ -17,13 +17,13 @@ class ApplicationSettingsContextTest extends TestCase {
 		return new ApplicationSettingsContext($store, $this->createStub(User::class), "app", "deployment");
 	}
 
-	public function testDeploymentPanels_emptyListStillHasOneOpenCreationPanelWithReadonlyFieldsPresent():void {
+	public function testDeploymentPanels_emptyListHasClosedCreationPanelWithReadonlyFieldsPresent():void {
 		$sut = $this->context([]);
 		self::assertSame([], iterator_to_array($sut->productionOptions()));
 		$panels = iterator_to_array($sut->deploymentPanels());
 		self::assertCount(1, $panels);
 		self::assertTrue($panels[0]->isNew);
-		self::assertTrue($panels[0]->isOpen);
+		self::assertFalse($panels[0]->isOpen);
 		self::assertSame("", $panels[0]->identifier);
 		self::assertSame("", $panels[0]->apiKey);
 		self::assertSame("/", $panels[0]->clientLoginPath);
@@ -46,5 +46,32 @@ class ApplicationSettingsContextTest extends TestCase {
 		self::assertCount(2, $options);
 		self::assertFalse($options[0]->selected);
 		self::assertTrue($options[1]->selected);
+	}
+
+	public function testDeploymentPanels_rejectedInputReopensCreationWithoutOpeningAnotherPanel():void {
+		$sut = $this->context([new ManagedDeployment("deployment", "Production", "host.test", "https://app.test", "/", "secret")]);
+		$input = new \GT\Input\Input([], ["deploymentName" => "Staging", "clientUrl" => "https://app.test/path"]);
+
+		$panels = iterator_to_array($sut->deploymentPanels($input, "Invalid client URL"));
+
+		self::assertFalse($panels[0]->isOpen);
+		self::assertSame("", $panels[0]->error);
+		self::assertTrue($panels[1]->isOpen);
+		self::assertSame("Staging", $panels[1]->name);
+		self::assertSame("https://app.test/path", $panels[1]->clientUrl);
+		self::assertSame("Invalid client URL", $panels[1]->error);
+	}
+
+	public function testDeploymentPanels_rejectedExistingDeploymentKeepsItsPanelOpen():void {
+		$sut = $this->context([new ManagedDeployment("deployment", "Production", "host.test", "https://app.test", "/", "secret")]);
+		$input = new \GT\Input\Input([], ["deploymentId" => "deployment", "deploymentName" => "Staging"]);
+
+		$panels = iterator_to_array($sut->deploymentPanels($input, "Invalid client URL"));
+
+		self::assertTrue($panels[0]->isOpen);
+		self::assertSame("Staging", $panels[0]->name);
+		self::assertSame("Invalid client URL", $panels[0]->error);
+		self::assertFalse($panels[1]->isOpen);
+		self::assertSame("", $panels[1]->error);
 	}
 }

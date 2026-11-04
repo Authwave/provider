@@ -63,6 +63,26 @@ admin-sidebar {
 
 	.sidebar-account {
 		justify-content: space-between;
+		gap: var(--theme-space-2);
+
+		[data-sudo-disable] {
+			margin-inline-end: auto;
+
+			> button {
+				@extend %o-badge;
+				--theme-badge-text: var(--theme-color-danger);
+				--theme-badge-border: var(--theme-color-danger);
+				--theme-badge-background: color-mix(in srgb, var(--theme-color-danger) 10%, transparent);
+				--theme-button-background: var(--theme-badge-background);
+				--theme-button-background-hover: var(--theme-badge-background);
+				--theme-button-background-active: var(--theme-badge-background);
+				--theme-button-border-hover: var(--theme-color-danger);
+				--theme-button-shadow: none;
+				--theme-button-shadow-hover: none;
+				--theme-button-shadow-active: none;
+				min-block-size: 0;
+			}
+		}
 
 		form {
 			margin: 0;

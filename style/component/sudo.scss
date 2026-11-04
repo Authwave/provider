@@ -1,0 +1,47 @@
+@use "../../node_modules/flair/style/lib/flair";
+
+body.dir--admin .sudo-control {
+	display: flex;
+	align-items: center;
+	gap: var(--theme-space-2);
+	min-inline-size: 0;
+
+	> input {
+		flex: 1;
+		min-inline-size: 0;
+	}
+
+	> button {
+		flex: none;
+	}
+
+	&:has(> input) {
+		position: relative;
+
+		> input {
+			padding-inline-end: calc(var(--theme-icon-button-size) + var(--theme-space-2));
+		}
+
+		> input[data-copy] {
+			padding-inline-end: calc(2 * var(--theme-icon-button-size) + var(--theme-space-2));
+		}
+
+		> button {
+			@extend %o-icon-button-plain;
+			--theme-icon-opacity: .5;
+			--theme-control-background-disabled: transparent;
+			position: absolute;
+			inset-inline-end: var(--theme-space-1);
+			inset-block-start: 50%;
+			translate: 0 -50%;
+
+			&:is(:hover, :active, :focus-visible):not(:disabled) {
+				--theme-icon-opacity: 1;
+			}
+		}
+
+		&:has(> [data-sudo-copy]) > [data-sudo-view] {
+			inset-inline-end: calc(var(--theme-icon-button-size) + var(--theme-space-1));
+		}
+	}
+}

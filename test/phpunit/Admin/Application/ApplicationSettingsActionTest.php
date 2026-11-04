@@ -18,6 +18,11 @@ use Gt\Http\Uri;
 use PHPUnit\Framework\TestCase;
 
 class ApplicationSettingsActionTest extends TestCase {
+	private function form():\GT\Dom\Element {
+		$document = new \GT\Dom\HTMLDocument(file_get_contents("page/_component/application-deployments.html"));
+		return $document->querySelector("form");
+	}
+
 	private function request(string $method = "POST", string $path = "/admin/applications/app/"):Request {
 		$request = $this->createStub(Request::class);
 		$request->method("getMethod")->willReturn($method);
@@ -51,7 +56,7 @@ class ApplicationSettingsActionTest extends TestCase {
 		$response = $this->createMock(Response::class);
 		$response->expects(self::once())->method("redirect")->with("/admin/applications/app/?deployment=existing#deployment-existing");
 		$sut = new ApplicationSettingsAction($store, $context, $this->createStub(FlashSession::class), $this->createStub(Audit::class));
-		$sut->saveDeployment(new Input([], ["deploymentId" => "existing", "confirmDelete" => "existing", "deploymentName" => "Development", "host" => "host.test", "clientUrl" => "https://app.test", "clientLoginPath" => "/", "apiKey" => "attacker"]), $this->request(), $response);
+		$sut->saveDeployment(new Input([], ["deploymentId" => "existing", "confirmDelete" => "existing", "deploymentName" => "Development", "host" => "host.test", "clientUrl" => "https://app.test", "clientLoginPath" => "/", "apiKey" => "attacker"]), $this->request(), $response, $this->form());
 	}
 
 	#[\PHPUnit\Framework\Attributes\DataProvider("invalidApplications")]
@@ -185,5 +190,58 @@ class ApplicationSettingsActionTest extends TestCase {
 		foreach([null, "other", ["existing"]] as $confirmation) {
 			yield [$confirmation];
 		}
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider("invalidDeployments")]
+	public function testSaveDeployment_htmlConstraintsRejectInvalidFields(array $body):void {
+		$store = $this->createMock(ApplicationRepository::class);
+		$context = $this->context($store);
+		$store->expects(self::never())->method("saveDeployment");
+		$audit = $this->createMock(Audit::class);
+		$audit->expects(self::once())->method("create")->with(Action::APPLICATION_SETTINGS_REJECTED,
+			self::callback(fn(array $detail) => $detail["applicationId"] === "app" && $detail["reason"] !== ""), $context->actor);
+		$flash = $this->createMock(FlashSession::class);
+		$flash->expects(self::once())->method("setFlash")->with(self::callback(fn($message) => is_string($message) && $message !== ""), "deployment_error");
+		$response = $this->createMock(Response::class);
+		$response->expects(self::never())->method("redirect");
+		$sut = new ApplicationSettingsAction($store, $context, $flash, $audit);
+
+		$sut->saveDeployment(new Input([], $body), $this->request(), $response, $this->form());
+	}
+
+	public static function invalidDeployments():iterable {
+		$valid = ["deploymentName" => "Development", "host" => "login.example.test",
+			"clientUrl" => "https://www.example.test", "clientLoginPath" => "/login/"];
+		foreach([
+			"deploymentName" => [null, "", " ", [], str_repeat("a", 33), "bad\nname", "\xFF"],
+			"host" => [null, "", "https://login.test", "login.test/path", "user@host.test", "bad host", "host:port", "host:100000", "[::1]", "host.test?query", str_repeat("a", 257)],
+			"clientUrl" => [null, "", "example.test", "javascript:alert(1)", "ftp://host.test", "https://user:pass@host.test", "https://host.test/path", "https://host.test?q=1", "https://host.test/#x", "https://[::1]"],
+			"clientLoginPath" => [null, "", "login", "//evil.test", "/\\evil.test", "/bad%0dpath", "/bad?query", "/bad#fragment", "/bad%xy", str_repeat("/", 257)],
+		] as $field => $values) {
+			foreach($values as $value) {
+				$body = $valid;
+				$body[$field] = $value;
+				yield [$body];
+			}
+		}
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider("validDeployments")]
+	public function testSaveDeployment_htmlConstraintsAcceptZeroAndUnicodeNames(string $name, string $host, string $url):void {
+		$store = $this->createMock(ApplicationRepository::class);
+		$context = $this->context($store);
+		$store->expects(self::once())->method("saveDeployment")
+			->willReturn(new ManagedDeployment("saved", $name, $host, $url, "/", "secret"));
+		$sut = new ApplicationSettingsAction($store, $context, $this->createStub(FlashSession::class), $this->createStub(Audit::class));
+
+		$sut->saveDeployment(new Input([], ["deploymentName" => $name, "host" => $host,
+			"clientUrl" => $url, "clientLoginPath" => "/"]), $this->request(), $this->createStub(Response::class), $this->form());
+	}
+
+	public static function validDeployments():iterable {
+		yield ["0", "localhost:65535", "http://localhost:8080/"];
+		yield [str_repeat("馬", 32), "localhost:9105", "https://localhost:8080"];
+		yield [str_repeat("😀", 16), "login.example.test", "HTTPS://CLIENT.TEST"];
+		yield ["Development", "127.0.0.1:8080", "https://client.test"];
 	}
 }

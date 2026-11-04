@@ -88,6 +88,7 @@ export BEHAT_DATABASE="$TEST_RUN_DIR/provider.sqlite"
 export database_driver=sqlite
 export database_schema="$BEHAT_DATABASE"
 export authwave_admin_email=admin@example.test
+export authwave_sudo_duration=5
 export session_path="$TEST_RUN_DIR/sessions"
 php -r 'require "vendor/autoload.php"; require "test/behat/database/DatabaseState.php"; new Authwave\Test\Behat\DatabaseState(getenv("BEHAT_DATABASE"), "test/behat/database");'
 

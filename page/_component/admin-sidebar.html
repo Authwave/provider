@@ -34,6 +34,9 @@
 							<button type="submit" name="do" value="logout" data-nav="logout" data-icon="logout">Log out</button>
 						</form>
 					</nav>
+					<form method="post" action="/sudo/" data-sudo-disable hidden data-bind:hidden="?!sudoUntil" data-bind:data-sudo-until="sudoUntil">
+						<button type="submit" name="do" value="disable" title="Disable sudo mode">SUDO</button>
+					</form>
 					<button type="button" class="icon-button" data-theme-toggle data-icon="sun-moon" hidden><span>System theme</span></button>
 				</div>
 			</div>

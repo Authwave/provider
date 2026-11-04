@@ -4,6 +4,7 @@ namespace Authwave\Admin\Application;
 use Authwave\Model\ApplicationRepository;
 use Authwave\Model\User;
 use Authwave\UI\DeletionPrompt;
+use GT\Input\Input;
 
 readonly class ApplicationSettingsContext {
 	public ApplicationSettings $application;
@@ -44,10 +45,28 @@ readonly class ApplicationSettingsContext {
 	}
 
 	/** @return iterable<DeploymentPanel> */
-	public function deploymentPanels():iterable {
+	public function deploymentPanels(?Input $input = null, string $error = ""):iterable {
+		$identifier = $input?->get("deploymentId", Input::DATA_BODY);
+		$matched = false;
+
 		foreach($this->deployments as $deployment) {
-			yield new DeploymentPanel($deployment, $this->openedDeployment === $deployment->identifier);
+			$submitted = $input !== null && $identifier === $deployment->identifier;
+			$open = $input === null && $this->openedDeployment === $deployment->identifier;
+
+			if($submitted) {
+				$matched = true;
+				yield new DeploymentPanel($deployment, true, $input, $error);
+			}
+			else {
+				yield new DeploymentPanel($deployment, $open);
+			}
 		}
-		yield new DeploymentPanel(null, !$this->deployments);
+
+		if($input !== null && !$matched) {
+			yield new DeploymentPanel(null, true, $input, $error);
+		}
+		else {
+			yield new DeploymentPanel(null);
+		}
 	}
 }

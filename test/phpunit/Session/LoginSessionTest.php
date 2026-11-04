@@ -26,6 +26,17 @@ class LoginSessionTest extends TestCase {
 		self::assertSame(LoginState::LOGGED_IN, $sut->getState());
 	}
 
+	public function testSetState_leavingAuthenticationDiscardsSudoAuthorisation():void {
+		$store = new SessionStore("login", $this->createStub(Session::class));
+		$store->set(LoginState::class, LoginState::LOGGED_IN);
+		$store->getStore("sudo", true)->set("until", time() + 60);
+		$sut = new LoginSession($store, $this->createStub(Audit::class), new AnonUser("anonymous"));
+
+		$sut->setState(LoginState::NOT_LOGGED_IN);
+
+		self::assertNull($store->getStore("sudo"));
+	}
+
 	public function testSetState_auditFailureDoesNotAuthenticateTheSession():void {
 		$store = new SessionStore("login", $this->createStub(Session::class));
 		$audit = $this->createStub(Audit::class);

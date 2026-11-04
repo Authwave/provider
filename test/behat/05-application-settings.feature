@@ -51,7 +51,7 @@ Feature: Application-specific settings and deployments
   Scenario: Deployments can be created, edited and selected for production
     When I complete the "Create a deployment" deployment form:
       | Deployment name   | Development               |
-      | Host              | login.example.test        |
+      | Authwave host              | login.example.test        |
       | Client URL        | http://localhost:8080     |
       | Client login path | /login/                   |
     And I save deployment "Create a deployment"
@@ -63,7 +63,7 @@ Feature: Application-specific settings and deployments
     And I should not see "No deployments are assigned to this application yet."
     When I complete the "Development" deployment form:
       | Deployment name   | Production                |
-      | Host              | account.example.test      |
+      | Authwave host              | account.example.test      |
       | Client URL        | https://www.example.test  |
       | Client login path | /authenticate/            |
     And I save deployment "Development"
@@ -76,16 +76,47 @@ Feature: Application-specific settings and deployments
     Then production should use deployment "Production"
     And deployment "Production" should keep the same API key
 
-  Scenario: Invalid deployment data cannot create a deployment
+  Scenario: The browser rejects invalid deployment fields before submission
     When I complete the "Create a deployment" deployment form:
       | Deployment name   | Development               |
-      | Host              | https://invalid.test/path |
+      | Authwave host     | https://invalid.test/path |
       | Client URL        | https://www.example.test  |
       | Client login path | /login/                   |
-    And I save deployment "Create a deployment"
-    Then I should see "Host must be a hostname with an optional port."
+    And I attempt to submit deployment "Create a deployment"
+    Then the deployment field "host" should have a native pattern validation error
+    And no deployment form request should have reached the server
+    And there should be 1 deployment expander
+
+  Scenario: The browser rejects a Client URL containing a path before submission
+    When I complete the "Create a deployment" deployment form:
+      | Deployment name   | Development                       |
+      | Authwave host     | login.example.test                |
+      | Client URL        | https://www.example.test/login/    |
+      | Client login path | /login/                           |
+    And I attempt to submit deployment "Create a deployment"
+    Then the deployment field "clientUrl" should have a native pattern validation error
+    And no deployment form request should have reached the server
+
+  Scenario: A rejected deployment stays open with its values and can be corrected
+    When I complete the "Create a deployment" deployment form:
+      | Deployment name   | Development                       |
+      | Authwave host     | login.example.test                |
+      | Client URL        | https://www.example.test/login/    |
+      | Client login path | /login/                           |
+    And I submit deployment "Create a deployment" without browser validation
+    Then the open deployment form "Create a deployment" should show "Client URL: This field does not match the required pattern: Use an HTTP or HTTPS origin, without credentials, a path, query or fragment." and retain:
+      | Deployment name   | Development                       |
+      | Authwave host     | login.example.test                |
+      | Client URL        | https://www.example.test/login/    |
+      | Client login path | /login/                           |
     And there should be 1 deployment expander
     And action "APPLICATION_SETTINGS_REJECTED" should be audited for the fixture administrator
+    When I complete the "Create a deployment" deployment form:
+      | Client URL | https://www.example.test |
+    And I save deployment "Create a deployment"
+    Then I should see "Deployment saved."
+    And deployment "Development" should have a saved read-only ID and API key
+    And action "DEPLOYMENT_CREATED" should be audited for the fixture administrator
 
   Scenario: An unassigned application cannot be viewed
     When I go to "/admin/applications/provider/"

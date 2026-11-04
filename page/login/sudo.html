@@ -1,0 +1,18 @@
+<main id="main-content">
+	<header class="auth-heading">
+		<h1>Confirm your password</h1>
+		<p>Enter your password again to enable sudo mode.</p>
+		<p data-bind:text="email"></p>
+	</header>
+	<form method="post">
+		<p role="alert" hidden data-bind:hidden="?!error" data-bind:text="error"></p>
+		<label>
+			<span>Password</span>
+			<input type="password" name="password" autocomplete="current-password" required data-autofocus />
+		</label>
+		<div class="actions">
+			<button type="submit" name="do" value="authorise" class="primary">Enable sudo mode</button>
+			<button type="submit" name="do" value="cancel" formnovalidate>Cancel</button>
+		</div>
+	</form>
+</main>

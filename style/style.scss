@@ -36,6 +36,8 @@
 	sun-moon,
 	check,
 	circle-check,
+	eye,
+	copy,
 ));
 @use "../node_modules/flair/style/lib/flair";
 @use "../node_modules/flair/style/lib/theme/base";
@@ -62,6 +64,7 @@
 @use "component/admin-chart-data";
 @use "component/site-footer";
 @use "component/table-link";
+@use "component/sudo";
 
 @use "vendor/flux";
 

@@ -2,6 +2,12 @@
 namespace Authwave\Security;
 
 enum Action {
+	case SUDO_REQUESTED;
+	case SUDO_AUTHORISED;
+	case SUDO_REJECTED;
+	case SUDO_FIELD_ACCESSED;
+	case SUDO_DISABLED;
+	case SUDO_EXPIRED;
 	case REQUEST_RECEIVED;
 	case APPLICATION_CREATED;
 	case APPLICATION_UPDATED;

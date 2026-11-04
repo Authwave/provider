@@ -88,6 +88,10 @@ readonly class LoginSession {
 			);
 		}
 
+		if($state !== LoginState::LOGGED_IN) {
+			$this->session->remove("sudo");
+		}
+
 		$this->session->set(LoginState::class, $state);
 	}
 

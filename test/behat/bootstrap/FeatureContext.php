@@ -11,6 +11,123 @@ use Behat\Mink\Exception\ExpectationException;
 require_once dirname(__DIR__) . "/database/DatabaseState.php";
 
 class FeatureContext extends MinkContext {
+	private function deploymentKey(string $id):string {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$query = $database->prepare("select secret from ApplicationDeployment where id = ?");
+		$query->execute([$id]);
+		$secret = $query->fetchColumn();
+		$this->expect(is_string($secret) && $secret !== "", "The deployment must have a persisted key.");
+		return $id . "_" . $secret;
+	}
+
+	#[Then('deployment :summary should have an obscured API key without leaking its value')]
+	public function obscuredDeploymentKey(string $summary):void {
+		$details = $this->deploymentDetails($summary);
+		$field = $details->findField("API key");
+		$id = $details->findField("ID")->getValue();
+		$key = $this->deploymentKey($id);
+		$prefix = preg_match('/^[^_]+_[^_]+_/', $key, $match) ? substr($key, 0, strlen($match[0]) + 4) : "";
+		$this->expect($field->getAttribute("name") === "apiKey", "The read-only key needs a name.");
+		$this->expect(str_starts_with($field->getValue(), $prefix) && str_contains($field->getValue(), "•"),
+			"Only the key prefix should be visible.");
+		$this->expect(!str_contains($this->getSession()->getPage()->getHtml(), $key), "The full key leaked into the document.");
+	}
+
+	#[When('I view the API key of deployment :summary')]
+	public function viewDeploymentKey(string $summary):void {
+		$this->deploymentDetails($summary)->find("css", "[data-sudo-view]")->click();
+		$revealed = getenv("BEHAT_JAVASCRIPT") === "1"
+			? 'document.querySelector("[data-sudo-view][aria-pressed=true]") !== null'
+			: 'document.querySelector("[data-sudo-enabled]") !== null';
+		$this->getSession()->wait(5000, 'location.pathname === "/login/sudo/" || (' . $revealed . ')');
+	}
+
+	#[Then('sudo mode should be enabled')]
+	public function sudoEnabled():void {
+		$this->getSession()->wait(5000, 'document.querySelector("[data-sudo-disable]:not([hidden])") !== null');
+		$this->openSidebar();
+		$this->assertSession()->elementExists("css", "[data-sudo-disable]:not([hidden])");
+	}
+
+	#[Then('sudo mode should be disabled')]
+	public function sudoDisabled():void {
+		$this->assertSession()->elementNotExists("css", "[data-sudo-disable]:not([hidden])");
+	}
+
+	#[Then('I can view the API key of deployment :summary')]
+	public function canViewDeploymentKey(string $summary):void {
+		if(getenv("BEHAT_JAVASCRIPT") === "1") {
+			$this->viewDeploymentKey($summary);
+		}
+		$this->visibleDeploymentKey($summary);
+	}
+
+	#[Then('the API key of deployment :summary should be visible')]
+	public function visibleDeploymentKey(string $summary):void {
+		$details = $this->deploymentDetails($summary);
+		$id = $details->findField("ID")->getValue();
+		$key = $this->deploymentKey($id);
+		$field = $details->findField("API key");
+		$this->getSession()->wait(5000, 'document.getElementById(' . json_encode($field->getAttribute("id")) . ').value === ' . json_encode($key));
+		$this->expect($field->getValue() === $key, "The authorised key was not revealed.");
+	}
+
+	#[When('the sudo period expires')]
+	public function expireSudo():void {
+		$until = (int)$this->assertSession()->elementExists("css", "[data-sudo-disable]")->getAttribute("data-sudo-until");
+		$this->expect($this->getSession()->wait(6500, "Date.now() >= " . ($until * 1000 + 100)), "The test sudo period did not expire.");
+		if(getenv("BEHAT_JAVASCRIPT") !== "1") {
+			$this->reload();
+		}
+		$this->sudoDisabled();
+	}
+
+	#[When('I disable sudo mode')]
+	public function disableSudo():void {
+		$this->openSidebar();
+		$this->pressButton("SUDO");
+		$this->getSession()->wait(5000, 'document.querySelector("application-deployments") !== null && document.querySelector("[data-sudo-disable]:not([hidden])") === null');
+	}
+
+	#[Then('the sudo audit trail should contain no credentials')]
+	public function sudoAuditCredentials():void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$details = $database->query("select detail from Audit where action like 'SUDO_%'")->fetchAll(PDO::FETCH_COLUMN);
+		foreach($details as $detail) {
+			$this->expect(!str_contains($detail ?? "", "Test-admin-password-2026")
+				&& !str_contains($detail ?? "", "Incorrect-password-2026")
+				&& !str_contains($detail ?? "", "0123456789abcdef0123456789abcdef"), "Sudo audit contains credentials.");
+		}
+	}
+
+	#[When('I copy the API key of deployment :summary')]
+	public function copyDeploymentKey(string $summary):void {
+		$details = $this->deploymentDetails($summary);
+		if(getenv("BEHAT_JAVASCRIPT") !== "1") {
+			$this->expect($details->find("css", "[data-sudo-copy]") === null, "Copy must be a JavaScript enhancement.");
+			return;
+		}
+		$details->find("css", "[data-sudo-copy]")->click();
+		$this->getSession()->wait(5000, 'location.pathname === "/login/sudo/"');
+	}
+
+	#[Then('copying the API key should require sudo and copy the saved value')]
+	public function copiedDeploymentKey():void {
+		if(getenv("BEHAT_JAVASCRIPT") !== "1") {
+			return;
+		}
+		$this->providerPath("/login/sudo/");
+		$this->fillField("Password", "Test-admin-password-2026");
+		$this->pressButton("Enable sudo mode");
+		$this->sudoEnabled();
+		$this->getSession()->executeScript('const write = navigator.clipboard.writeText.bind(navigator.clipboard); navigator.clipboard.writeText = async value => { await write(value); window.copiedSudoValue = value; };');
+		$this->deploymentDetails("Development")->find("css", "[data-sudo-copy]")->click();
+		$this->getSession()->wait(5000, 'window.copiedSudoValue !== undefined');
+		$this->expect($this->getSession()->evaluateScript('window.copiedSudoValue') === $this->deploymentKey("managed-development"),
+			"The clipboard API must receive the authorised saved key.");
+		$this->obscuredDeploymentKey("Development");
+	}
+
 	#[Then('the sidebar should own its semantic landmark')]
 	public function sidebarLandmark():void {
 		$this->assertSession()->elementsCount("css", "admin-sidebar", 1);
@@ -317,7 +434,7 @@ class FeatureContext extends MinkContext {
 		$details = $this->deploymentDetails($summary);
 		$fields = $details->findAll('css', 'input[readonly]');
 		$this->deletedDeploymentId = $fields[0]->getValue();
-		$this->deletedDeploymentKey = $fields[1]->getValue();
+		$this->deletedDeploymentKey = $this->deploymentKey($this->deletedDeploymentId);
 		$details->pressButton('Delete deployment');
 		$this->getSession()->wait(5000,
 			"document.querySelector('#delete-dialog[open], #delete-confirmation:not([hidden])') !== null");
@@ -481,6 +598,7 @@ class FeatureContext extends MinkContext {
 
 	#[Then('I should be on the settings page for application :name')]
 	public function applicationSettingsPage(string $name):void {
+		$this->getSession()->wait(5000, 'document.querySelector("application-settings form") !== null');
 		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
 		$query = $database->prepare("select Application.id from Application join UserAdmin on UserAdmin.applicationId = Application.id where Application.name = ? and UserAdmin.userId = 'administrator'");
 		$query->execute([$name]);
@@ -611,11 +729,63 @@ class FeatureContext extends MinkContext {
 		foreach($table->getRows() as [$field, $value]) $details->fillField($field, $value);
 	}
 
+	private int $deploymentPostCount = 0;
+
+	private function deploymentPosts():int {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		return (int)$database->query("select count(*) from Audit where action = 'REQUEST_RECEIVED' and json_extract(detail, '$.method') = 'POST'")->fetchColumn();
+	}
+
+	#[When('I attempt to submit deployment :summary')]
+	public function attemptDeploymentSubmission(string $summary):void {
+		$this->deploymentPostCount = $this->deploymentPosts();
+		$this->deploymentDetails($summary)->find("css", "button[value=save-deployment]")->press();
+	}
+
+	#[Then('the deployment field :name should have a native pattern validation error')]
+	public function nativeDeploymentValidation(string $name):void {
+		$selector = json_encode('application-deployments details[open] [name="' . $name . '"]');
+		$this->expect($this->getSession()->evaluateScript("(() => {
+			const field = document.querySelector($selector);
+			return field.validity.patternMismatch && !field.validity.valid && document.activeElement === field;
+		})()"), "The browser must prevent submission and focus the invalid field.");
+	}
+
+	#[Then('no deployment form request should have reached the server')]
+	public function noDeploymentRequest():void {
+		$this->expect($this->deploymentPosts() === $this->deploymentPostCount, "Invalid browser input must not reach the server.");
+	}
+
+	#[When('I submit deployment :summary without browser validation')]
+	public function bypassDeploymentBrowserValidation(string $summary):void {
+		$this->deploymentDetails($summary);
+		$this->getSession()->evaluateScript('document.querySelector("application-deployments details[open] form").noValidate = true');
+		$this->saveDeployment($summary);
+	}
+
 	#[When('I save deployment :summary')]
 	public function saveDeployment(string $summary):void {
 		$details = $this->deploymentDetails($summary);
-		$details->find('css', 'button[type=submit]')->press();
-		$this->getSession()->wait(5000, "document.querySelector('application-settings [role=status]:not([hidden]), application-settings [role=alert]:not([hidden])') !== null");
+		$details->find('css', 'button[value=save-deployment]')->press();
+		$this->getSession()->wait(5000, "document.querySelector('application-deployments [role=status]:not([hidden]), application-deployments details[open] [role=alert]:not([hidden])') !== null");
+	}
+
+	#[Then('the open deployment form :summary should show :message and retain:')]
+	public function rejectedDeploymentForm(string $summary, string $message, \Behat\Gherkin\Node\TableNode $values):void {
+		$details = $this->assertSession()->elementExists("css", "application-deployments details[open]");
+		$this->expect($details->find("css", "summary")->getText() === $summary, "The submitted deployment must remain open.");
+		$alert = $details->find("css", "[role=alert]");
+		$this->expect($alert !== null && $alert->isVisible() && $alert->getText() === $message,
+			"The validation error must be visible inside the submitted form.");
+		$this->expect($this->getSession()->evaluateScript('(() => {
+			const alert = document.querySelector("application-deployments details[open] [role=alert]:not([hidden])");
+			const bounds = alert.getBoundingClientRect();
+			return document.activeElement === alert && bounds.top >= 0 && bounds.bottom <= innerHeight;
+		})()'), "The error must receive focus and be visible in the viewport.");
+
+		foreach($values->getRows() as [$field, $value]) {
+			$this->expect($details->findField($field)->getValue() === $value, "The $field value must be retained.");
+		}
 	}
 
 	#[Then('deployment :summary should have a saved read-only ID and API key')]
@@ -624,19 +794,16 @@ class FeatureContext extends MinkContext {
 		$fields = $details->findAll('css', 'input[readonly]');
 		$this->expect(count($fields) === 2, "Missing read-only deployment fields.");
 		foreach($fields as $field) $this->expect($field->isVisible() && $field->getValue() !== "", "Deployment fields should be visible and populated.");
-		$this->savedDeploymentKey = $fields[1]->getValue();
-		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
-		$query = $database->prepare("select id, secret from ApplicationDeployment where id = ?");
-		$query->execute([$fields[0]->getValue()]);
-		$row = $query->fetch(PDO::FETCH_ASSOC);
-		$this->expect($row && $this->savedDeploymentKey === $row['id'] . '_' . $row['secret'], "The deployment/API key was not persisted.");
+		$this->savedDeploymentKey = $this->deploymentKey($fields[0]->getValue());
+		$this->obscuredDeploymentKey($summary);
 	}
 
 	#[Then('deployment :summary should keep the same API key')]
 	public function stableDeploymentKey(string $summary):void {
 		$details = $this->deploymentDetails($summary);
 		$fields = $details->findAll('css', 'input[readonly]');
-		$this->expect($this->savedDeploymentKey !== null && $fields[1]->getValue() === $this->savedDeploymentKey, "Editing must not rotate the API key.");
+		$this->expect($this->savedDeploymentKey !== null && $this->deploymentKey($fields[0]->getValue()) === $this->savedDeploymentKey, "Editing must not rotate the API key.");
+		$this->obscuredDeploymentKey($summary);
 	}
 
 	#[Then('production should use deployment :name')]

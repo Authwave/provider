@@ -8,6 +8,7 @@ use GT\Dom\Element;
 use GT\DomTemplate\Binder;
 use Gt\Http\Uri;
 use Gt\Http\Response;
+use Authwave\Security\Sudo;
 
 function go_before(
 	AdminArea $area,
@@ -17,7 +18,13 @@ function go_before(
 	$area->enter($uri, $response);
 }
 
-function go(Element $element, Binder $binder, Uri $uri, Onboarding $onboarding):void {
+function go(Element $element, Binder $binder, Uri $uri, Onboarding $onboarding,
+	Sudo $sudo, AdminArea $area):void {
+	$binder->bindKeyValue("sudoUntil", $sudo->expiresAt($area->administrator()));
+	$return = $uri->getPath() . ($uri->getQuery() ? "?" . $uri->getQuery() : "");
+	$element->querySelector("[data-sudo-disable]")->setAttribute("action",
+		"/sudo/?" . http_build_query(["return" => $return]));
+
 	$binder->bindKeyValue("needsApplication", $onboarding->needsApplication());
 	$binder->bindKeyValue("completedCount", $onboarding->completedCount());
 	$binder->bindList($onboarding->steps(), templateName: "setup-steps");

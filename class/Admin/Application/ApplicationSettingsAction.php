@@ -5,6 +5,9 @@ use Authwave\Model\ApplicationRepository;
 use Authwave\Security\{Audit, Action};
 use Authwave\Session\FlashSession;
 use GT\Input\Input;
+use GT\Dom\Element;
+use GT\DomValidation\Validator;
+use GT\DomValidation\ValidationException;
 use Gt\Http\{Request, Response};
 use InvalidArgumentException;
 
@@ -29,7 +32,8 @@ readonly class ApplicationSettingsAction {
 				$this->text($input, "productionDeploymentId"));
 		}
 		catch(InvalidArgumentException $error) {
-			$this->reject($error, Action::APPLICATION_SETTINGS_REJECTED, $response);
+			$this->reject($error, Action::APPLICATION_SETTINGS_REJECTED);
+			$response->redirect($application->url);
 			return;
 		}
 
@@ -37,26 +41,49 @@ readonly class ApplicationSettingsAction {
 		$response->redirect($application->url);
 	}
 
-	public function saveDeployment(Input $input, Request $request, Response $response):void {
+	public function saveDeployment(Input $input, Request $request, Response $response,
+		Element $form):void {
 		if(!$this->accepts($request)) {
 			return;
 		}
 
 		$application = $this->context->application;
+		$validator = new Validator();
 
 		try {
+			$fields = [];
+
+			foreach($form->querySelectorAll("input[name]:not([readonly])") as $field) {
+				$name = $field->getAttribute("name");
+				$fields[$name] = $this->text($input, $name);
+			}
+
+			$validator->validate($form, $fields);
 			$saved = $this->applications->saveDeployment($this->context->actor, $application->identifier,
 				$this->text($input, "deploymentId"), new DeploymentData(
-					$this->text($input, "deploymentName"), $this->text($input, "host"),
-					$this->text($input, "clientUrl"), $this->text($input, "clientLoginPath"),
+					(string)$fields["deploymentName"], (string)$fields["host"],
+					(string)$fields["clientUrl"], (string)$fields["clientLoginPath"],
 				));
 		}
+		catch(ValidationException) {
+			$messages = [];
+
+			foreach($validator->getLastErrorList() as $name => $message) {
+				$field = $form->querySelector('[name="' . $name . '"]');
+				$label = $field->closest("label")->querySelector("span")->textContent;
+				$messages []= "$label: $message";
+			}
+
+			$this->reject(new InvalidArgumentException(implode(" ", $messages)),
+				Action::APPLICATION_SETTINGS_REJECTED, "deployment_error");
+			return;
+		}
 		catch(InvalidArgumentException $error) {
-			$this->reject($error, Action::APPLICATION_SETTINGS_REJECTED, $response);
+			$this->reject($error, Action::APPLICATION_SETTINGS_REJECTED, "deployment_error");
 			return;
 		}
 
-		$this->flash->setFlash("Deployment saved.", "settings_success");
+		$this->flash->setFlash("Deployment saved.", "deployment_success");
 		$response->redirect($application->url . "?deployment=" . rawurlencode($saved->identifier)
 			. "#deployment-" . rawurlencode($saved->identifier));
 	}
@@ -91,7 +118,8 @@ readonly class ApplicationSettingsAction {
 				$this->context->application->identifier, $identifier);
 		}
 		catch(InvalidArgumentException $error) {
-			$this->reject($error, Action::DEPLOYMENT_DELETION_REJECTED, $response);
+			$this->reject($error, Action::DEPLOYMENT_DELETION_REJECTED);
+			$response->redirect($this->context->application->url);
 			return;
 		}
 
@@ -105,12 +133,12 @@ readonly class ApplicationSettingsAction {
 				=== rtrim($this->context->application->url, "/");
 	}
 
-	private function reject(InvalidArgumentException $error, Action $action, Response $response):void {
+	private function reject(InvalidArgumentException $error, Action $action,
+		string $category = "settings_error"):void {
 		$this->audit->create($action,
 			["applicationId" => $this->context->application->identifier,
 				"reason" => $error->getMessage()], $this->context->actor);
-		$this->flash->setFlash($error->getMessage(), "settings_error");
-		$response->redirect($this->context->application->url);
+		$this->flash->setFlash($error->getMessage(), $category);
 	}
 
 	private function text(Input $input, string $key):?string {

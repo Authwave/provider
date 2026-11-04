@@ -1,23 +1,38 @@
 <section class="settings-panel stack" data-flux="update">
 	<h2>Deployments</h2>
+	<p role="status" hidden data-bind:hidden="?!success" data-bind:text="success"></p>
 	<p data-bind:hidden="?hasDeployments">No deployments are assigned to this application yet.</p>
 	<ul class="deployment-list stack">
 		<li data-list="deployment-panels" data-bind:data-new="isNew">
 			<details class="settings-disclosure" name="application-deployments" data-bind:id="panelId" data-bind:open="?isOpen">
 				<summary><span class="new-deployment-icon" data-icon="plus" aria-hidden="true"></span><span data-bind:text="summary">Create a deployment</span></summary>
 				<form method="post" class="form-fields stack compact">
-					<label class="existing-deployment-field"><span>ID</span>
+					<p role="alert" tabindex="-1" hidden data-bind:hidden="?!error" data-bind:autofocus="?error" data-bind:text="error"></p>
+					<label class="existing-deployment-field">
+						<span>ID</span>
 						<input name="deploymentId" readonly data-bind:value="identifier" />
 					</label>
-					<label><span>Deployment name</span>
-						<input name="deploymentName" required maxlength="32" placeholder="e.g. Development, Staging, Production" data-bind:value="name" />
+					<label>
+						<span>Deployment name</span>
+						<input name="deploymentName" required maxlength="32" placeholder="e.g. Development, Staging, Production" data-bind:value="name" pattern="^(?=.*\S)[^\p{C}]+$" title="Enter a deployment name containing a non-space character, without control characters." />
 					</label>
-					<label class="existing-deployment-field"><span>API key</span>
-						<input readonly data-bind:value="apiKey" autocomplete="off" spellcheck="false" />
+					<label class="existing-deployment-field">
+						<span>API key</span>
+						<input name="apiKey" readonly data-sudo="key" data-copy data-bind:value="apiKey" autocomplete="off" spellcheck="false" />
 					</label>
-					<label><span>Host</span><input name="host" required maxlength="256" placeholder="account.example.com" data-bind:value="host" /></label>
-					<label><span>Client URL</span><input name="clientUrl" type="url" required maxlength="256" placeholder="https://www.example.com" data-bind:value="clientUrl" /></label>
-					<label><span>Client login path</span><input name="clientLoginPath" required maxlength="256" placeholder="/login/" data-bind:value="clientLoginPath" /></label>
+					<label>
+						<span>Authwave host</span>
+						<input name="host" required maxlength="256" placeholder="account.example.com" data-bind:value="host" pattern="^[A-Za-z0-9]+(?:[.\-][A-Za-z0-9]+)*(?::[0-9]{1,5})?$" title="Enter a hostname such as localhost or account.example.com, with an optional numeric port." />
+					</label>
+					<label>
+						<span>Client URL</span>
+						<input name="clientUrl" type="url" required maxlength="256" placeholder="https://www.example.com" data-bind:value="clientUrl" pattern="^[Hh][Tt][Tt][Pp][Ss]?:\/\/[A-Za-z0-9]+(?:[.\-][A-Za-z0-9]+)*(?::[0-9]{1,5})?\/?$" title="Use an HTTP or HTTPS origin, without credentials, a path, query or fragment." />
+						<small>Use the scheme and host only. Enter the login path below.</small>
+					</label>
+					<label>
+						<span>Client login path</span>
+						<input name="clientLoginPath" required maxlength="256" placeholder="/login/" data-bind:value="clientLoginPath" pattern="^\/(?!\/|%2[fF])(?:%(?!(?:0[0-9A-Fa-f]|1[0-9A-Fa-f]|20|23|3[Ff]|5[Cc]|7[Ff]))[0-9A-Fa-f]{2}|[^\s?#%\\])*$" title="Use a path starting with one slash, without whitespace, backslashes, a query or fragment." />
+					</label>
 					<div class="actions">
 						<button type="submit" name="do" value="save-deployment" data-bind:class=":isNew primary" data-bind:text="submitLabel">Create deployment</button>
 						<button type="submit" name="do" value="delete-deployment" formnovalidate class="existing-deployment-field" data-bind:data-confirm-delete="identifier" data-bind:data-delete-name="name">Delete deployment</button>

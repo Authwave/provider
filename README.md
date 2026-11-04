@@ -122,6 +122,30 @@ opening disclosures, do not send HTTP requests and are not covered by server
 request auditing.
 
 
+Sudo fields
+-----------
+
+Mark a protected value with `data-sudo`. Add `data-sudo="key"` for API keys:
+this retains the prefix through the second underscore and four secret characters,
+then obscures the remainder. Add `data-copy` to offer a clipboard button when
+JavaScript is available. Read-only inputs still need their normal `name`.
+
+The admin common logic masks values on the server and adds a native View button.
+Password confirmation at `/login/sudo/` enables sudo for 60 seconds; configure
+`authwave.sudo_duration` in seconds to change that period. A key is disclosed only
+in the response requested by View or Copy, rather than every response during the
+sudo period. Other sudo fields are available while sudo is active. JavaScript
+re-obscures authorised responses, provides view/copy controls, and clears visible
+values when sudo expires or the page is left. After password confirmation, use
+View or Copy on the returned field. Without JavaScript the authorised View
+response displays the key until the next navigation.
+
+The SUDO button beside Log out immediately revokes authorisation. Logging out
+also discards it. Each authorisation request, rejection, success, field access,
+expiry and explicit revocation is audited without credentials. Protected admin
+responses use `Cache-Control: no-store`.
+
+
 Testing
 -------
 
@@ -149,7 +173,8 @@ Each check can also run separately: `composer behat`, `composer phpunit`,
   login and first-application onboarding. Page JavaScript is disabled by default
   to verify the HTTP-first flow. After building assets, use
   `BEHAT_JAVASCRIPT=1 composer behat` to check Flux enhancement too.
-  The runner starts its own server/browser on available ports and cleans up
+  The runner uses a five-second sudo period to exercise expiry quickly,
+  starts its own server/browser on available ports and cleans up
   after success or failure. Undefined or pending steps fail the suite.
 * Stateful scenarios use a disposable SQLite database and isolated session
   directory. No development database credentials are used or mutated. A database
@@ -172,6 +197,11 @@ empty until those features are implemented.
 formatted and annotated for those checks, with local PHPMD exceptions for
 stateless framework/utility calls, established public `id` fields, and the legacy
 workspace adapter. PHPStan uses no baseline or ignored errors.
+
+Deployment form constraints are declared in the HTML and checked server-side
+with `phpgt/domvalidation`. Composer currently uses the local checkout at
+`../../PhpGt/DomValidation` while its HTML `required` and Unicode-length parity
+fixes await release. That checkout must be available when installing dependencies.
 
 The supplementary browser regression scripts remain available through
 `npm run test:ui`. They require Node.js and installed npm dependencies, including

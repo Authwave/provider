@@ -15,6 +15,7 @@ use Authwave\Session\LoginSession;
 use Authwave\Security\AnonUser;
 use Authwave\Security\AdminAccess;
 use Authwave\Security\Audit;
+use Authwave\Security\Sudo;
 use Authwave\User\UserRepository;
 use Gt\Database\Database;
 use GT\Input\Input;
@@ -22,6 +23,14 @@ use Gt\Session\Session;
 use GT\WebEngine\Service\DefaultServiceLoader;
 
 class ServiceLoader extends DefaultServiceLoader {
+	public function loadSudo():Sudo {
+		return new Sudo(
+			$this->container->get(Session::class)->getStore(LoginSession::SESSION_STORE_KEY . ".sudo", true),
+			$this->container->get(UserRepository::class),
+			$this->container->get(Audit::class),
+			$this->config->getInt("authwave.sudo_duration") ?? 60,
+		);
+	}
 
 	public function loadApplicationSettingsContext():ApplicationSettingsContext {
 		$opened = $this->container->get(Input::class)->get("deployment", Input::DATA_QUERYSTRING);

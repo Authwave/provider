@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "dd74beea6629fe314551b1c402f65bc6",
+    "content-hash": "98f3d64cf6bd0425d56fdd4fcdc6be04",
     "packages": [
         {
             "name": "composer/semver",
@@ -1357,16 +1357,16 @@
         },
         {
             "name": "phpgt/cssxpath",
-            "version": "v1.5.0",
+            "version": "v1.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpgt/CssXPath.git",
-                "reference": "577781742ff61742332740d50f35f2b6cc037e2a"
+                "reference": "bc6a61aff5ed1dec3a5d8a491ec087c5305cf413"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpgt/CssXPath/zipball/577781742ff61742332740d50f35f2b6cc037e2a",
-                "reference": "577781742ff61742332740d50f35f2b6cc037e2a",
+                "url": "https://api.github.com/repos/phpgt/CssXPath/zipball/bc6a61aff5ed1dec3a5d8a491ec087c5305cf413",
+                "reference": "bc6a61aff5ed1dec3a5d8a491ec087c5305cf413",
                 "shasum": ""
             },
             "require": {
@@ -1383,6 +1383,7 @@
             "type": "library",
             "autoload": {
                 "psr-4": {
+                    "GT\\CssXPath\\": "./src",
                     "Gt\\CssXPath\\": "./src"
                 }
             },
@@ -1401,7 +1402,7 @@
             "description": "Convert CSS selectors to XPath queries.",
             "support": {
                 "issues": "https://github.com/phpgt/CssXPath/issues",
-                "source": "https://github.com/phpgt/CssXPath/tree/v1.5.0"
+                "source": "https://github.com/phpgt/CssXPath/tree/v1.6.0"
             },
             "funding": [
                 {
@@ -1409,7 +1410,8 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-03-16T12:14:14+00:00"
+            "time": "2026-06-29T20:05:51+00:00",
+            "published-time": "2026-10-05T10:20:04+00:00"
         },
         {
             "name": "phpgt/curl",
@@ -1793,22 +1795,17 @@
         },
         {
             "name": "phpgt/domvalidation",
-            "version": "v1.0.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/phpgt/DomValidation.git",
-                "reference": "573cfc00cbfa7eb75fb7b870e95adfd6dc54a733"
-            },
+            "version": "dev-master",
             "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/phpgt/DomValidation/zipball/573cfc00cbfa7eb75fb7b870e95adfd6dc54a733",
-                "reference": "573cfc00cbfa7eb75fb7b870e95adfd6dc54a733",
-                "shasum": ""
+                "type": "path",
+                "url": "../../PhpGt/DomValidation",
+                "reference": "e1469aa01a2396625be472b72eb57e6b42ba245e"
             },
             "require": {
+                "ext-mbstring": "*",
                 "php": ">=8.2",
-                "phpgt/cssxpath": "1.*",
-                "phpgt/dom": "^4.1.8"
+                "phpgt/cssxpath": "^1.6",
+                "phpgt/dom": "^4.2"
             },
             "require-dev": {
                 "phpmd/phpmd": "^2.13",
@@ -1819,25 +1816,49 @@
             "type": "library",
             "autoload": {
                 "psr-4": {
+                    "GT\\DomValidation\\": "./src/",
                     "Gt\\DomValidation\\": "./src/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "autoload-dev": {
+                "psr-4": {
+                    "GT\\DomValidation\\Test\\": "./test/phpunit"
+                }
+            },
+            "scripts": {
+                "phpunit": [
+                    "vendor/bin/phpunit --configuration phpunit.xml"
+                ],
+                "phpstan": [
+                    "vendor/bin/phpstan analyse --memory-limit=512M --level 6 src"
+                ],
+                "phpcs": [
+                    "vendor/bin/phpcs src --standard=phpcs.xml"
+                ],
+                "phpmd": [
+                    "vendor/bin/phpmd src/ text phpmd.xml"
+                ],
+                "test": [
+                    "@phpunit",
+                    "@phpstan",
+                    "@phpcs",
+                    "@phpmd"
+                ]
+            },
             "license": [
                 "MIT"
             ],
             "description": "Server side form validation using web standards.",
-            "support": {
-                "issues": "https://github.com/phpgt/DomValidation/issues",
-                "source": "https://github.com/phpgt/DomValidation/tree/v1.0.2"
-            },
             "funding": [
                 {
-                    "url": "https://github.com/sponsors/PhpGt",
-                    "type": "github"
+                    "type": "github",
+                    "url": "https://github.com/sponsors/PhpGt"
                 }
             ],
-            "time": "2026-03-11T18:01:15+00:00"
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
         },
         {
             "name": "phpgt/fetch",
@@ -8737,10 +8758,18 @@
             "published-time": "2026-10-28T18:20:33+00:00"
         }
     ],
-    "aliases": [],
+    "aliases": [
+        {
+            "package": "phpgt/domvalidation",
+            "version": "9999999-dev",
+            "alias": "1.0.x-dev",
+            "alias_normalized": "1.0.9999999.9999999-dev"
+        }
+    ],
     "minimum-stability": "stable",
     "stability-flags": {
-        "authwave/php-client": 20
+        "authwave/php-client": 20,
+        "phpgt/domvalidation": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,
