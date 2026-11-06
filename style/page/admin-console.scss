@@ -1,4 +1,5 @@
 @use "../../node_modules/flair/style/lib/flair";
+@use "../animation/flux-loader-spin";
 
 delete-dialog, delete-confirmation {
 	display: contents;
@@ -8,6 +9,14 @@ body.dir--admin {
 
 	.actions {
 		@extend %p-form-actions;
+	}
+
+	.actions > .action-start {
+		order: -1;
+	}
+
+	.actions > .danger {
+		--theme-button-text: var(--theme-color-danger);
 	}
 
 	.delete-dialog {
@@ -57,6 +66,27 @@ body.dir--admin {
 			}
 		}
 
+		> li > details > summary {
+			list-style-position: outside;
+		}
+
+		.deployment-summary {
+			display: flex;
+			align-items: center;
+			gap: var(--theme-space-2);
+		}
+
+		.deployment-badges {
+			display: inline-flex;
+			align-items: center;
+			gap: var(--theme-space-2);
+			margin-inline-start: auto;
+
+			&:not(:has(> .badge:not([hidden]))) {
+				display: none;
+			}
+		}
+
 		.new-deployment-icon {
 			display: none;
 		}
@@ -74,16 +104,13 @@ body.dir--admin {
 			}
 
 			> summary {
-				display: flex;
-				align-items: center;
-				gap: var(--theme-space-2);
 				list-style: none;
 
 				&::-webkit-details-marker {
 					display: none;
 				}
 
-				> .new-deployment-icon {
+				.new-deployment-icon {
 					display: inline-flex;
 					--theme-icon-gap: 0;
 				}
@@ -96,6 +123,87 @@ body.dir--admin {
 
 		form {
 			padding: var(--theme-space-4);
+		}
+	}
+
+	.settings-panel .form-fields .domain-verification {
+		@extend %o-labelled-control;
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+	}
+
+	.domain-verification-controls {
+		display: flex;
+		align-items: center;
+		gap: var(--theme-space-2);
+		flex: 1;
+
+		> p {
+			margin: 0;
+		}
+
+		> button {
+			margin-inline-start: auto;
+			align-self: end;
+		}
+	}
+
+	.domain-verification-controls > .verification-link {
+		@extend %o-link;
+		--theme-button-background-hover: transparent;
+		--theme-button-background-active: transparent;
+		--theme-button-decoration-hover: underline;
+		--theme-button-shadow-hover: none;
+		--theme-button-shadow-active: none;
+		min-block-size: 0;
+		min-inline-size: 0;
+		padding: 0;
+		border: 0;
+		border-radius: 0;
+		background: transparent;
+		box-shadow: none;
+		font: inherit;
+		margin-inline-start: 0;
+		align-self: center;
+	}
+
+	.domain-verification-help {
+		@extend %o-popover;
+		--theme-popover-width: 44rem;
+
+		&::backdrop {
+			background: rgb(0 0 0 / 50%);
+		}
+
+		table {
+			font-size: var(--theme-small-size);
+
+			th, td {
+				padding: var(--theme-space-2);
+
+				&:first-child, &:last-child {
+					white-space: nowrap;
+				}
+			}
+		}
+	}
+
+	.verification-check {
+		display: inline-flex;
+		vertical-align: -.125em;
+		color: var(--theme-color-success);
+	}
+
+	.verification-spinner {
+		display: inline-flex;
+		vertical-align: middle;
+		margin-inline-end: var(--theme-space-2);
+
+		&::before {
+			@extend %flux-loader-spinner;
+			display: block;
+			margin: 0;
 		}
 	}
 

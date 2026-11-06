@@ -12,7 +12,10 @@ select
 	ApplicationDeployment.secret,
 	ApplicationDeployment.providerHost,
 	ApplicationDeployment.clientHost,
-	ApplicationDeployment.clientLoginPath
+	ApplicationDeployment.clientLoginPath,
+	ApplicationDeployment.domainVerified,
+	ApplicationDeployment.clientConnected,
+	ApplicationDeployment.userLoggedIn
 
 from
 	Application

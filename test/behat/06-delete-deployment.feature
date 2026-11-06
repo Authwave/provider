@@ -1,6 +1,17 @@
 Feature: Deleting deployments with an audit trail
   Deployment deletion must never silently remove users or email history.
 
+  Scenario: Enter saves a deployment rather than requesting deletion
+    Given the database is in the "deployment_admin" state
+    And I sign in as the fixture administrator
+    When I go to "/admin/applications/managed/"
+    And I complete the "Development" deployment form:
+      | Deployment name | Updated development |
+    And I press Enter in the deployment name for "Development"
+    Then I should see "Deployment saved."
+    And deployment "Updated development" should have a saved read-only ID and API key
+    And action "DEPLOYMENT_UPDATED" should be audited for the fixture administrator
+
   Scenario: Delete the last unused deployment and return to the empty state
     Given the database is in the "deployment_admin" state
     And I sign in as the fixture administrator
@@ -89,5 +100,16 @@ Feature: Deleting deployments with an audit trail
     And I request deletion of deployment "<b>Development</b>"
     Then I should see "Confirm deleting <b>Development</b>" in the deletion confirmation
     And the deletion confirmation name should not contain HTML elements
+    When I cancel deletion
+    Then no deployment should have been deleted
+
+  Scenario: An unsaved deployment title does not change the deletion confirmation
+    Given the database is in the "deployment_admin" state
+    And I sign in as the fixture administrator
+    When I go to "/admin/applications/managed/"
+    And I complete the "Development" deployment form:
+      | Deployment name | Unsaved title |
+    And I request deletion of deployment "Development"
+    Then I should see "Confirm deleting Development" in the deletion confirmation
     When I cancel deletion
     Then no deployment should have been deleted

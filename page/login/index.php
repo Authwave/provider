@@ -32,7 +32,6 @@ function go(
 
 	$clientHost = $deployment->clientHost;
 	$binder->bindKeyValue("clientHost", $clientHost);
-	$binder->bindKeyValue("title", $deployment->title);
 }
 
 function do_continue(

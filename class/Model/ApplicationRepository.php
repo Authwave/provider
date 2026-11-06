@@ -4,23 +4,24 @@ namespace Authwave\Model;
 use Authwave\Security\Action;
 use Authwave\Security\AnonUser;
 use Authwave\Security\Audit;
-use Gt\Database\Database;
+use Authwave\Security\DomainVerification;
+use GT\Database\Database;
 use Throwable;
 use Authwave\Model\User;
-use Authwave\Admin\Application\{ApplicationName, ApplicationSettings, DeploymentData,
-	ManagedApplication, ManagedDeployment};
+use Authwave\Admin\Application\{ApplicationName, DeploymentData, ManagedApplication};
 use Closure;
 use GT\Ulid\Ulid;
 use InvalidArgumentException;
 use UnexpectedValueException;
-use Gt\Http\ResponseStatusException\ClientError\HttpNotFound;
-use Gt\Database\Result\Row;
-use Gt\Http\Uri;
+use GT\Http\ResponseStatusException\ClientError\HttpNotFound;
+use GT\Database\Result\Row;
+use GT\Http\Uri;
 
 readonly class ApplicationRepository {
 	public function __construct(
 		private Database $database,
 		private Audit $audit,
+		private DomainVerification $domains,
 	) {
 	}
 
@@ -121,6 +122,9 @@ readonly class ApplicationRepository {
 			$row->getString("clientHost"),
 			$row->getString("clientLoginPath"),
 			$row->getString("providerHost") ?? "",
+			$row->getBool("domainVerified"),
+			$row->getBool("clientConnected"),
+			$row->getBool("userLoggedIn"),
 		);
 	}
 
@@ -167,28 +171,25 @@ readonly class ApplicationRepository {
 		return $applications;
 	}
 
-	public function get(User $actor, string $identifier):ApplicationSettings {
-		$row = $this->database->queryCollection("admin_application")
-			->fetch("getOwned", $identifier, $actor->id);
+	public function get(User $actor, string $identifier):Application {
+		$id = $this->database->queryCollection("admin_application")
+			->fetchString("getOwned", $identifier, $actor->id);
 
-		if(!$row) {
-			throw new HttpNotFound();
-		}
-
-		return new ApplicationSettings($row->getString("id"), $row->getString("name"),
-			$row->getString("productionApplicationDeploymentId"));
+		return $this->getById($id) ?? throw new HttpNotFound();
 	}
 
-	/** @return list<ManagedDeployment> */
+	/** @return list<ApplicationDeployment> */
 	public function deployments(User $actor, string $identifier):array {
-		$this->get($actor, $identifier);
+		$application = $this->get($actor, $identifier);
 		$result = [];
 		$rows = $this->database->queryCollection("admin_deployment")->fetchAll("getAll", $identifier);
 
 		foreach($rows as $row) {
-			$result []= new ManagedDeployment($row->getString("id"), $row->getString("title"),
-				$row->getString("providerHost"), $row->getString("clientHost"),
-				$row->getString("clientLoginPath"), $row->getString("secret"));
+			$result []= new ApplicationDeployment($row->getString("id"), $application,
+				$row->getString("title"), $row->getString("secret"), $row->getString("clientHost"),
+				$row->getString("clientLoginPath"), $row->getString("providerHost"),
+				$row->getBool("domainVerified"), $row->getBool("clientConnected"),
+				$row->getBool("userLoggedIn"));
 		}
 
 		return $result;
@@ -208,8 +209,9 @@ readonly class ApplicationRepository {
 				$name->value, $production, $identifier);
 			$this->audit->recordChange(
 				Action::APPLICATION_UPDATED,
-				before: $before,
-				after: new ApplicationSettings($identifier, $name->value, $production),
+				before: (object)["name" => $before->name,
+					"productionApplicationDeploymentId" => $before->productionApplicationDeploymentId],
+				after: (object)["name" => $name->value, "productionApplicationDeploymentId" => $production],
 				actor: $actor,
 				context: ["applicationId" => $identifier],
 			);
@@ -217,32 +219,41 @@ readonly class ApplicationRepository {
 	}
 
 	public function saveDeployment(User $actor, string $applicationId, ?string $identifier,
-		DeploymentData $data):ManagedDeployment {
+		DeploymentData $data):ApplicationDeployment {
 		return $this->transaction(function()use(
 			$actor, $applicationId, $identifier, $data,
-		):ManagedDeployment {
-			$this->get($actor, $applicationId);
+		):ApplicationDeployment {
+			$application = $this->get($actor, $applicationId);
 			$identifier = $identifier === "" ? null : $identifier;
 			$before = $identifier !== null
 				? $this->deployment($actor, $applicationId, $identifier) : null;
-			$deployment = new ManagedDeployment($before->identifier ?? (string)new Ulid("DEPLOYMENT"),
-				$data->name, $data->host, $data->clientUrl, $data->clientLoginPath,
-				$before->secret ?? base64_encode(random_bytes(24)));
+			$oldHostname = $this->domains->hostname($before->providerHost ?? "");
+			$newHostname = $this->domains->hostname($data->providerHost);
+			$verified = $oldHostname === $newHostname && ($before->domainVerified ?? false);
+			$sameConnection = $before && $before->providerHost === $data->providerHost
+				&& $before->clientHost === $data->clientHost
+				&& $before->clientLoginPath === $data->clientLoginPath;
+			$deployment = new ApplicationDeployment($before->id ?? (string)new Ulid("DEPLOYMENT"),
+				$application, $data->title, $before->secret ?? base64_encode(random_bytes(24)),
+				$data->clientHost, $data->clientLoginPath, $data->providerHost, $verified,
+				$sameConnection && $before->clientConnected, $sameConnection && $before->userLoggedIn);
 			$query = $this->database->queryCollection("admin_deployment");
 
 			if($before) {
-				$query->update("update", $data->name, $data->host, $data->clientUrl,
-					$data->clientLoginPath, $identifier, $applicationId);
+				$query->update("update", $data->title, $data->providerHost, $data->clientHost,
+					$data->clientLoginPath, (int)$deployment->domainVerified,
+					(int)$deployment->clientConnected, (int)$deployment->userLoggedIn,
+					$identifier, $applicationId);
 			}
 			else {
-				$query->insert("create", $deployment->identifier, $applicationId, $data->name,
-					$data->host, $data->clientUrl, $data->clientLoginPath, $deployment->secret);
+				$query->insert("create", $deployment->id, $applicationId, $data->title,
+					$data->providerHost, $data->clientHost, $data->clientLoginPath, $deployment->secret);
 			}
 
 			$this->audit->recordChange(
 				$before ? Action::DEPLOYMENT_UPDATED : Action::DEPLOYMENT_CREATED,
-				before: $before,
-				after: $deployment,
+				before: $before ? $this->deploymentDetails($before) : null,
+				after: $this->deploymentDetails($deployment),
 				actor: $actor,
 				context: $before
 					? ["applicationId" => $applicationId, "deploymentId" => $identifier]
@@ -262,13 +273,13 @@ readonly class ApplicationRepository {
 				throw new InvalidArgumentException("Deployments with users or emails cannot be deleted.");
 			}
 
-			if($application->productionDeploymentId === $identifier) {
+			if($application->productionApplicationDeploymentId === $identifier) {
 				$this->database->queryCollection("admin_application")->update("update",
 					$application->name, null, $applicationId);
 				$this->audit->recordChange(
 					Action::APPLICATION_UPDATED,
-					before: $application,
-					after: new ApplicationSettings($applicationId, $application->name, null),
+					before: (object)["productionApplicationDeploymentId" => $identifier],
+					after: (object)["productionApplicationDeploymentId" => null],
 					actor: $actor,
 					context: ["applicationId" => $applicationId],
 				);
@@ -280,7 +291,7 @@ readonly class ApplicationRepository {
 
 			$this->audit->recordChange(
 				Action::DEPLOYMENT_DELETED,
-				before: $before,
+				before: $this->deploymentDetails($before),
 				after: null,
 				actor: $actor,
 				context: ["applicationId" => $applicationId],
@@ -288,15 +299,154 @@ readonly class ApplicationRepository {
 		});
 	}
 
+	private function deploymentDetails(ApplicationDeployment $deployment):object {
+		return (object)[
+			"id" => $deployment->id,
+			"title" => $deployment->title,
+			"providerHost" => $deployment->providerHost,
+			"clientHost" => $deployment->clientHost,
+			"clientLoginPath" => $deployment->clientLoginPath,
+			"domainVerified" => $deployment->domainVerified,
+			"clientConnected" => $deployment->clientConnected,
+			"userLoggedIn" => $deployment->userLoggedIn,
+		];
+	}
+
 	private function deployment(User $actor, string $applicationId,
-		string $identifier):ManagedDeployment {
+		string $identifier):ApplicationDeployment {
 		foreach($this->deployments($actor, $applicationId) as $deployment) {
-			if($deployment->identifier === $identifier) {
+			if($deployment->id === $identifier) {
 				return $deployment;
 			}
 		}
 
 		throw new InvalidArgumentException("Choose a deployment assigned to this application.");
+	}
+
+	public function hasConnectedApplication(User $administrator):bool {
+		return $this->database->queryCollection("admin_deployment")
+			->fetchInt("hasConnectedApplication", $administrator->id) > 0;
+	}
+
+	public function hasClientLogin(User $administrator):bool {
+		return $this->database->queryCollection("admin_deployment")
+			->fetchInt("hasClientLogin", $administrator->id) > 0;
+	}
+
+	public function recordClientConnection(string $deploymentId, Uri $uri, AnonUser $actor):void {
+		if(!in_array($uri->getPath(), ["", "/"], true)) {
+			return;
+		}
+
+		$this->transaction(function()use($deploymentId, $uri, $actor):void {
+			$deployment = $this->productionDeployment($deploymentId);
+			$host = $uri->getHost() . ($uri->getPort() ? ":" . $uri->getPort() : "");
+
+			if(!$deployment || strcasecmp($host, $deployment->providerHost) !== 0) {
+				return;
+			}
+
+			$changed = $this->database->queryCollection("admin_deployment")
+				->update("connectClient", $deploymentId, $deployment->providerHost);
+
+			if($changed === 1) {
+				$this->audit->recordChange(Action::CLIENT_CONNECTED,
+					(object)["clientConnected" => false], (object)["clientConnected" => true],
+					$actor, ["deploymentId" => $deploymentId]);
+			}
+		});
+	}
+
+	public function recordClientLogin(User $actor):void {
+		$this->transaction(function()use($actor):void {
+			$deployment = $this->productionDeployment($actor->applicationDeploymentId);
+
+			if(!$deployment) {
+				return;
+			}
+
+			$changed = $this->database->queryCollection("admin_deployment")
+				->update("recordUserLogin", $deployment->id, $deployment->providerHost);
+
+			if($changed === 1) {
+				$this->audit->recordChange(Action::FIRST_CLIENT_LOGIN,
+					(object)["userLoggedIn" => false], (object)["userLoggedIn" => true],
+					$actor, ["deploymentId" => $deployment->id]);
+			}
+		});
+	}
+
+	private function productionDeployment(string $id):?ApplicationDeployment {
+		$deployment = $this->getDeploymentById($id);
+
+		if(!$deployment || !$deployment->domainVerified
+		|| $this->domains->isLocal($deployment->providerHost)
+		|| $deployment->application->productionApplicationDeploymentId !== $id) {
+			return null;
+		}
+
+		return $deployment;
+	}
+
+	public function hasVerifiedDomain(User $administrator):bool {
+		$rows = $this->database->queryCollection("admin_deployment")
+			->fetchAll("getDomainsByAdministrator", $administrator->id);
+
+		foreach($rows as $row) {
+			if($row->getBool("domainVerified")
+				&& !$this->domains->isLocal($row->getString("providerHost"))) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public function verifyDeployment(User $actor, string $applicationId, string $id):bool {
+		$deployment = $this->deployment($actor, $applicationId, $id);
+
+		if($this->domains->isLocal($deployment->providerHost)) {
+			return false;
+		}
+
+		if($deployment->domainVerified) {
+			return true;
+		}
+
+		$verified = $this->domains->verify($deployment->providerHost);
+
+		return $this->transaction(function()use(
+			$actor, $applicationId, $id, $deployment, $verified,
+		):bool {
+			$current = $this->deployment($actor, $applicationId, $id);
+			$sameHost = $this->domains->hostname($current->providerHost)
+				=== $this->domains->hostname($deployment->providerHost);
+
+			if(!$verified || !$sameHost) {
+				$this->audit->create(Action::DOMAIN_VERIFICATION_CHECKED,
+					["deploymentId" => $id, "result" => $sameHost ? "pending" : "changed"], $actor);
+				return false;
+			}
+
+			if($current->domainVerified) {
+				return true;
+			}
+
+			$updated = $this->database->queryCollection("admin_deployment")
+				->update("verifyDomain", $id, $applicationId, $current->providerHost);
+
+			if($updated !== 1) {
+				$this->audit->create(Action::DOMAIN_VERIFICATION_CHECKED,
+					["deploymentId" => $id, "result" => "changed"], $actor);
+				return false;
+			}
+
+			$this->audit->recordChange(Action::DOMAIN_VERIFIED,
+				before: (object)["domainVerified" => false],
+				after: (object)["domainVerified" => true],
+				actor: $actor, context: ["deploymentId" => $id, "providerHost" => $current->providerHost]);
+			return true;
+		});
 	}
 
 	public function countFor(User $administrator):int {

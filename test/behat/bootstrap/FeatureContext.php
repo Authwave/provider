@@ -11,6 +11,235 @@ use Behat\Mink\Exception\ExpectationException;
 require_once dirname(__DIR__) . "/database/DatabaseState.php";
 
 class FeatureContext extends MinkContext {
+	#[Then('the login page should identify application :name')]
+	public function loginApplicationName(string $name):void {
+		$this->assertSession()->elementTextContains("css", "#main-content", $name);
+		$this->expect($this->getSession()->getPage()->find("css", ".logo")->getAttribute("alt") === "$name logo",
+			"The logo must describe the application, rather than the deployment.");
+		$this->expect($this->getSession()->getPage()->find("css", "title")->getText() === "$name - Login",
+			"The browser title must name the application.");
+	}
+
+	#[Then('the login page should not show a deployment badge')]
+	public function noLoginDeploymentBadge():void {
+		$notice = $this->assertSession()->elementExists("css", ".deployment-notice");
+		$this->expect(!$notice->isVisible(), "Production must not show a deployment badge.");
+	}
+
+	#[Then('the login page should show deployment badge :name above its content at width :width')]
+	public function loginDeploymentBadge(string $name, int $width):void {
+		$this->getSession()->resizeWindow($width, 1000);
+		$notice = $this->assertSession()->elementExists("css", ".deployment-notice");
+		$this->expect($notice->isVisible() && $notice->getText() === $name, "Missing non-production deployment badge.");
+		$this->expect($this->getSession()->evaluateScript(<<<'JS'
+(() => {
+	const notice = document.querySelector('.deployment-notice');
+	const main = document.querySelector('#main-content');
+	const badge = notice.querySelector('.badge');
+	return !main.contains(notice) && notice.getBoundingClientRect().bottom <= main.getBoundingClientRect().top
+		&& parseFloat(getComputedStyle(badge).borderRadius) > 0
+		&& document.documentElement.scrollWidth <= innerWidth;
+})()
+JS), "The deployment badge must be above the main content and fit the viewport.");
+	}
+
+	#[Given('production client URLs use the test server')]
+	public function productionClientUrls():void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$port = parse_url($this->getMinkParameter("base_url"), PHP_URL_PORT);
+		$query = $database->prepare("update ApplicationDeployment set providerHost = ?, clientHost = ?, clientLoginPath = '/logged-out/' where id = 'managed-development'");
+		$query->execute(["login.production.test:$port", $this->getMinkParameter("base_url")]);
+		$query = $database->prepare("update User set hash = ? where id = 'customer'");
+		$query->execute([password_hash("Test-customer-password-2026", PASSWORD_DEFAULT)]);
+	}
+
+	#[When('I start a client login on the production provider')]
+	public function productionClientLogin():void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$deployment = $database->query("select id, secret, providerHost from ApplicationDeployment where id = 'managed-development'")->fetch(PDO::FETCH_OBJ);
+		$iv = new \GT\Cipher\InitVector();
+		$payload = http_build_query(["action" => "login", "secretIv" => (string)new \GT\Cipher\InitVector()]);
+		$message = new \GT\Cipher\Message\PlainTextMessage($payload, $iv);
+		$query = http_build_query([
+			"c" => (string)$message->encrypt(new \GT\Cipher\Key($deployment->secret)),
+			"i" => (string)$iv,
+			"d" => $deployment->id,
+			"u" => bin2hex($this->getMinkParameter("base_url") . "/logged-out/"),
+		]);
+		$this->visit("http://$deployment->providerHost/?$query");
+	}
+
+	#[When('I visit the production provider directly')]
+	public function visitProductionProvider():void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$host = $database->query("select providerHost from ApplicationDeployment where id = 'managed-development'")->fetchColumn();
+		$this->visit("http://$host/");
+	}
+
+	#[When('I start a development login on the production provider')]
+	public function productionDevelopmentLogin():void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$host = $database->query("select providerHost from ApplicationDeployment where id = 'managed-development'")->fetchColumn();
+		$this->visit("http://$host/?dev-login=managed-development");
+	}
+
+	#[When('I sign in as the production customer')]
+	public function productionCustomerSignIn():void {
+		$this->fillField("Email address", "customer@example.test");
+		$this->pressButton("Continue");
+		$this->getSession()->wait(5000, "document.querySelector('input[name=password]') !== null");
+		$this->fillField("Password", "Test-customer-password-2026");
+		$this->pressButton("Log in with password");
+		$this->expect($this->getSession()->wait(5000,
+			"location.pathname === '/logged-out/' || location.pathname === '/login/success/'"),
+			"The customer's authentication must complete.");
+	}
+
+	#[Then('production client progress should have :count saved milestones with audits')]
+	public function productionClientProgress(int $count):void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$row = $database->query("select clientConnected, userLoggedIn from ApplicationDeployment where id = 'managed-development'")->fetch(PDO::FETCH_OBJ);
+		$this->expect((bool)$row->clientConnected === ($count >= 1), "Incorrect saved client-connection progress.");
+		$this->expect((bool)$row->userLoggedIn === ($count >= 2), "Incorrect saved first-login progress.");
+		foreach(["CLIENT_CONNECTED", "FIRST_CLIENT_LOGIN"] as $index => $action) {
+			$query = $database->prepare("select userId, anonUserId, detail from Audit where action = ?");
+			$query->execute([$action]);
+			$rows = $query->fetchAll(PDO::FETCH_OBJ);
+			$this->expect(count($rows) === ($count > $index ? 1 : 0), "Incorrect audit count for $action.");
+			if($rows) {
+				$this->expect($index === 0 ? $rows[0]->anonUserId !== null : $rows[0]->userId === "customer",
+					"The milestone must identify its actual actor.");
+				$this->expect(!str_contains($rows[0]->detail, "secret"), "Milestone audits must not contain credentials.");
+			}
+		}
+	}
+
+	#[Then('requesting domain instructions on the hosted provider should identify the hosted provider')]
+	public function hostedDomainInstructions():void {
+		$request = curl_init($this->getSession()->getCurrentUrl());
+		curl_setopt_array($request, [CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_HTTPHEADER => ["Host: login.authwave.com"],
+			CURLOPT_COOKIE => "GT=" . $this->getSession()->getCookie("GT")]);
+		$html = curl_exec($request);
+		$this->expect(curl_getinfo($request, CURLINFO_HTTP_CODE) === 200 && is_string($html),
+			"The hosted-host request must use the authenticated test session.");
+		$document = new \GT\Dom\HTMLDocument($html);
+		$message = $document->querySelector("#domain-help-managed-development p")->textContent;
+		$this->expect($message === "You are using the hosted Authwave provider", "Incorrect hosted-provider message.");
+	}
+
+	private int $domainCheckCount = 0;
+
+	private function domainChecks():int {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		return (int)$database->query("select count(*) from Audit where action = 'DOMAIN_VERIFICATION_CHECKED'")->fetchColumn();
+	}
+
+	#[When('I start checking the deployment domain')]
+	public function startDomainCheck():void {
+		$this->domainPopover()->pressButton("I've set these records");
+		$this->getSession()->wait(5000, 'document.querySelector(".domain-verification[data-flux=live]") !== null');
+	}
+
+	#[Then('the deployment domain should be checked every ten seconds while this page is open')]
+	public function domainPolling():void {
+		$this->deploymentDomainStatus("Development", "Checking domain...");
+		$region = $this->assertSession()->elementExists("css", ".domain-verification[data-flux=live]");
+		$this->expect($region->getAttribute("data-flux-rate") === "10", "DNS checks must use a ten-second Flux rate.");
+		$this->expect($region->find("css", ".verification-spinner")->isVisible(), "Pending verification needs its spinner.");
+		if(getenv("BEHAT_JAVASCRIPT") !== "1") {
+			$before = $this->domainChecks();
+			$region->pressButton("Check again");
+			$this->expect($this->domainChecks() === $before + 1, "Native verification must support a manual recheck.");
+		}
+	}
+
+	#[Then('domain verification polling should not discard unsaved deployment fields')]
+	public function domainPollingPreservesDraft():void {
+		if(getenv("BEHAT_JAVASCRIPT") !== "1") {
+			return;
+		}
+		$details = $this->deploymentDetails("Development");
+		$details->fillField("Deployment name", "Unsaved title");
+		$token = $this->getSession()->evaluateScript('document.querySelector("meta[name=csrf-token]").content');
+		$before = $this->domainChecks();
+		$deadline = microtime(true) + 12;
+		while($this->domainChecks() === $before && microtime(true) < $deadline) {
+			usleep(100000);
+		}
+		$this->expect($this->domainChecks() > $before, "Flux must perform another DNS check without user interaction.");
+		$this->expect($this->deploymentDetails("Development")->findField("Deployment name")->getValue() === "Unsaved title",
+			"A status refresh must preserve unsaved deployment values.");
+		$this->expect($this->getSession()->wait(5000, 'document.querySelector("meta[name=csrf-token]").content !== ' . json_encode($token)),
+			"Live responses must renew CSRF tokens without replacing editable fields.");
+		$this->domainCheckCount = $this->domainChecks();
+	}
+
+	#[Then('leaving the page should stop domain verification checks')]
+	public function domainPollingStops():void {
+		if(getenv("BEHAT_JAVASCRIPT") !== "1") {
+			return;
+		}
+		$this->getSession()->wait(11000, 'false');
+		$this->expect($this->domainChecks() === $this->domainCheckCount, "Leaving the page must stop DNS checks.");
+	}
+
+	private function domainPopover():\Behat\Mink\Element\NodeElement {
+		foreach($this->getSession()->getPage()->findAll("css", ".domain-verification-help") as $popover) {
+			if($popover->isVisible()) {
+				return $popover;
+			}
+		}
+
+		throw new RuntimeException("No domain verification popover is open.");
+	}
+
+	#[Then('deployment :title should show domain status :status')]
+	public function deploymentDomainStatus(string $title, string $status):void {
+		$this->expect($this->deploymentDetails($title)->find("css", ".domain-verification p")->getText() === $status,
+			"Unexpected domain verification status.");
+	}
+
+	#[Then('deployment :title should have a :badge badge')]
+	public function deploymentBadge(string $title, string $badge):void {
+		$labels = $this->deploymentDetails($title)->findAll("css", "summary .badge:not([hidden])");
+		$this->expect(in_array($badge, array_map(fn($label) => $label->getText(), $labels), true), "Missing $badge badge.");
+	}
+
+	#[Then('deployment :title should not have a :badge badge')]
+	public function missingDeploymentBadge(string $title, string $badge):void {
+		$labels = $this->deploymentDetails($title)->findAll("css", "summary .badge:not([hidden])");
+		$this->expect(!in_array($badge, array_map(fn($label) => $label->getText(), $labels), true), "Unexpected $badge badge.");
+	}
+
+	#[When('I open the domain verification instructions for deployment :title')]
+	public function openDomainInstructions(string $title):void {
+		$this->deploymentDetails($title)->pressButton("Begin verification");
+	}
+
+	#[Then('the domain verification popover should show the DNS records for :host')]
+	public function domainInstructions(string $host):void {
+		$popover = $this->domainPopover();
+		$rows = $popover->findAll("css", "tbody tr");
+		$this->expect(count($rows) === 2, "Both nameserver records must be shown.");
+		foreach($rows as $index => $row) {
+			$values = array_map(fn($cell) => $cell->getText(), $row->findAll("css", "td"));
+			$this->expect($values === ["NS", $host, "ns" . ($index + 1) . ".authwave.com", "1800"], "Incorrect DNS instructions.");
+		}
+	}
+
+	#[When('I cancel domain verification')]
+	public function cancelDomainVerification():void {
+		$this->domainPopover()->pressButton("Cancel");
+	}
+
+	#[Then('the domain verification popover should be closed')]
+	public function closedDomainInstructions():void {
+		foreach($this->getSession()->getPage()->findAll("css", ".domain-verification-help") as $popover) {
+			$this->expect(!$popover->isVisible(), "The verification popover must be closed.");
+		}
+	}
+
 	private function deploymentKey(string $id):string {
 		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
 		$query = $database->prepare("select secret from ApplicationDeployment where id = ?");
@@ -52,14 +281,6 @@ class FeatureContext extends MinkContext {
 	#[Then('sudo mode should be disabled')]
 	public function sudoDisabled():void {
 		$this->assertSession()->elementNotExists("css", "[data-sudo-disable]:not([hidden])");
-	}
-
-	#[Then('I can view the API key of deployment :summary')]
-	public function canViewDeploymentKey(string $summary):void {
-		if(getenv("BEHAT_JAVASCRIPT") === "1") {
-			$this->viewDeploymentKey($summary);
-		}
-		$this->visibleDeploymentKey($summary);
 	}
 
 	#[Then('the API key of deployment :summary should be visible')]
@@ -120,6 +341,7 @@ class FeatureContext extends MinkContext {
 		$this->fillField("Password", "Test-admin-password-2026");
 		$this->pressButton("Enable sudo mode");
 		$this->sudoEnabled();
+		$this->obscuredDeploymentKey("Development");
 		$this->getSession()->executeScript('const write = navigator.clipboard.writeText.bind(navigator.clipboard); navigator.clipboard.writeText = async value => { await write(value); window.copiedSudoValue = value; };');
 		$this->deploymentDetails("Development")->find("css", "[data-sudo-copy]")->click();
 		$this->getSession()->wait(5000, 'window.copiedSudoValue !== undefined');
@@ -227,7 +449,13 @@ class FeatureContext extends MinkContext {
 		$this->getSession()->wait(5000, "document.querySelector('input[name=password]') !== null");
 		$this->fillField("Password", "Test-admin-password-2026");
 		$this->pressButton("Log in with password");
-		$this->getSession()->wait(5000, "document.querySelector('admin-sidebar') !== null");
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$hasApplications = (int)$database->query("select count(*) from UserAdmin where userId = 'administrator'")->fetchColumn() > 0;
+		$path = $hasApplications ? "/admin/" : "/admin/applications/";
+		$this->expect($this->getSession()->wait(5000,
+			"location.pathname === " . json_encode($path)
+			. " && document.readyState === 'complete' && document.querySelector('admin-sidebar') !== null"),
+			"Administrator sign-in must finish on its account's landing page.");
 	}
 
 	#[Then('the provider path should be :path')]
@@ -448,7 +676,7 @@ class FeatureContext extends MinkContext {
 		$records = $query->fetchAll(PDO::FETCH_COLUMN);
 		$this->expect(count($records) === 1, "Expected exactly one deployment deletion audit.");
 		$detail = json_decode($records[0], flags: JSON_THROW_ON_ERROR);
-		$this->expect($detail->from->identifier === $this->deletedDeploymentId && !property_exists($detail, "to"),
+		$this->expect($detail->from->id === $this->deletedDeploymentId && !property_exists($detail, "to"),
 			"Missing deleted deployment details.");
 		$this->expect($detail->applicationId === 'managed', "Incorrect application scope.");
 		$this->expect($this->deletedDeploymentKey !== null
@@ -470,8 +698,8 @@ class FeatureContext extends MinkContext {
 		$records = $database->query("select detail from Audit where action = 'APPLICATION_UPDATED' and userId = 'administrator'")->fetchAll(PDO::FETCH_COLUMN);
 		foreach($records as $record) {
 			$detail = json_decode($record);
-			$change = $detail->from->productionDeploymentId ?? null;
-			if($change === $this->deletedDeploymentId && $detail->to->productionDeploymentId === null) return;
+			$change = $detail->from->productionApplicationDeploymentId ?? null;
+			if($change === $this->deletedDeploymentId && $detail->to->productionApplicationDeploymentId === null) return;
 		}
 		throw new RuntimeException("Missing production-selection removal audit.");
 	}
@@ -663,7 +891,7 @@ class FeatureContext extends MinkContext {
 	public function onlyDeploymentOpen(string $summary):void {
 		$this->assertSession()->elementsCount('css', 'application-deployments details[open]', 1);
 		$open = $this->assertSession()->elementExists('css', 'application-deployments details[open]');
-		$this->expect($open->find('css', 'summary')->getText() === $summary,
+		$this->expect($open->find('css', '.deployment-title')->getText() === $summary,
 			'Unexpected open deployment.');
 	}
 
@@ -716,7 +944,7 @@ class FeatureContext extends MinkContext {
 
 	private function deploymentDetails(string $summary):\Behat\Mink\Element\NodeElement {
 		foreach($this->getSession()->getPage()->findAll('css', 'application-deployments details') as $details) {
-			if($details->find('css', 'summary')->getText() !== $summary) continue;
+			if($details->find('css', '.deployment-title')->getText() !== $summary) continue;
 			if(!$details->hasAttribute('open')) $details->find('css', 'summary')->click();
 			return $details;
 		}
@@ -763,6 +991,15 @@ class FeatureContext extends MinkContext {
 		$this->saveDeployment($summary);
 	}
 
+	#[When('I press Enter in the deployment name for :summary')]
+	public function submitDeploymentWithEnter(string $summary):void {
+		$details = $this->deploymentDetails($summary);
+		$field = $details->findField("Deployment name");
+		$field->focus();
+		$field->keyPress(13);
+		$this->getSession()->wait(5000, "document.querySelector('application-deployments [role=status]:not([hidden])') !== null");
+	}
+
 	#[When('I save deployment :summary')]
 	public function saveDeployment(string $summary):void {
 		$details = $this->deploymentDetails($summary);
@@ -773,7 +1010,7 @@ class FeatureContext extends MinkContext {
 	#[Then('the open deployment form :summary should show :message and retain:')]
 	public function rejectedDeploymentForm(string $summary, string $message, \Behat\Gherkin\Node\TableNode $values):void {
 		$details = $this->assertSession()->elementExists("css", "application-deployments details[open]");
-		$this->expect($details->find("css", "summary")->getText() === $summary, "The submitted deployment must remain open.");
+		$this->expect($details->find("css", ".deployment-title")->getText() === $summary, "The submitted deployment must remain open.");
 		$alert = $details->find("css", "[role=alert]");
 		$this->expect($alert !== null && $alert->isVisible() && $alert->getText() === $message,
 			"The validation error must be visible inside the submitted form.");

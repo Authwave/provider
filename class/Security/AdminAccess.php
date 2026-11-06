@@ -2,7 +2,7 @@
 namespace Authwave\Security;
 
 use Authwave\Model\User;
-use Gt\Database\Query\QueryCollection;
+use GT\Database\Query\QueryCollection;
 
 readonly class AdminAccess {
 	public function __construct(

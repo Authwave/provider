@@ -13,7 +13,7 @@ class DeploymentDataTest extends TestCase {
 	):void {
 		$sut = new DeploymentData($name, $host, $client, $path);
 
-		self::assertSame($expected, [$sut->name, $sut->host, $sut->clientUrl, $sut->clientLoginPath]);
+		self::assertSame($expected, [$sut->title, $sut->providerHost, $sut->clientHost, $sut->clientLoginPath]);
 	}
 
 	public static function validValues():iterable {

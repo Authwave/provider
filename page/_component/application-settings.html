@@ -7,15 +7,15 @@
 	<form method="post" class="form-fields stack compact" data-bind:action="url">
 		<label>
 			<span>ID</span>
-			<input readonly data-bind:value="identifier" />
+			<input name="id" readonly data-bind:value="@" />
 		</label>
 		<label>
 			<span>Name</span>
-			<input name="name" required maxlength="128" data-bind:value="name" />
+			<input name="name" required maxlength="128" data-bind:value="@" />
 		</label>
 		<label>
 			<span>Production deployment</span>
-			<select name="productionDeploymentId">
+			<select name="productionApplicationDeploymentId">
 				<option data-list="production-options" data-bind:value="value" data-bind:text="label" data-bind:selected="?selected"></option>
 			</select>
 		</label>

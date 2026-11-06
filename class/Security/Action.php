@@ -2,6 +2,10 @@
 namespace Authwave\Security;
 
 enum Action {
+	case DOMAIN_VERIFICATION_CHECKED;
+	case DOMAIN_VERIFIED;
+	case CLIENT_CONNECTED;
+	case FIRST_CLIENT_LOGIN;
 	case SUDO_REQUESTED;
 	case SUDO_AUTHORISED;
 	case SUDO_REJECTED;

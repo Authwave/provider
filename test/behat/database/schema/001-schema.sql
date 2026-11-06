@@ -5,7 +5,7 @@ create table Application (
 create table ApplicationDeployment (
 	id text primary key, applicationId text not null, title text not null,
 	secret text not null, providerHost text not null, clientHost text not null,
-	clientLoginPath text not null
+	clientLoginPath text not null, domainVerified integer not null default 0, clientConnected integer not null default 0, userLoggedIn integer not null default 0
 );
 create table ApplicationTheme (applicationId text, colourScheme text, colours text);
 create table User (

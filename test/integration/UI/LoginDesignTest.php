@@ -104,7 +104,7 @@ class LoginDesignTest extends TestCase {
 		$request = $this->createStub(Request::class);
 		$request->method("getMethod")->willReturn("GET");
 		$this->call("index", "go", new Input(["email" => "edit@example.test"]), $request, $this->response, $this->login, $view->binder);
-		self::assertSame("Test application", $view->document->querySelector("h1 span")->textContent);
+		self::assertSame("Test app", $view->document->querySelector("h1 span")->textContent);
 		self::assertSame("/asset/default-logo.svg", $view->document->querySelector(".logo")->getAttribute("src"));
 		self::assertSame("edit@example.test", $view->document->querySelector("input[name=email]")->getAttribute("value"));
 		self::assertNull($this->login->getEmail());
@@ -132,7 +132,7 @@ class LoginDesignTest extends TestCase {
 			self::assertSame("(prefers-color-scheme: dark)", $source->getAttribute("media"));
 			self::assertSame($dark ? "/$directory/$dark" : "/asset/default-logo.svg", $source->getAttribute("srcset"));
 			self::assertSame($light ? "/$directory/$light" : "/asset/default-logo.svg", $picture->querySelector("img")->getAttribute("src"));
-			self::assertSame("Branded application logo", $picture->querySelector("img")->getAttribute("alt"));
+			self::assertSame("Branded app logo", $picture->querySelector("img")->getAttribute("alt"));
 			self::assertNull($view->document->documentElement->getAttribute("style"));
 			self::assertSame($style ? ':root[data-flair-theme="bright"][data-color-scheme="light"] { ' . $style . ' }' : null,
 				$view->document->querySelector("#application-theme")?->textContent);
@@ -243,7 +243,7 @@ class LoginDesignTest extends TestCase {
 		$this->users->method("get")->willReturn($this->user);
 		$this->session->expects(self::once())->method("kill");
 		$this->call("_common", "go", $view->document, $view->binder, $this->login);
-		$this->call("success", "go", new Input(["debug" => "1"]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), null), $this->createStub(Request::class));
+		$this->call("success", "go", new Input(["debug" => "1"]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), null), $this->createStub(Request::class), $this->createStub(ApplicationRepository::class));
 		$uri = $view->document->querySelector("main p a")->getAttribute("href");
 		self::assertStringStartsWith("https://client.example.test/callback?", $uri);
 		parse_str(parse_url($uri, PHP_URL_QUERY), $query);
@@ -262,7 +262,7 @@ class LoginDesignTest extends TestCase {
 		$this->session->expects(self::never())->method("kill");
 		$this->response->expects(self::never())->method("redirect");
 		$this->call("_common", "go", $view->document, $view->binder, $this->login);
-		$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), $this->user->email), $this->createStub(Request::class));
+		$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), $this->user->email), $this->createStub(Request::class), $this->createStub(ApplicationRepository::class));
 		$link = $view->document->querySelector('a[href="/admin/"]');
 		self::assertNotNull($link);
 		self::assertFalse($link->parentElement->hasAttribute("hidden"));
@@ -278,7 +278,7 @@ class LoginDesignTest extends TestCase {
 		$this->users->method("get")->willReturn($this->user);
 		$this->session->expects(self::once())->method("kill");
 		try {
-			$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), "someone-else@example.test"), $this->createStub(Request::class));
+			$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), "someone-else@example.test"), $this->createStub(Request::class), $this->createStub(ApplicationRepository::class));
 			self::fail("Expected client redirect");
 		}
 		catch(Redirect $redirect) {
@@ -294,7 +294,7 @@ class LoginDesignTest extends TestCase {
 		$this->users->method("get")->willReturn($this->user);
 		$this->session->expects(self::never())->method("kill");
 		$view = new View("login/success");
-		$this->redirects("/admin/", fn() => $this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), $this->user->email), $this->createStub(Request::class)));
+		$this->redirects("/admin/", fn() => $this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), $this->user->email), $this->createStub(Request::class), $this->createStub(ApplicationRepository::class)));
 	}
 
 	public function testChangingEmailOrDeploymentRequiresAuthenticationAgain():void {
@@ -322,11 +322,11 @@ class LoginDesignTest extends TestCase {
 		$view = new View("_error/403");
 		$this->callFile("page/_error/_common.php", "go", $view->document, $view->binder, $this->login);
 		self::assertTrue($view->document->body->classList->contains("dir--login"));
-		self::assertSame("Test application logo", $view->document->querySelector(".logo")->getAttribute("alt"));
+		self::assertSame("Test app logo", $view->document->querySelector(".logo")->getAttribute("alt"));
 		self::assertStringContainsString("doesn't have access to user administration", $view->document->body->textContent);
 		$link = $view->document->querySelector(".auth-heading a");
 		self::assertSame("https://client.example.test/callback", $link->getAttribute("href"));
-		self::assertSame("Continue to Test application", $link->textContent);
+		self::assertSame("Continue to Test app", $link->textContent);
 		self::assertSame("/login/access-denied/", $view->document->querySelector("form")->getAttribute("action"));
 		self::assertFalse($this->login->isAdminRequested());
 	}
@@ -372,7 +372,7 @@ class LoginDesignTest extends TestCase {
 		$this->response->expects(self::never())->method("redirect");
 		$request = $this->createMock(Request::class);
 		$request->expects(self::atLeastOnce())->method("getHeaderLine")->with("X-Authwave-Flux")->willReturn("1");
-		$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class)), $request);
+		$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class)), $request, $this->createStub(ApplicationRepository::class));
 		$link = $view->document->querySelector("a[data-client-redirect]");
 		self::assertNotNull($link);
 		self::assertStringStartsWith("https://client.example.test/callback?AUTHWAVE_RESPONSE_DATA=", $link->getAttribute("href"));

@@ -1,5 +1,9 @@
 @use "../../node_modules/flair/style/lib/flair";
 
+body.dir--admin .field:has(> .sudo-control) {
+	gap: 0;
+}
+
 body.dir--admin .sudo-control {
 	display: flex;
 	align-items: center;

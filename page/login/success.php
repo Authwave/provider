@@ -1,5 +1,6 @@
 <?php
 use Authwave\Session\LoginSession;
+use Authwave\Model\ApplicationRepository;
 use Authwave\Security\Action;
 use Authwave\Security\Audit;
 use Authwave\Security\AdminAccess;
@@ -25,6 +26,7 @@ function go(
 	Audit $audit,
 	AdminAccess $adminAccess,
 	Request $request,
+	ApplicationRepository $applications,
 ):void {
 	if($loginSession->getState() !== LoginState::LOGGED_IN) {
 		$response->redirect("/login/");
@@ -94,6 +96,10 @@ function go(
 		"deploymentId" => $deployment->id,
 	], $user);
 	$developmentLogin = $loginSession->getDataKey("developmentLogin");
+
+	if(!$developmentLogin) {
+		$applications->recordClientLogin($user);
+	}
 
 	if(!$isAdmin) {
 		$session->kill();

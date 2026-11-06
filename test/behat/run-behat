@@ -108,6 +108,8 @@ fi
 	--headless=new \
 	--disable-dev-shm-usage \
 	--disable-gpu \
+	--host-resolver-rules="MAP *.test 127.0.0.1" \
+	--no-proxy-server \
 	"${SCRIPT_FLAGS[@]}" \
 	--no-first-run \
 	--no-default-browser-check \

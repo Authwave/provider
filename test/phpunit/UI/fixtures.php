@@ -19,6 +19,7 @@ foreach(["index", "authenticate", "security-check", "success", "access-denied"] 
 	foreach([
 		"title" => "Test application - Login",
 		"applicationName" => "Test application",
+		"nonProduction" => false,
 		"logoPath" => "/asset/default-logo.svg?light",
 		"darkLogoPath" => "/asset/default-logo.svg?dark",
 		"email" => "test@example.test",

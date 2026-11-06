@@ -1,44 +1,49 @@
 <?php
 namespace Authwave\Admin\Application;
 
-use Authwave\Model\ApplicationRepository;
+use Authwave\Model\{ApplicationRepository, Application, User};
+use Authwave\UI\DeletionPrompt;
 use Authwave\Security\{Audit, Action};
 use Authwave\Session\FlashSession;
 use GT\Input\Input;
 use GT\Dom\Element;
 use GT\DomValidation\Validator;
 use GT\DomValidation\ValidationException;
-use Gt\Http\{Request, Response};
+use GT\Http\{Request, Response};
 use InvalidArgumentException;
 
 readonly class ApplicationSettingsAction {
+	private string $url;
 	public function __construct(
 		private ApplicationRepository $applications,
-		private ApplicationSettingsContext $context,
+		private Application $application,
+		private User $actor,
 		private FlashSession $flash,
 		private Audit $audit,
-	) {}
+	) {
+		$this->url = "/admin/applications/" . rawurlencode($application->id) . "/";
+	}
 
 	public function saveApplication(Input $input, Request $request, Response $response):void {
 		if(!$this->accepts($request)) {
 			return;
 		}
 
-		$application = $this->context->application;
+		$application = $this->application;
 
 		try {
-			$this->applications->save($this->context->actor, $application->identifier,
+			$this->applications->save($this->actor, $application->id,
 				new ApplicationName($this->text($input, "name")),
-				$this->text($input, "productionDeploymentId"));
+				$this->text($input, "productionApplicationDeploymentId"));
 		}
 		catch(InvalidArgumentException $error) {
 			$this->reject($error, Action::APPLICATION_SETTINGS_REJECTED);
-			$response->redirect($application->url);
+			$response->redirect($this->url);
 			return;
 		}
 
 		$this->flash->setFlash("Application settings saved.", "settings_success");
-		$response->redirect($application->url);
+		$response->redirect($this->url);
 	}
 
 	public function saveDeployment(Input $input, Request $request, Response $response,
@@ -47,7 +52,7 @@ readonly class ApplicationSettingsAction {
 			return;
 		}
 
-		$application = $this->context->application;
+		$application = $this->application;
 		$validator = new Validator();
 
 		try {
@@ -59,10 +64,10 @@ readonly class ApplicationSettingsAction {
 			}
 
 			$validator->validate($form, $fields);
-			$saved = $this->applications->saveDeployment($this->context->actor, $application->identifier,
-				$this->text($input, "deploymentId"), new DeploymentData(
-					(string)$fields["deploymentName"], (string)$fields["host"],
-					(string)$fields["clientUrl"], (string)$fields["clientLoginPath"],
+			$saved = $this->applications->saveDeployment($this->actor, $application->id,
+				$this->text($input, "id"), new DeploymentData(
+					(string)$fields["title"], (string)$fields["providerHost"],
+					(string)$fields["clientHost"], (string)$fields["clientLoginPath"],
 				));
 		}
 		catch(ValidationException) {
@@ -84,8 +89,8 @@ readonly class ApplicationSettingsAction {
 		}
 
 		$this->flash->setFlash("Deployment saved.", "deployment_success");
-		$response->redirect($application->url . "?deployment=" . rawurlencode($saved->identifier)
-			. "#deployment-" . rawurlencode($saved->identifier));
+		$response->redirect($this->url . "?deployment=" . rawurlencode($saved->id)
+			. "#deployment-" . rawurlencode($saved->id));
 	}
 
 	public function deleteDeployment(Input $input, Request $request, Response $response):void {
@@ -94,13 +99,13 @@ readonly class ApplicationSettingsAction {
 		}
 
 		try {
-			$identifier = $this->text($input, "deploymentId");
+			$identifier = $this->text($input, "id");
 
 			if($identifier === null || trim($identifier) === "") {
 				throw new InvalidArgumentException("Choose a deployment assigned to this application.");
 			}
 
-			$prompt = $this->context->deletionPrompt($identifier);
+			$prompt = $this->deletionPrompt($identifier);
 
 			if($prompt === null) {
 				throw new InvalidArgumentException("Choose a deployment assigned to this application.");
@@ -108,36 +113,46 @@ readonly class ApplicationSettingsAction {
 
 			if(!$prompt->isConfirmed($input->get("confirmDelete", Input::DATA_BODY))) {
 				$this->audit->create(Action::DELETE_CONFIRMATION_REQUESTED,
-					["applicationId" => $this->context->application->identifier,
-						"deploymentId" => $identifier], $this->context->actor);
+					["applicationId" => $this->application->id,
+						"deploymentId" => $identifier], $this->actor);
 				$response->redirect($prompt->confirmationUrl);
 				return;
 			}
 
-			$this->applications->deleteDeployment($this->context->actor,
-				$this->context->application->identifier, $identifier);
+			$this->applications->deleteDeployment($this->actor,
+				$this->application->id, $identifier);
 		}
 		catch(InvalidArgumentException $error) {
 			$this->reject($error, Action::DEPLOYMENT_DELETION_REJECTED);
-			$response->redirect($this->context->application->url);
+			$response->redirect($this->url);
 			return;
 		}
 
 		$this->flash->setFlash("Deployment deleted.", "settings_success");
-		$response->redirect($this->context->application->url);
+		$response->redirect($this->url);
+	}
+
+	public function deletionPrompt(?string $identifier):?DeletionPrompt {
+		foreach($this->applications->deployments($this->actor, $this->application->id) as $deployment) {
+			if($deployment->id === $identifier) {
+				return new DeletionPrompt($deployment->id, $deployment->title, $this->url);
+			}
+		}
+
+		return null;
 	}
 
 	private function accepts(Request $request):bool {
 		return $request->getMethod() === "POST"
 			&& rtrim($request->getUri()->getPath(), "/")
-				=== rtrim($this->context->application->url, "/");
+				=== rtrim($this->url, "/");
 	}
 
 	private function reject(InvalidArgumentException $error, Action $action,
 		string $category = "settings_error"):void {
 		$this->audit->create($action,
-			["applicationId" => $this->context->application->identifier,
-				"reason" => $error->getMessage()], $this->context->actor);
+			["applicationId" => $this->application->id,
+				"reason" => $error->getMessage()], $this->actor);
 		$this->flash->setFlash($error->getMessage(), $category);
 	}
 

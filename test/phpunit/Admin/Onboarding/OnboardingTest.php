@@ -79,4 +79,31 @@ class OnboardingTest extends TestCase {
 		self::assertTrue($steps[2]->current);
 		self::assertSame(range(1, 7), array_map(fn($step) => $step->number, $steps));
 	}
+	public function testSteps_verifiedDomainCompletesTheThirdStep():void {
+		$sut = new Onboarding(1, true);
+
+		$steps = iterator_to_array($sut->steps());
+
+		self::assertSame(3, $sut->completedCount());
+		self::assertTrue($steps[2]->complete);
+		self::assertTrue($steps[3]->current);
+	}
+
+	#[DataProvider("clientProgress")]
+	public function testCompletedCount_tracksClientMilestones(bool $connected, bool $signedIn, int $expected):void {
+		$sut = new Onboarding(1, true, $connected, $signedIn);
+
+		self::assertSame($expected, $sut->completedCount());
+		$steps = iterator_to_array($sut->steps());
+		self::assertSame($expected >= 4, $steps[3]->complete);
+		self::assertSame($expected >= 5, $steps[4]->complete);
+	}
+
+	public static function clientProgress():iterable {
+		yield [false, false, 3];
+		yield [false, true, 3];
+		yield [true, false, 4];
+		yield [true, true, 5];
+	}
+
 }

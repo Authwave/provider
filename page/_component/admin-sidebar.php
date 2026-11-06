@@ -9,6 +9,7 @@ use GT\DomTemplate\Binder;
 use Gt\Http\Uri;
 use Gt\Http\Response;
 use Authwave\Security\Sudo;
+use GT\Input\Input;
 
 function go_before(
 	AdminArea $area,
@@ -19,9 +20,17 @@ function go_before(
 }
 
 function go(Element $element, Binder $binder, Uri $uri, Onboarding $onboarding,
-	Sudo $sudo, AdminArea $area):void {
+	Sudo $sudo, AdminArea $area, Input $input):void {
+	if(is_string($input->get("verify", Input::DATA_QUERYSTRING))) {
+		$progress = $element->querySelector(".setup-card");
+		$progress->setAttribute("data-flux", "live");
+		$progress->setAttribute("data-flux-rate", "10");
+	}
+
 	$binder->bindKeyValue("sudoUntil", $sudo->expiresAt($area->administrator()));
 	$return = $uri->getPath() . ($uri->getQuery() ? "?" . $uri->getQuery() : "");
+	// This form submits to /sudo/ page logic, rather than a sidebar action.
+	$element->querySelector('[data-sudo-disable] input[name="__component"]')->remove();
 	$element->querySelector("[data-sudo-disable]")->setAttribute("action",
 		"/sudo/?" . http_build_query(["return" => $return]));
 

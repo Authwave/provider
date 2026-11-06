@@ -1,4 +1,3 @@
-@use "../variable/icon" as variable;
 @use "../animation/flux-loader-spin";
 
 // Apply Flux's autosave presentation before its deferred script starts.
@@ -28,17 +27,12 @@ form[data-flux] {
 		}
 
 		&::after {
-			--flux-loader-size: 32px;
+			@extend %flux-loader-icon;
 			content: "";
 			position: absolute;
 			inset: 0;
 			margin: auto;
-			transform-origin: center;
 			z-index: 1;
-			width: var(--flux-loader-size);
-			height: var(--flux-loader-size);
-			background-color: currentColor;
-			mask: url("#{variable.$path}loader-4.svg") center / var(--flux-loader-size) var(--flux-loader-size) no-repeat;
 			opacity: 0;
 			transition: opacity 0.2s ease;
 		}
@@ -51,8 +45,7 @@ form[data-flux] {
 			&::after {
 				opacity: 1;
 				transition: opacity 1s ease;
-				will-change: transform;
-				animation: flux-loader-spin 1s infinite steps(8, end);
+				@extend %flux-loader-spinner;
 			}
 		}
 	}
@@ -65,7 +58,6 @@ form[data-flux] {
 
 			&.flux-button-waiting::after {
 				transition: none;
-				animation: none;
 			}
 		}
 	}

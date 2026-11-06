@@ -237,9 +237,22 @@ try {
 		await send("Input.dispatchKeyEvent", {type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13});
 		assert.equal(await evaluate("document.querySelector('.flux-button-waiting').value"), button);
 		assert.equal(await evaluate("document.querySelectorAll('.flux-button-waiting').length"), 1);
-		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').maskImage.includes('loader-4.svg')"), true);
+		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').maskImage.includes('loader.svg')"), true);
 		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').position"), "absolute");
 		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').animationName"), "flux-loader-spin");
+		assert.equal(await evaluate(`(() => {
+			const button = document.querySelector('.flux-button-waiting');
+			const animation = button.getAnimations({subtree: true}).find(item => item.animationName === 'flux-loader-spin');
+			animation.pause();
+			animation.currentTime = 0;
+			const first = getComputedStyle(button, '::after').backgroundImage;
+			animation.currentTime = 125;
+			const next = getComputedStyle(button, '::after');
+			const stationary = next.rotate === 'none' && next.transform === 'none' && next.maskPosition === '50% 50%';
+			const changing = next.backgroundImage !== first;
+			animation.play();
+			return stationary && changing;
+		})()`), true, 'The loader must animate its shading while keeping the SVG mask stationary');
 		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').transitionDuration"), "1s");
 		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').transitionDelay"), "0s");
 		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting > span')).transitionDuration"), "1s");

@@ -1,3 +1,5 @@
+import {updateCsrfTokens} from "../app/form-submission.es6";
+
 class SudoFields {
 	constructor() {
 		this.timers = new WeakMap();
@@ -5,12 +7,28 @@ class SudoFields {
 		document.addEventListener("flux:after-render", () => this.initialise());
 		document.addEventListener("submit", event => this.submit(event), {capture: true});
 		window.addEventListener("pagehide", () => this.obscureAll());
-		window.addEventListener("pageshow", () => this.initialise());
+		window.addEventListener("pageshow", event => {
+			if(event.persisted) {
+				this.initialise();
+			}
+		});
 	}
 
 	initialise() {
+		const url = new URL(location.href);
+		const requested = url.searchParams.get("sudo-view");
+		if(requested !== null) {
+			url.searchParams.delete("sudo-view");
+			history.replaceState(history.state, "", url);
+		}
+
 		for(const field of document.querySelectorAll("[data-sudo-enabled]")) {
-			this.obscure(field);
+			if(field.id === requested && Number(field.dataset.sudoUntil) * 1000 > Date.now()) {
+				this.show(field, field.value ?? field.textContent, field.dataset.sudoUntil);
+			}
+			else {
+				this.obscure(field);
+			}
 		}
 
 		for(const field of document.querySelectorAll("[data-sudo][data-copy]")) {
@@ -22,6 +40,7 @@ class SudoFields {
 			const view = group.querySelector("[data-sudo-view]");
 			const copy = view.cloneNode(true);
 			copy.removeAttribute("data-sudo-view");
+			copy.removeAttribute("aria-pressed");
 			copy.dataset.sudoCopy = field.id;
 			copy.dataset.icon = "copy";
 			copy.value = "copy";
@@ -71,6 +90,13 @@ class SudoFields {
 		}
 	}
 
+	show(field, value, until) {
+		this.setValue(field, value);
+		field.closest(".sudo-control").querySelector("[data-sudo-view]").setAttribute("aria-pressed", "true");
+		clearTimeout(this.timers.get(field));
+		this.timers.set(field, setTimeout(() => this.obscure(field), Number(until) * 1000 - Date.now()));
+	}
+
 	async submit(event) {
 		const button = event.submitter;
 		if(!button?.matches("[data-sudo-view], [data-sudo-copy]")) {
@@ -108,12 +134,7 @@ class SudoFields {
 			}
 
 			const page = new DOMParser().parseFromString(await response.text(), "text/html");
-			// WebEngine shares a one-use CSRF token across the page's forms.
-			const token = page.querySelector('meta[name="csrf-token"]').content;
-			document.querySelector('meta[name="csrf-token"]').content = token;
-			for(const input of document.querySelectorAll('input[name="csrf-token"]')) {
-				input.value = token;
-			}
+			updateCsrfTokens(page);
 
 			const authorised = page.getElementById(field.id);
 			if(!authorised?.hasAttribute("data-sudo-enabled")
@@ -127,11 +148,7 @@ class SudoFields {
 				await navigator.clipboard.writeText(value);
 			}
 			else {
-				this.setValue(field, value);
-				button.setAttribute("aria-pressed", "true");
-				clearTimeout(this.timers.get(field));
-				this.timers.set(field, setTimeout(() => this.obscure(field),
-					Number(authorised.dataset.sudoUntil) * 1000 - Date.now()));
+				this.show(field, value, authorised.dataset.sudoUntil);
 			}
 		}
 		catch(error) {

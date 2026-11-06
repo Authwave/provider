@@ -4,8 +4,8 @@ namespace Authwave\Security;
 use Authwave\Model\User;
 use Authwave\User\{UserRepository, LoginState};
 use Authwave\Session\LoginSession;
-use Gt\Http\Request;
-use Gt\Database\Query\QueryCollection;
+use GT\Http\Request;
+use GT\Database\Query\QueryCollection;
 use GT\Ulid\Ulid;
 use stdClass;
 

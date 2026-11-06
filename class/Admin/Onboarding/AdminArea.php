@@ -8,10 +8,10 @@ use Authwave\Session\LoginSession;
 use Authwave\User\LoginState;
 use Authwave\Model\User;
 use Authwave\User\UserRepository;
-use Gt\Http\Response;
-use Gt\Http\Uri;
-use Gt\Session\Session;
-use Gt\Http\ResponseStatusException\ClientError\HttpNotFound;
+use GT\Http\Response;
+use GT\Http\Uri;
+use GT\Session\Session;
+use GT\Http\ResponseStatusException\ClientError\HttpNotFound;
 
 class AdminArea {
 	private ?Onboarding $onboarding = null;
@@ -58,7 +58,10 @@ class AdminArea {
 
 	public function onboarding():Onboarding {
 		if($this->onboarding === null) {
-			$this->onboarding = new Onboarding($this->applications->countFor($this->administrator()));
+			$this->onboarding = new Onboarding($this->applications->countFor($this->administrator()),
+				$this->applications->hasVerifiedDomain($this->administrator()),
+				$this->applications->hasConnectedApplication($this->administrator()),
+				$this->applications->hasClientLogin($this->administrator()));
 		}
 
 		return $this->onboarding;

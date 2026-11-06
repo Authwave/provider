@@ -65,8 +65,9 @@ Database entities live in `Authwave\Model`: `Application`, `ApplicationDeploymen
 `ApplicationTheme`, `User`, `UserAuthCode`, `UserAdmin`, `Email` and `Audit` map to
 tables with those exact case-sensitive names. Their column properties preserve database
 nullability and stored values. Foreign-key IDs are explicit alongside the
-existing typed relationships. Admin page data such as `ManagedApplication` and
-`DeploymentPanel` remains in `Authwave\Admin\Application`; it is presentation data.
+existing typed relationships. The application list uses `ManagedApplication` for
+its derived production-host columns. Application settings and deployment forms bind repository entities
+directly; field names match database columns and use `data-bind:value="@"`.
 These are plain readonly classes, with no ORM integration yet.
 
 The migration history uses these table names from the start. Existing databases
@@ -122,6 +123,45 @@ opening disclosures, do not send HTTP requests and are not covered by server
 request auditing.
 
 
+Deployment domain verification
+------------------------------
+
+Saved deployments classify `localhost` and IPv4 loopback addresses (`127.*`) as
+local, including hosts with ports. They need no DNS verification. Local and
+production deployments are labelled in their disclosure summaries.
+
+Public domains must delegate to both `ns1.authwave.com` and `ns2.authwave.com`.
+The provider then checks `authwave-confirmation.<hostname>` for an exact TXT
+match to `authwave.domain_confirmation` (default `dev-2611`). Configure this value
+to match the marker served by the authoritative DNS servers. Missing records or
+temporary DNS failures leave the deployment unverified. Hostnames ending in
+`.test` bypass DNS checks and verify immediately through the same
+persisted, audited verification action.
+
+The Verify popover explains the NS records. "I've set these records" starts a
+normal GET verification request. Flux enhances the status and account-progress
+regions with `data-flux="live" data-flux-rate="10"`; it checks every ten seconds
+while the page remains open without replacing unsaved form fields. Without
+JavaScript, use Check again. Successful verification is persisted and audited in
+one transaction and completes the third account-setup step. Local deployments
+do not complete the domain-verification step. Changing the hostname clears verification, while changing only
+its port retains it. Migration 019 adds the `domainVerified` column.
+
+
+Production client setup
+-----------------------
+
+The selected production deployment completes "Connect your application" when
+its verified, non-local Authwave host receives a decrypted client login request.
+A subsequent successful client sign-in completes "Your first user signs in".
+Direct provider visits, admin-area sign-ins and development-login requests
+do not complete these milestones. Migration 020 stores `clientConnected` and
+`userLoggedIn` on `ApplicationDeployment`; first transitions and their actors are
+audited in the same transaction. Changing the provider host, client URL or login
+path clears both flags. The checklist follows the currently selected production
+deployment, and earlier logins are not inferred from historical audit entries.
+
+
 Sudo fields
 -----------
 
@@ -136,8 +176,9 @@ Password confirmation at `/login/sudo/` enables sudo for 60 seconds; configure
 in the response requested by View or Copy, rather than every response during the
 sudo period. Other sudo fields are available while sudo is active. JavaScript
 re-obscures authorised responses, provides view/copy controls, and clears visible
-values when sudo expires or the page is left. After password confirmation, use
-View or Copy on the returned field. Without JavaScript the authorised View
+values when sudo expires or the page is left. After password confirmation, the
+requested View resumes automatically using a one-use `sudo-view` query parameter.
+Copy still requires a fresh click. Without JavaScript the authorised View
 response displays the key until the next navigation.
 
 The SUDO button beside Log out immediately revokes authorisation. Logging out
@@ -210,6 +251,13 @@ with isolated fixtures. They are separate from the basic Behat smoke coverage.
 
 Manual development login
 ------------------------
+
+HTTP development providers need `[session] cookie_secure=false` in
+`config.dev.ini`. WebEngine 5.1 or later is required for this setting to reach
+the session service. Otherwise a Secure cookie is issued over HTTP and the
+login session is lost on the next request. Keep Secure cookies enabled for
+HTTPS deployments.
+
 
 For manual testing without a client application, open
 `http://localhost:9105/?dev-login=<deployment-id>` on your provider (adjust the

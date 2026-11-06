@@ -35,7 +35,7 @@ class ApplicationRepositoryTest extends TestCase {
 		$database->expects(self::once())->method("fetch")->with("countApplications", "admin")
 			->willReturn(new Row(["applicationCount" => $count]));
 		$sut = new ApplicationRepository($this->database($database),
-			$this->createStub(\Authwave\Security\Audit::class));
+			$this->createStub(\Authwave\Security\Audit::class), $this->createStub(\Authwave\Security\DomainVerification::class));
 		self::assertSame((int)$count, $sut->countFor($this->administrator()));
 	}
 
@@ -51,7 +51,7 @@ class ApplicationRepositoryTest extends TestCase {
 		$database->method("fetch")->willReturn($row);
 		$this->expectException(UnexpectedValueException::class);
 		$sut = new ApplicationRepository($this->database($database),
-			$this->createStub(\Authwave\Security\Audit::class));
+			$this->createStub(\Authwave\Security\Audit::class), $this->createStub(\Authwave\Security\DomainVerification::class));
 		$sut->countFor($this->administrator());
 	}
 
@@ -67,7 +67,7 @@ class ApplicationRepositoryTest extends TestCase {
 		$database->expects(self::never())->method("fetch");
 		$this->expectException(InvalidArgumentException::class);
 		$sut = new ApplicationRepository($this->database($database),
-			$this->createStub(\Authwave\Security\Audit::class));
+			$this->createStub(\Authwave\Security\Audit::class), $this->createStub(\Authwave\Security\DomainVerification::class));
 		$sut->countFor($this->administrator(" "));
 	}
 
@@ -78,7 +78,8 @@ class ApplicationRepositoryTest extends TestCase {
 		$row = $identifier === null ? null : new Row([
 			"applicationId" => "app", "name" => "App", "applicationDeploymentId" => $identifier,
 			"title" => "Production", "secret" => "secret", "clientHost" => "client.test",
-			"clientLoginPath" => "/login/", "providerHost" => "login.test",
+			"clientLoginPath" => "/login/", "providerHost" => "login.test", "domainVerified" => false,
+			"clientConnected" => false, "userLoggedIn" => false,
 		]);
 		$queries->expects($identifier === null ? self::never() : self::once())->method("fetch")
 			->with("getById", $identifier)->willReturn($row);
@@ -88,7 +89,7 @@ class ApplicationRepositoryTest extends TestCase {
 	#[DataProvider("identifiers")]
 	public function testGetDeploymentByProviderHost_resolvesCanonicalDeployment(?string $identifier):void {
 		$queries = $this->hostQueries("getIdByProviderHost", $identifier);
-		$sut = new ApplicationRepository($this->database($queries), $this->createStub(Audit::class));
+		$sut = new ApplicationRepository($this->database($queries), $this->createStub(Audit::class), $this->createStub(\Authwave\Security\DomainVerification::class));
 
 		$deployment = $sut->getDeploymentByProviderHost("example.test");
 
@@ -102,7 +103,7 @@ class ApplicationRepositoryTest extends TestCase {
 	#[DataProvider("identifiers")]
 	public function testGetDeploymentByClientHost_resolvesCanonicalDeployment(?string $identifier):void {
 		$queries = $this->hostQueries("getIdByClientHost", $identifier);
-		$sut = new ApplicationRepository($this->database($queries), $this->createStub(Audit::class));
+		$sut = new ApplicationRepository($this->database($queries), $this->createStub(Audit::class), $this->createStub(\Authwave\Security\DomainVerification::class));
 
 		$deployment = $sut->getDeploymentByClientHost("example.test");
 
@@ -118,7 +119,7 @@ class ApplicationRepositoryTest extends TestCase {
 		$queries = $this->createMock(QueryCollection::class);
 		$queries->expects($identifier === null ? self::never() : self::once())->method("fetch")
 			->with("getById", $identifier)->willReturn(null);
-		$sut = new ApplicationRepository($this->database($queries), $this->createStub(Audit::class));
+		$sut = new ApplicationRepository($this->database($queries), $this->createStub(Audit::class), $this->createStub(\Authwave\Security\DomainVerification::class));
 
 		self::assertNull($sut->getById($identifier));
 	}
@@ -128,7 +129,7 @@ class ApplicationRepositoryTest extends TestCase {
 		$queries = $this->createMock(QueryCollection::class);
 		$queries->expects($identifier === null ? self::never() : self::once())->method("fetch")
 			->with("getById", $identifier)->willReturn(null);
-		$sut = new ApplicationRepository($this->database($queries), $this->createStub(Audit::class));
+		$sut = new ApplicationRepository($this->database($queries), $this->createStub(Audit::class), $this->createStub(\Authwave\Security\DomainVerification::class));
 
 		self::assertNull($sut->getDeploymentById($identifier));
 	}
@@ -149,7 +150,7 @@ class ApplicationRepositoryTest extends TestCase {
 		$database->expects(self::never())->method("queryCollection");
 		$audit = $this->createMock(Audit::class);
 		$audit->expects(self::never())->method("create");
-		$sut = new ApplicationRepository($database, $audit);
+		$sut = new ApplicationRepository($database, $audit, $this->createStub(\Authwave\Security\DomainVerification::class));
 		$deployment = new ApplicationDeployment("deployment",
 			new Application("app", "App", "sender@example.test"),
 			"Production", "secret", $host, $path);
@@ -174,7 +175,7 @@ class ApplicationRepositoryTest extends TestCase {
 			"emailSettings" => null, "productionApplicationDeploymentId" => $production,
 			"lightThemeColours" => '{"primary":"#123456"}',
 		]));
-		$sut = new ApplicationRepository($this->database($queries), $this->createStub(Audit::class));
+		$sut = new ApplicationRepository($this->database($queries), $this->createStub(Audit::class), $this->createStub(\Authwave\Security\DomainVerification::class));
 
 		$application = $sut->getById("app");
 

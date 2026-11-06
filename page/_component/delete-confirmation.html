@@ -1,8 +1,8 @@
 <section id="delete-confirmation" class="settings-panel stack" hidden data-bind:hidden="?!showConfirmation">
 	<h2 data-bind:text="message"></h2>
 	<form method="post" class="stack" data-bind:action="returnUrl">
-		<input type="hidden" name="deploymentId" data-bind:value="identifier" />
-		<input type="hidden" name="confirmDelete" data-bind:value="identifier" />
+		<input type="hidden" name="id" data-bind:value="@" />
+		<input type="hidden" name="confirmDelete" data-bind:value="id" />
 		<div class="actions">
 			<a class="control" data-bind:href="returnUrl">Cancel</a>
 			<button type="submit" name="do" value="delete-deployment" class="primary">Confirm delete</button>

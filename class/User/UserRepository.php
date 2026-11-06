@@ -8,9 +8,9 @@ use Authwave\Model\ApplicationDeployment;
 use Authwave\Model\ApplicationRepository;
 use Authwave\Security\Audit;
 use Authwave\Security\Action;
-use Gt\Database\Query\QueryCollection;
-use Gt\Database\Result\Row;
-use Gt\Logger\Log;
+use GT\Database\Query\QueryCollection;
+use GT\Database\Result\Row;
+use GT\Logger\Log;
 use GT\Ulid\Ulid;
 readonly class UserRepository {
 

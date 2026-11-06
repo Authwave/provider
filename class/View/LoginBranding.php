@@ -15,7 +15,10 @@ readonly class LoginBranding {
 	): void {
 		$application = $deployment->application;
 		$this->bindIdentity($binder, $deployment);
-		$binder->bindKeyValue("title", "{$deployment->title} - Login");
+		$binder->bindKeyValue("title", "{$application->name} - Login");
+		$binder->bindKeyValue("deploymentName", $deployment->title);
+		$binder->bindKeyValue("nonProduction",
+			$application->productionApplicationDeploymentId !== $deployment->id);
 		$css = [];
 		foreach ($application->getThemes() as $theme) {
 			if ($rule = $theme->toCss()) {
@@ -35,7 +38,7 @@ readonly class LoginBranding {
 	public function bindIdentity(Binder $binder, ApplicationDeployment $deployment): void {
 		$logoPath = ApplicationLogo::getPath($deployment->application) ?? "/asset/default-logo.svg";
 		$darkLogoPath = ApplicationLogo::getPath($deployment->application, "logo_dark") ?? $logoPath;
-		$binder->bindKeyValue("applicationName", $deployment->title);
+		$binder->bindKeyValue("applicationName", $deployment->application->name);
 		$binder->bindKeyValue("logoPath", $logoPath);
 		$binder->bindKeyValue("darkLogoPath", $darkLogoPath);
 	}

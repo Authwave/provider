@@ -65,6 +65,7 @@ class LoginReturnUriTest extends TestCase {
 			$this->createStub(Input::class), $response, $this->createStub(Binder::class),
 			$login, $users, $session, $this->createStub(Audit::class),
 			$this->createStub(AdminAccess::class), $this->createStub(Request::class),
+			$this->createStub(\Authwave\Model\ApplicationRepository::class),
 		);
 	}
 

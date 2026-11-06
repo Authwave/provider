@@ -86,6 +86,7 @@ function go(
 			}
 
 			$loginSession->setData($data);
+			$applicationRepository->recordClientConnection($deployment->id, $uri, $anonymous);
 			$response->redirect("/");
 		}
 		elseif($data["action"] === "logout") {

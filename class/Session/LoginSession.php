@@ -7,13 +7,13 @@ use Authwave\Security\AnonUser;
 use Authwave\Security\Audit;
 use Authwave\Model\User;
 use Authwave\User\LoginState;
-use Gt\Session\SessionStore;
+use GT\Session\SessionStoreInterface;
 
 readonly class LoginSession {
 	const SESSION_STORE_KEY = "AUTHWAVE_PROVIDER_SESSION";
 
 	public function __construct(
-		private SessionStore $session,
+		private SessionStoreInterface $session,
 		private Audit $audit,
 		private AnonUser $anonUser,
 	) {

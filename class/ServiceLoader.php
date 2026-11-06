@@ -1,10 +1,9 @@
 <?php
 namespace Authwave;
 
-use Authwave\Model\ApplicationRepository;
+use Authwave\Model\{Application, ApplicationRepository};
 use Authwave\Admin\Application\ApplicationCatalogue;
-use Authwave\Admin\Application\{ApplicationSettingsContext,
-	ApplicationSettingsAction};
+use Authwave\Admin\Application\ApplicationSettingsAction;
 use GT\Routing\Path\DynamicPath;
 use Authwave\Admin\Onboarding\AdminArea;
 use Authwave\Admin\Onboarding\Onboarding;
@@ -16,13 +15,19 @@ use Authwave\Security\AnonUser;
 use Authwave\Security\AdminAccess;
 use Authwave\Security\Audit;
 use Authwave\Security\Sudo;
+use Authwave\Security\DomainVerification;
 use Authwave\User\UserRepository;
-use Gt\Database\Database;
+use GT\Database\Database;
 use GT\Input\Input;
-use Gt\Session\Session;
+use GT\Session\Session;
 use GT\WebEngine\Service\DefaultServiceLoader;
 
 class ServiceLoader extends DefaultServiceLoader {
+	public function loadDomainVerification():DomainVerification {
+		return new DomainVerification($this->config->getString("authwave.domain_confirmation")
+			?? DomainVerification::DEFAULT_CONFIRMATION);
+	}
+
 	public function loadSudo():Sudo {
 		return new Sudo(
 			$this->container->get(Session::class)->getStore(LoginSession::SESSION_STORE_KEY . ".sudo", true),
@@ -32,17 +37,17 @@ class ServiceLoader extends DefaultServiceLoader {
 		);
 	}
 
-	public function loadApplicationSettingsContext():ApplicationSettingsContext {
-		$opened = $this->container->get(Input::class)->get("deployment", Input::DATA_QUERYSTRING);
-		return new ApplicationSettingsContext($this->container->get(ApplicationRepository::class),
+	public function loadApplication():Application {
+		return $this->container->get(ApplicationRepository::class)->get(
 			$this->container->get(AdminArea::class)->administrator(),
 			$this->container->get(DynamicPath::class)->get("applicationId") ?? "",
-			is_string($opened) ? $opened : null);
+		);
 	}
 
 	public function loadApplicationSettingsAction():ApplicationSettingsAction {
 		return new ApplicationSettingsAction($this->container->get(ApplicationRepository::class),
-			$this->container->get(ApplicationSettingsContext::class),
+			$this->container->get(Application::class),
+			$this->container->get(AdminArea::class)->administrator(),
 			$this->container->get(FlashSession::class), $this->container->get(Audit::class));
 	}
 
@@ -113,7 +118,7 @@ class ServiceLoader extends DefaultServiceLoader {
 
 	public function loadSiteRepo():ApplicationRepository {
 		return new ApplicationRepository($this->container->get(Database::class),
-			$this->container->get(Audit::class));
+			$this->container->get(Audit::class), $this->container->get(DomainVerification::class));
 	}
 
 	public function loadUserRepo():UserRepository {

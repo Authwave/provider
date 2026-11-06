@@ -19,11 +19,11 @@
 				</ul>
 			</nav>
 			<div class="sidebar-bottom stack">
-				<section class="setup-card" aria-labelledby="sidebar-setup-title">
+				<section id="account-setup" class="setup-card" aria-labelledby="sidebar-setup-title">
 					<div class="toolbar"><h2 id="sidebar-setup-title">Complete account</h2><span><span data-bind:text="completedCount"></span> of 7 complete</span></div>
 					<progress max="7" data-bind:value="completedCount" aria-label="Account setup progress"></progress>
 					<ul class="checklist">
-						<li data-list="setup-steps" data-bind:data-icon="icon" data-bind:text="title"></li>
+						<li data-list="setup-steps" data-bind:data-icon="icon" data-bind:data-complete="complete"><span data-bind:text="title"></span></li>
 					</ul>
 					<a class="control" href="/integrations/help/">Continue setup</a>
 				</section>

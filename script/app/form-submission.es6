@@ -42,12 +42,34 @@ document.addEventListener("flux:before-request", event => {
 
 // This Flux version tries to restore text selections even on email inputs,
 // whose selectionStart is null. Move focus to the action before replacement.
-document.addEventListener("flux:before-render", () => {
+document.addEventListener("flux:before-render", event => {
+	// Read the response token before its nodes are adopted into the current document.
+	const incoming = event.detail?.updates?.find(update => update.newElement)?.newElement.ownerDocument;
+	if(incoming) {
+		updateCsrfTokens(incoming);
+	}
+
 	const active = document.activeElement;
 	if(active instanceof HTMLInputElement && active.selectionStart === null) {
 		active.form?.querySelector('button[type="submit"]')?.focus();
 	}
 });
+
+export function updateCsrfTokens(incomingDocument) {
+	const token = incomingDocument.querySelector('meta[name="csrf-token"]')?.content;
+	if(!token) {
+		return;
+	}
+
+	const meta = document.querySelector('meta[name="csrf-token"]');
+	if(meta) {
+		meta.content = token;
+	}
+
+	for(const input of document.querySelectorAll('input[name="csrf-token"]')) {
+		input.value = token;
+	}
+}
 
 document.addEventListener("flux:after-render", () => {
 	const link = document.querySelector("a[data-client-redirect]");

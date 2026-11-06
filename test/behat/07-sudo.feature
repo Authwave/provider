@@ -15,7 +15,7 @@ Feature: Password confirmation protects sensitive administrator controls
     When I fill in "Password" with "Test-admin-password-2026"
     And I press "Enable sudo mode"
     Then sudo mode should be enabled
-    And I can view the API key of deployment "Development"
+    And the API key of deployment "Development" should be visible
     And action "SUDO_AUTHORISED" should be audited for the fixture administrator
     And action "SUDO_FIELD_ACCESSED" should be audited for the fixture administrator
     And the sudo audit trail should contain no credentials
@@ -44,7 +44,7 @@ Feature: Password confirmation protects sensitive administrator controls
     And I fill in "Password" with "Test-admin-password-2026"
     And I press "Enable sudo mode"
     Then sudo mode should be enabled
-    And I can view the API key of deployment "Development"
+    And the API key of deployment "Development" should be visible
     When the sudo period expires
     Then deployment "Development" should have an obscured API key without leaking its value
     When I view the API key of deployment "Development"

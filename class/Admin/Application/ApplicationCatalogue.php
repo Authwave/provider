@@ -3,7 +3,7 @@ namespace Authwave\Admin\Application;
 
 use Authwave\Model\ApplicationRepository;
 use Authwave\Model\User;
-use Gt\Session\SessionStore;
+use GT\Session\SessionStoreInterface;
 use Authwave\Security\{Audit, Action};
 
 readonly class ApplicationCatalogue {
@@ -14,7 +14,7 @@ readonly class ApplicationCatalogue {
 	public function __construct(
 		ApplicationRepository $store,
 		User $administrator,
-		SessionStore $session,
+		SessionStoreInterface $session,
 		Audit $audit,
 		?string $requested = null,
 	) {

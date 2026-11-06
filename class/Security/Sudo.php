@@ -6,8 +6,8 @@ use Authwave\User\UserRepository;
 use Closure;
 use GT\Dom\Element;
 use GT\Dom\HTMLDocument;
-use Gt\Http\Uri;
-use Gt\Session\SessionStore;
+use GT\Http\Uri;
+use GT\Session\SessionStoreInterface;
 use InvalidArgumentException;
 use LogicException;
 
@@ -15,7 +15,7 @@ readonly class Sudo {
 	private Closure $clock;
 
 	public function __construct(
-		private SessionStore $session,
+		private SessionStoreInterface $session,
 		private UserRepository $users,
 		private Audit $audit,
 		private int $duration = 60,
@@ -45,7 +45,7 @@ readonly class Sudo {
 	}
 
 	public function request(User $actor, string $field, string $return, string $action):Uri {
-		$this->returnUri($return);
+		$return = (string)$this->returnUri($return)->withoutQueryValue("sudo-view");
 
 		if(!preg_match('/^[a-zA-Z0-9_-]{1,200}$/', $field)
 		|| !in_array($action, ["view", "copy"], true)) {
@@ -96,7 +96,14 @@ readonly class Sudo {
 			return new Uri("/admin/");
 		}
 
-		return $this->returnUri($this->session->getString("return"));
+		$uri = $this->returnUri($this->session->getString("return"));
+
+		if($this->session->get("action") === "view"
+		&& $this->session->get("reveal") && $this->expiresAt($actor) > 0) {
+			$uri = $uri->withQueryValue("sudo-view", $this->session->getString("field"));
+		}
+
+		return $uri;
 	}
 
 	public function reveal(User $actor, string $field, string $location,
@@ -163,6 +170,7 @@ readonly class Sudo {
 	}
 
 	public function apply(HTMLDocument $document, User $actor, Uri $uri):void {
+		$uri = $uri->withoutQueryValue("sudo-view");
 		$location = $uri->getPath();
 
 		if($uri->getQuery() !== "") {
@@ -205,7 +213,7 @@ readonly class Sudo {
 		if($label) {
 			// Keep buttons outside the input's label: they have their own accessible names.
 			$container = $document->createElement("div");
-			$container->className = $label->className;
+			$container->className = trim("field " . $label->className);
 			$label->before($container);
 			$label->setAttribute("for", $field->id);
 			$container->appendChild($label);

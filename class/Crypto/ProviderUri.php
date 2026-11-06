@@ -1,7 +1,7 @@
 <?php
 namespace Authwave\Crypto;
 
-use Gt\Http\Uri;
+use GT\Http\Uri;
 use Psr\Http\Message\UriInterface;
 
 readonly class ProviderUri {

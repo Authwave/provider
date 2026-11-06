@@ -7,7 +7,7 @@ insert into UserAdmin values
 ('administrator', 'empty-app'),
 ('administrator', 'production-app'),
 ('administrator', 'unassigned-app');
-insert into ApplicationDeployment values
+insert into ApplicationDeployment (id, applicationId, title, secret, providerHost, clientHost, clientLoginPath) values
 ('production-deployment', 'production-app', 'Production', '0123456789abcdef0123456789abcdef', 'login.example.test', 'https://www.example.test', '/login/'),
 ('staging-deployment', 'production-app', 'Staging', '0123456789abcdef0123456789abcdef', 'staging-login.example.test', 'https://staging.example.test', '/login/'),
 ('unassigned-deployment', 'unassigned-app', 'Development', '0123456789abcdef0123456789abcdef', 'unassigned-login.example.test', 'https://unassigned.example.test', '/login/');

@@ -1,7 +1,7 @@
 <?php
-use Authwave\Admin\Application\ApplicationSettingsContext;
+use Authwave\Model\Application;
 use GT\DomTemplate\Binder;
 
-function go(Binder $binder, ApplicationSettingsContext $context):void {
-	$binder->bindKeyValue("currentName", $context->application->name);
+function go(Binder $binder, Application $application):void {
+	$binder->bindKeyValue("currentName", $application->name);
 }

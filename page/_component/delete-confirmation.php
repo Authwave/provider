@@ -1,12 +1,12 @@
 <?php
-use Authwave\Admin\Application\{ApplicationSettingsContext, ApplicationSettingsAction};
+use Authwave\Admin\Application\ApplicationSettingsAction;
 use GT\DomTemplate\Binder;
 use GT\Input\Input;
 use Gt\Http\{Request, Response};
 
-function go(Binder $binder, ApplicationSettingsContext $context, Input $input):void {
+function go(Binder $binder, ApplicationSettingsAction $action, Input $input):void {
 	$identifier = $input->get("confirm-delete", Input::DATA_QUERYSTRING);
-	$prompt = $context->deletionPrompt(is_string($identifier) ? $identifier : null);
+	$prompt = $action->deletionPrompt(is_string($identifier) ? $identifier : null);
 	$binder->bindKeyValue("showConfirmation", $prompt !== null);
 
 	if($prompt) {

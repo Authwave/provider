@@ -205,12 +205,22 @@ body.dir--admin {
 		padding: 0;
 		margin: 0 0 var(--theme-space-4);
 
+		li {
+			display: flex;
+			align-items: center;
+		}
+
 		li + li {
 			margin-block-start: var(--theme-space-3);
 		}
 
 		li::before {
 			color: var(--theme-color-primary);
+		}
+
+		li[data-complete="1"] > span {
+			text-decoration: line-through;
+			text-decoration-color: var(--theme-color-primary);
 		}
 	}
 

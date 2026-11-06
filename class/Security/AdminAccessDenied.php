@@ -1,7 +1,7 @@
 <?php
 namespace Authwave\Security;
 
-use Gt\Http\ResponseStatusException\ResponseStatusException;
+use GT\Http\ResponseStatusException\ResponseStatusException;
 
 class AdminAccessDenied extends ResponseStatusException {
 	public function getHttpCode():int {

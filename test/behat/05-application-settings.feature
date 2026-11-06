@@ -83,7 +83,7 @@ Feature: Application-specific settings and deployments
       | Client URL        | https://www.example.test  |
       | Client login path | /login/                   |
     And I attempt to submit deployment "Create a deployment"
-    Then the deployment field "host" should have a native pattern validation error
+    Then the deployment field "providerHost" should have a native pattern validation error
     And no deployment form request should have reached the server
     And there should be 1 deployment expander
 
@@ -94,7 +94,7 @@ Feature: Application-specific settings and deployments
       | Client URL        | https://www.example.test/login/    |
       | Client login path | /login/                           |
     And I attempt to submit deployment "Create a deployment"
-    Then the deployment field "clientUrl" should have a native pattern validation error
+    Then the deployment field "clientHost" should have a native pattern validation error
     And no deployment form request should have reached the server
 
   Scenario: A rejected deployment stays open with its values and can be corrected

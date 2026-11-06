@@ -74,6 +74,56 @@ class SudoTest extends TestCase {
 		self::assertSame("private", $document->querySelector("button")->getAttribute("data-sudo-view"));
 	}
 
+	#[DataProvider("returnActions")]
+	public function testDestination_onlyAuthorisedViewCarriesFieldIntent(string $action, string $query):void {
+		$users = $this->createStub(UserRepository::class);
+		$users->method("checkLogin")->willReturn(true);
+		$sut = new Sudo($this->store(), $users, $this->createStub(Audit::class));
+		$actor = $this->actor();
+		$return = "/admin/applications/one/?deployment=one&search=hello%20world";
+		$sut->request($actor, "deployment-one-apiKey", $return . "&sudo-view=other", $action);
+		self::assertSame($return, (string)$sut->destination($actor));
+
+		$sut->authenticate($actor, "password");
+
+		self::assertSame($return . $query, (string)$sut->destination($actor));
+	}
+
+	public static function returnActions():iterable {
+		yield ["view", "&sudo-view=deployment-one-apiKey"];
+		yield ["copy", ""];
+	}
+
+	public function testApply_viewIntentUsesTheExistingOneRenderGrant():void {
+		$users = $this->createStub(UserRepository::class);
+		$users->method("checkLogin")->willReturn(true);
+		$sut = new Sudo($this->store(), $users, $this->createStub(Audit::class));
+		$actor = $this->actor();
+		$sut->request($actor, "deployment-one-apiKey", "/admin/applications/one/", "view");
+		$sut->authenticate($actor, "password");
+		$uri = $sut->destination($actor);
+		$document = $this->fieldDocument();
+
+		$sut->apply($document, $actor, $uri);
+
+		self::assertSame("DEPLOYMENT_one_abcdefgh", $document->querySelector("input")->value);
+		self::assertStringNotContainsString("sudo-view", $document->querySelector("button")->getAttribute("formaction"));
+
+		$reloaded = $this->fieldDocument();
+		$sut->apply($reloaded, $actor, $uri);
+		self::assertSame("DEPLOYMENT_one_abcd••••", $reloaded->querySelector("input")->value);
+	}
+
+	public function testApply_queryStringAloneCannotRevealAKey():void {
+		$sut = new Sudo($this->store(), $this->createStub(UserRepository::class), $this->createStub(Audit::class));
+		$document = $this->fieldDocument();
+
+		$sut->apply($document, $this->actor(), new Uri("/admin/applications/one/?sudo-view=deployment-one-apiKey"));
+
+		self::assertSame("DEPLOYMENT_one_abcd••••", $document->querySelector("input")->value);
+		self::assertNull($document->querySelector("[data-sudo-enabled]"));
+	}
+
 	public function testRequest_requiresPasswordUntilAuthorisedAndConsumesOnlyMatchingFieldOnce():void {
 		$users = $this->createStub(UserRepository::class);
 		$users->method("checkLogin")->willReturn(true);

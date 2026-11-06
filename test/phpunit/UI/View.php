@@ -14,8 +14,11 @@ class View {
 	public ListElementCollection $lists;
 
 	public function __construct(string $page) {
+		$headerPath = "page/" . dirname($page) . "/_header.html";
+		$nestedHeader = dirname($page) !== "." && is_file($headerPath) ? file_get_contents($headerPath) : "";
 		$this->document = new HTMLDocument(
 			file_get_contents("page/_header.html")
+			. $nestedHeader
 			. file_get_contents("page/$page.html")
 			. file_get_contents("page/_footer.html")
 		);

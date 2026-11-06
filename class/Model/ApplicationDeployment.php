@@ -1,7 +1,7 @@
 <?php
 namespace Authwave\Model;
 
-use Gt\Http\Uri;
+use GT\Http\Uri;
 use Psr\Http\Message\UriInterface;
 
 readonly class ApplicationDeployment {
@@ -18,6 +18,9 @@ readonly class ApplicationDeployment {
 		public string $clientHost,
 		public string $clientLoginPath,
 		public string $providerHost = "",
+		public bool $domainVerified = false,
+		public bool $clientConnected = false,
+		public bool $userLoggedIn = false,
 	) {
 		$this->applicationId = $application->id;
 	}

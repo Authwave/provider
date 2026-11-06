@@ -1,11 +1,16 @@
 <?php
 namespace Authwave\Admin\Onboarding;
 
-use Gt\Http\Uri;
+use GT\Http\Uri;
 use InvalidArgumentException;
 
 readonly class Onboarding {
-	public function __construct(private int $applicationCount) {
+	public function __construct(
+		private int $applicationCount,
+		private bool $hasVerifiedDomain = false,
+		private bool $hasConnectedApplication = false,
+		private bool $hasClientLogin = false,
+	) {
 		if($applicationCount < 0) {
 			throw new InvalidArgumentException("Application count cannot be negative.");
 		}
@@ -36,7 +41,19 @@ readonly class Onboarding {
 	}
 
 	public function completedCount():int {
-		return $this->needsApplication() ? 1 : 2;
+		if($this->needsApplication()) {
+			return 1;
+		}
+
+		if(!$this->hasVerifiedDomain) {
+			return 2;
+		}
+
+		if(!$this->hasConnectedApplication) {
+			return 3;
+		}
+
+		return $this->hasClientLogin ? 5 : 4;
 	}
 
 	/** @return iterable<SetupStep> */
@@ -45,8 +62,8 @@ readonly class Onboarding {
 			"Create your account",
 			"Create your first application",
 			"Verify domain",
-			"Deploy your application",
-			"Connect with a client integration",
+			"Connect your application",
+			"Your first user signs in",
 			"Customise your deployment",
 			"Enable production mode",
 		];

@@ -1,5 +1,33 @@
+@use "../variable/icon" as variable;
+
+@property --flux-loader-angle {
+	syntax: "<angle>";
+	inherits: false;
+	initial-value: 0deg;
+}
+
+// Keep the SVG mask stationary so its edges never move between pixels.
+%flux-loader-icon {
+	inline-size: var(--flux-loader-size, 32px);
+	block-size: var(--flux-loader-size, 32px);
+	background: conic-gradient(from calc(var(--flux-loader-angle) + 22.5deg), transparent, currentColor);
+	mask: url("#{variable.$path}loader.svg") center / var(--flux-loader-size, 32px) var(--flux-loader-size, 32px) no-repeat;
+	transform-origin: center;
+	aspect-ratio: 1;
+
+}
+
+%flux-loader-spinner {
+	@extend %flux-loader-icon;
+	animation: flux-loader-spin 1s infinite steps(8, end);
+
+	@media (prefers-reduced-motion: reduce) {
+		animation: none;
+	}
+}
+
 @keyframes flux-loader-spin {
 	to {
-		rotate: 1turn;
+		--flux-loader-angle: 1turn;
 	}
 }
