@@ -18,12 +18,37 @@ User authentication flow
 6) After successful authentication, the provider returns encrypted user details to your application.
 7) The client library stores the authenticated user in your application's session, giving your application access to their ID and email address.
 
+Login presentation
+------------------
+
+Login headings, browser titles, logo descriptions and return links use the
+application's name, never the deployment's title. The selected production
+deployment has no environment badge. Other deployments show their title in a
+badge above `#main-content`; when production is unset, every deployment shows
+its badge. The shared login header is `page/login/_header.html`, and
+`View\LoginBranding` supplies the identity and badge bindings.
+
 Login return destinations
 -------------------------
 
 The client can send a requested return destination in the hexadecimal `u` query parameter when starting login. The provider keeps a validated destination in the login session and returns the encrypted authentication response to that path, query string and fragment.
 
 Root-relative paths, query-only or fragment-only references, and absolute URLs on the deployment's configured client origin are supported. An absolute URL must match the configured scheme, host and effective port. External origins, credentials, scheme-relative URLs, malformed encodings and unsafe characters are ignored; login then uses the deployment's configured client return URI. Destinations without `u` also use that default, with the encrypted `returnQuery` value supported for query-only integrations.
+
+Client logout
+-------------
+
+The client clears its own authentication state and sends an encrypted logout
+request to the provider. The provider audits `LOGOUT_REQUESTED`, clears its
+session and returns the browser to the explicit `redirectTo` destination or the
+deployment's default client return URI. It does not append `do=logout`: the
+return is navigation, not another invocation of the client's logout handler.
+
+The audit uses the authenticated user when the provider still has enough session
+state to resolve them, otherwise an anonymous actor. Successful non-admin login
+clears the provider session, so logout must not assume that identity remains
+available. A client-supplied identity must be authenticated and checked against
+its deployment before being accepted as an audit actor.
 
 User account administration
 ---------------------------
@@ -52,14 +77,20 @@ Creation redirects directly to `/admin/applications/APP_ID/`. This screen saves
 the application name and its production deployment, restricted to deployments
 belonging to that application. It also creates and edits deployments. Deployment
 names support 32 characters; Host is a hostname with an optional port, Client URL
-is an HTTP/HTTPS origin, and Client login path is a root-relative path.
+is an HTTP/HTTPS origin, and Client login path is a root-relative path. Host
+fields support ordinary ASCII hostnames, localhost, IPv4 and optional ports
+containing one to five digits. IPv6 and exhaustive DNS/port-range validation are outside the current
+supported formats.
 
 `Model\ApplicationRepository` owns application/deployment reads, creation,
 updates, deletion, administrator assignments and application counts. Mutations
 and audit writes share one database transaction. Component handlers orchestrate
 HTTP input, flash messages and redirects; validated values and page data remain
 plain typed classes. There are no separate application creation/store/registry
-services.
+services. The repository is `readonly`; its `getBy*` methods return nullable
+entities. Alternate-key lookups fetch one ID through `getIdBy*.sql` with
+`fetchString`/`fetchInt`, then delegate to the canonical ID lookup for hydration.
+`getClientRedirectUri()` returns a `Uri` for the page's HTTP response.
 
 Database entities live in `Authwave\Model`: `Application`, `ApplicationDeployment`,
 `ApplicationTheme`, `User`, `UserAuthCode`, `UserAdmin`, `Email` and `Audit` map to
@@ -94,6 +125,7 @@ Without scripting or dialog support, the initial POST opens an HTTP confirmation
 form; no deletion occurs until explicitly confirmed for the same target ID.
 New delete controls use `data-confirm-delete` and `data-delete-name` and must keep
 that server-side confirmation check as well as their ownership/CSRF checks.
+The confirmation POST requires `confirmDelete` to match the saved target ID.
 
 The remaining administration screens retain their layouts with unfinished
 controls disabled. There is no demo state, simulated reporting, billing data or
@@ -104,7 +136,9 @@ application through Behat rather than a simulated HTTP backend.
 Audit logging
 -------------
 
-Audit rows identify the actor and timestamp in their own columns. Detail JSON
+`Security\Audit` owns both request and business-event auditing; there are no
+separate audit forwarding services, diff factories or payload classes. Audit
+rows identify the actor and timestamp in their own columns. Detail JSON
 contains only event-specific information: requests store `method` and `path`;
 updates store target IDs and changed `from`/`to` fields; creation stores `to` and
 deletion stores `from` once. Unchanged fields, duplicate diffs, empty state
@@ -187,6 +221,33 @@ expiry and explicit revocation is audited without credentials. Protected admin
 responses use `Cache-Control: no-store`.
 
 
+Styling and browser enhancements
+--------------------------------
+
+* Shared control patterns come from Flair, installed from
+  `../../BrightFlair/flair`; theme-specific values belong in its theme rather
+  than local overrides. Application layout styles remain under `style/`.
+* Form-ending controls use `.actions` for spacing equivalent to an input caption
+  and its gap. Save/Continue is first in the HTML so Enter submits it; CSS places
+  secondary controls, including deletion, to the left. Icon-only controls retain
+  screen-reader text. Existing panels use readable maximum widths and responsive
+  columns without changing their meaningful HTML order.
+* Login, domain-verification and development-preview spinners share
+  `style/animation/flux-loader-spin.scss`, including reduced-motion handling.
+  The SVG mask stays stationary while its shading animates. CSS adjustments
+  belong in that shared implementation; the icon asset is not a workaround for
+  animation geometry or rasterisation problems.
+* Forms and links work without JavaScript. Flux enhances them after rendering;
+  pre-script appearance, including hidden autosave controls, is handled by
+  HTML/CSS. Cross-page forms must reach the destination's handler rather than
+  carrying an unrelated component-routing field.
+
+After changing source assets, rebuild the assets served by the provider:
+
+```bash
+vendor/bin/build --default vendor/phpgt/webengine/build.default.ini
+```
+
 Testing
 -------
 
@@ -227,7 +288,7 @@ Each check can also run separately: `composer behat`, `composer phpunit`,
   Set `CHROME_BIN` if Chrome/Chromium is not on your PATH; extra Behat arguments
   are forwarded, for example `composer behat -- --name="first visit"`.
 
-New administrator onboarding is based on the signed-in user's `user_admin`
+New administrator onboarding is based on the signed-in user's `UserAdmin`
 application assignments. The provider's
 login application is not implicitly treated as one of the user's applications.
 The first setup step (creating the account) is complete; creating the first
