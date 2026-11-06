@@ -25,13 +25,13 @@ function go_before(Audit $audit, Request $request, LoginSession $login,
 
 function go(
 	ApplicationRepository $applicationRepository,
+	UserRepository $userRepository,
 	Uri $uri,
 	LoginSession $loginSession,
 	Session $session,
 	Response $response,
 	Config $config,
 	HTMLDocument $document,
-	Audit $audit,
 	AnonUser $anonymous,
 ):void {
 	foreach($document->querySelectorAll("table:has(a[data-table-link])") as $table) {
@@ -90,7 +90,9 @@ function go(
 			$response->redirect("/");
 		}
 		elseif($data["action"] === "logout") {
-			$loginSession->clearDataForLogout($deployment);
+			$email = $loginSession->getEmail();
+			$user = $email ? $userRepository->get($deployment, $email) : null;
+			$loginSession->clearDataForLogout($deployment, $user);
 			$session->kill();
 
 			if(isset($data["redirectTo"])) {
@@ -107,10 +109,7 @@ function go(
 				$response->redirect($redirectUri);
 			}
 			else {
-				$response->redirect(
-					new Uri($deployment->getClientReturnUri())
-						->withQueryValue("do", "logout")
-				);
+				$response->redirect(new Uri($deployment->getClientReturnUri()));
 			}
 		}
 	}
