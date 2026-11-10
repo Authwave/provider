@@ -13,6 +13,7 @@ pick_port() {
 
 APP_PORT="${BEHAT_APP_PORT:-$(pick_port)}"
 CHROME_PORT="${BEHAT_CHROME_PORT:-$(pick_port)}"
+CLIENT_PORT="$(pick_port)"
 APP_COMMAND="${BEHAT_APP_COMMAND:-php -d display_errors=0 -S ${APP_HOST}:${APP_PORT} -t ${ROOT_DIR}/www ${ROOT_DIR}/vendor/phpgt/webengine/go.php}"
 
 if [[ -z "$CHROME_BIN" ]]; then
@@ -59,6 +60,10 @@ cleanup() {
 	if ((status != 0)) && [[ -n "${TEST_RUN_DIR:-}" ]]; then
 		cat "$TEST_RUN_DIR"/*.log >&2 || true
 	fi
+	if [[ -n "${CLIENT_PID:-}" ]]; then
+		kill "$CLIENT_PID" >/dev/null 2>&1 || true
+		wait "$CLIENT_PID" 2>/dev/null || true
+	fi
 	if [[ -n "${APP_PID:-}" ]]; then
 		kill "$APP_PID" >/dev/null 2>&1 || true
 		wait "$APP_PID" 2>/dev/null || true
@@ -92,6 +97,11 @@ export authwave_sudo_duration=5
 export session_path="$TEST_RUN_DIR/sessions"
 php -r 'require "vendor/autoload.php"; require "test/behat/database/DatabaseState.php"; new Authwave\Test\Behat\DatabaseState(getenv("BEHAT_DATABASE"), "test/behat/database");'
 
+export BEHAT_CLIENT_URL="http://${APP_HOST}:${CLIENT_PORT}/"
+php -S "${APP_HOST}:${CLIENT_PORT}" "$ROOT_DIR/test/behat/client/receive.php" >"$TEST_RUN_DIR/client.log" 2>&1 &
+CLIENT_PID=$!
+wait_for_port "$APP_HOST" "$CLIENT_PORT" "Client notification receiver"
+
 export BEHAT_BASE_URL="http://${APP_HOST}:${APP_PORT}"
 export BEHAT_CHROME_API_URL="http://${CHROME_HOST}:${CHROME_PORT}"
 
@@ -101,8 +111,10 @@ wait_for_port "$APP_HOST" "$APP_PORT" "PHP application"
 
 CHROME_PROFILE_DIR="$(mktemp -d /tmp/authwave-behat-chrome.XXXXXX)"
 SCRIPT_FLAGS=()
+TAG_FLAGS=()
 if [[ "${BEHAT_JAVASCRIPT:-0}" != "1" ]]; then
 	SCRIPT_FLAGS=(--blink-settings=scriptEnabled=false)
+	TAG_FLAGS=(--tags "~@javascript")
 fi
 "$CHROME_BIN" \
 	--headless=new \
@@ -121,6 +133,6 @@ fi
 CHROME_PID=$!
 wait_for_port "$CHROME_HOST" "$CHROME_PORT" "Chromium remote debugger"
 
-if ! "$ROOT_DIR/$BEHAT_BIN" --strict --no-interaction "$@"; then
+if ! "$ROOT_DIR/$BEHAT_BIN" --strict --no-interaction "${TAG_FLAGS[@]}" "$@"; then
 	exit 1
 fi

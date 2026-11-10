@@ -4,4 +4,4 @@ insert into ApplicationDeployment (id, applicationId, title, secret, providerHos
 	'provider', 'provider', 'Authwave', '0123456789abcdef0123456789abcdef',
 	'fixture.invalid', 'https://client.example.test', '/login/'
 );
-insert into User values ('administrator', 'provider', 'admin@example.test', null);
+insert into User (id, applicationDeploymentId, email, hash) values ('administrator', 'provider', 'admin@example.test', null);

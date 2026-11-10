@@ -11,6 +11,559 @@ use Behat\Mink\Exception\ExpectationException;
 require_once dirname(__DIR__) . "/database/DatabaseState.php";
 
 class FeatureContext extends MinkContext {
+	#[Given('the client responds to notifications with HTTP :status')]
+	public function clientNotificationResponse(int $status):void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$database->prepare("update ClientNotificationResponse set status = ?")->execute([$status]);
+	}
+
+	#[Then('the client should have received user :email :count time')]
+	#[Then('the client should have received user :email :count times')]
+	public function receivedClientNotifications(string $email, int $count):void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$query = $database->prepare("select count(*), count(distinct iv) from ClientNotificationReceipt where email = ?");
+		$query->execute([$email]);
+		$row = $query->fetch(PDO::FETCH_NUM);
+		$this->expect((int)$row[0] === $count && (int)$row[1] === $count,
+			"Expected $count immediate notifications with fresh encryption for $email.");
+	}
+
+	#[When('I redeliver the client notification for :email')]
+	public function redeliverClientNotification(string $email):void {
+		$this->getSession()->resizeWindow(390, 1000);
+		$this->openUserDetails($email);
+		$form = $this->clientNotificationForm($email);
+		$this->expect($this->getSession()->evaluateScript('(() => {
+			const button = document.querySelector("#all-users .user-details:popover-open button[value=redeliver]");
+			const range = document.createRange();
+			range.selectNodeContents(button);
+			return range.getClientRects().length === 1;
+		})()'), "The Redeliver label must remain on one line on a narrow screen.");
+		$form->pressButton("Redeliver");
+		$this->expect($this->getSession()->wait(5000,
+			'/Client notification delivered\.|User deleted\./.test(document.querySelector("#all-users [role=status]")?.textContent)'),
+			"Redelivery must complete before reporting success.");
+	}
+
+	#[Then('user :email should not have a Redeliver button')]
+	public function noClientRedeliveryButton(string $email):void {
+		$this->expect($this->clientNotificationForm($email)->getParent()->hasAttribute("hidden"),
+			"A successful notification must not offer Redeliver.");
+	}
+
+	private function clientNotificationForm(string $email):\Behat\Mink\Element\NodeElement {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$query = $database->prepare("select id from User where email = ? and applicationDeploymentId = 'managed-development'");
+		$query->execute([$email]);
+		$selector = '#all-users .user-sync-error input[name="id"][value="' . $query->fetchColumn() . '"]';
+		return $this->assertSession()->elementExists("css", $selector)->getParent();
+	}
+
+	#[When('I open user details for :email')]
+	public function openUserDetails(string $email):void {
+		$form = $this->clientNotificationForm($email);
+		$popup = $form->find("xpath", "ancestor::div[@popover]");
+		$this->assertSession()->elementExists("css", 'button[data-icon=edit][popovertarget="' . $popup->getAttribute("id") . '"]')->click();
+		$this->expect($popup->isVisible(), "User details must open.");
+		if($directory = getenv("UI_SCREENSHOT_DIR")) {
+			$this->saveScreenshot("user-details.png", $directory);
+		}
+	}
+
+	#[Then('the URL and popover should identify user :id')]
+	public function userDetailsUrl(string $id):void {
+		$this->expect($this->getSession()->wait(5000, 'new URL(location.href).searchParams.get("user") === '
+			. json_encode($id) . ' && document.querySelector(".user-details:popover-open")?.id === '
+			. json_encode("user-details-" . $id)), "The URL must reopen the selected user details.");
+	}
+
+	#[When("I close the user details")]
+	public function closeUserDetails():void {
+		$id = $this->getSession()->evaluateScript('document.querySelector(".user-details:popover-open")?.id');
+		$this->assertSession()->elementExists("css", "#" . $id)->pressButton("Close user details");
+	}
+
+	#[Then("the URL should not select a user popover")]
+	public function noUserDetailsUrl():void {
+		$this->expect($this->getSession()->wait(5000,
+			'!new URL(location.href).searchParams.has("user") && !document.querySelector(".user-details:popover-open")'),
+			"Closing details must remove the selected user from the URL.");
+	}
+
+	#[When("I go back in user detail history")]
+	public function backInUserDetails():void {
+		$this->getSession()->back();
+	}
+
+	#[When("I go forward in user detail history")]
+	public function forwardInUserDetails():void {
+		$this->getSession()->forward();
+	}
+
+	#[Then("sudo should return to user details with Delete enabled")]
+	public function sudoReturnsToUserDetails():void {
+		$this->expect($this->getSession()->wait(5000, 'location.pathname === "/admin/users/" && new URL(location.href).searchParams.has("user")'),
+			"Sudo must preserve the selected user in the URL.");
+
+		if(getenv("BEHAT_JAVASCRIPT") !== "1") {
+			$id = $this->getSession()->evaluateScript('new URL(location.href).searchParams.get("user")');
+			$this->assertSession()->elementExists("css", 'button[popovertarget="user-details-' . $id . '"][data-icon=edit]')->click();
+		}
+
+		$this->expect($this->getSession()->evaluateScript('document.querySelector(".user-details:popover-open .user-delete")?.disabled === false'),
+			"The original user popover must reopen with Delete enabled.");
+		$this->assertSession()->elementNotExists("css", "#delete-dialog[open], #delete-confirmation:not([hidden])");
+	}
+
+	#[Then("the user delete button should require sudo")]
+	public function userDeleteRequiresSudo():void {
+		$this->expect($this->getSession()->evaluateScript('document.querySelector(".user-details:popover-open .user-delete")?.disabled === true'),
+			"Delete must be disabled before sudo authentication.");
+	}
+
+	#[When("I bypass the disabled user delete control")]
+	public function bypassUserDeleteControl():void {
+		$this->getSession()->executeScript('(() => {
+			const button = document.querySelector(".user-details:popover-open .user-delete");
+			const confirmed = document.createElement("input");
+			confirmed.name = "confirmDelete";
+			confirmed.value = button.dataset.confirmDelete;
+			button.form.append(confirmed);
+			button.disabled = false;
+			button.removeAttribute("data-confirm-delete");
+			button.form.requestSubmit(button);
+		})()');
+		$this->expect($this->getSession()->wait(5000, 'location.pathname === "/login/sudo/"'),
+			"A confirmed request without sudo must require password authentication.");
+	}
+
+	#[When("I request sudo for user deletion")]
+	public function requestUserDeletionSudo():void {
+		$id = $this->getSession()->evaluateScript('document.querySelector(".user-details:popover-open")?.id');
+		$this->assertSession()->elementExists("css", "#" . $id)->pressButton("Enable sudo to delete");
+		$this->expect($this->getSession()->wait(5000, 'location.pathname === "/login/sudo/"'),
+			"Deletion must request password authentication.");
+	}
+
+	#[When("I view the email in user details")]
+	public function viewUserDetailsEmail():void {
+		$id = $this->getSession()->evaluateScript('document.querySelector(".user-details:popover-open")?.id');
+		$this->assertSession()->elementExists("css", "#" . $id . " [data-sudo-view]")->press();
+		$this->expect($this->getSession()->wait(5000, 'location.pathname === "/login/sudo/"'),
+			"The details email must require sudo authorisation.");
+	}
+
+	#[Then('the details for :email should return with a visible email')]
+	public function userDetailsSudoReturn(string $email):void {
+		$this->expect($this->getSession()->wait(5000, 'location.pathname === "/admin/users/"'),
+			"Sudo must return to the Users page.");
+
+		if(getenv("BEHAT_JAVASCRIPT") !== "1") {
+			$this->openUserDetails($email);
+		}
+
+		$this->expect($this->getSession()->evaluateScript('document.querySelector(".user-details:popover-open [data-sudo=email]")?.textContent') === $email,
+			"Sudo must reveal the requested details email and reopen the enhanced popover.");
+	}
+
+	#[Then("the user details should show their login history and deployment")]
+	public function userDetailsHistory():void {
+		$this->expect($this->getSession()->evaluateScript('(() => {
+			const popup = document.querySelector(".user-details:popover-open");
+			const logins = popup.querySelectorAll(".user-login-history time");
+			return popup.textContent.includes("Development") && !popup.textContent.includes("Private")
+				&& logins.length === 1 && !Number.isNaN(Date.parse(logins[0].dateTime))
+				&& popup.querySelector("[data-sudo=email]").textContent === "al•••@ex••••••••••";
+		})()'), "Details must show successful timestamps and authorised deployments while protecting email.");
+	}
+
+	#[Then("the user details should fit mobile and desktop screens")]
+	public function userDetailsLayout():void {
+		foreach([390, 1440] as $width) {
+			$this->getSession()->resizeWindow($width, 1000);
+			$this->expect($this->getSession()->evaluateScript('(() => {
+				const popup = document.querySelector(".user-details:popover-open");
+				const rect = popup.getBoundingClientRect();
+				return rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight
+					&& popup.scrollWidth <= popup.clientWidth + 1
+					&& document.querySelectorAll(".user-details:popover-open").length === 1;
+			})()'), "User details must fit a $width pixel viewport without horizontal scrolling.");
+			if($directory = getenv("UI_SCREENSHOT_DIR")) {
+				$this->saveScreenshot("user-details-$width.png", $directory);
+			}
+		}
+	}
+
+	#[Then('user :email should have a synchronisation error indicator')]
+	public function userSyncErrorIndicator(string $email):void {
+		$popup = $this->clientNotificationForm($email)->find("xpath", "ancestor::div[@popover]");
+		$row = $this->assertSession()->elementExists("css", 'button[data-icon=edit][popovertarget="' . $popup->getAttribute("id") . '"]')
+			->find("xpath", "ancestor::tr");
+		$this->expect(str_contains($row->getAttribute("class"), "sync-error"), "A failed row must be tinted.");
+		$this->expect(!$row->find("css", "[data-icon=cloud-x]")->hasAttribute("hidden"), "A failed row must show cloud-x.");
+		$this->expect($this->clientNotificationForm($email)->find("css", "button[value=redeliver]") !== null,
+			"Redeliver belongs in the synchronisation notice.");
+	}
+
+	#[Then('I should see :message in the user deletion confirmation')]
+	public function userDeletionConfirmationMessage(string $message):void {
+		$this->expect($this->deletionConfirmation()->find("css", "h2")->getText() === $message,
+			"The confirmation must identify the saved user during sudo mode.");
+	}
+
+	#[Then("the user confirmation should close when sudo expires")]
+	public function userConfirmationExpires():void {
+		$this->expect($this->getSession()->wait(9000,
+			'Date.now() >= Number(document.querySelector("[data-sudo-disable]").dataset.sudoUntil) * 1000 + 100'
+			. ' && !document.querySelector("#delete-dialog[open]") && document.getElementById("delete-dialog-title").textContent === ""'),
+			"Sudo expiry must close the user confirmation.");
+		$this->expect($this->getSession()->evaluateScript('document.getElementById("delete-dialog-title").textContent') === "",
+			"A closed confirmation must not retain the revealed email.");
+	}
+
+	#[When('I delete the user from their details')]
+	public function deleteUserFromDetails():void {
+		$id = $this->getSession()->evaluateScript('document.querySelector(".user-details:popover-open")?.id');
+		$popup = $this->assertSession()->elementExists("css", "#" . $id);
+
+		if($popup->findButton("Delete user")->hasAttribute("disabled")) {
+			$popup->pressButton("Enable sudo to delete");
+			$this->expect($this->getSession()->wait(5000, 'location.pathname === "/login/sudo/"'),
+				"Deletion must require sudo first.");
+			$this->fillField("Password", "Test-admin-password-2026");
+			$this->pressButton("Enable sudo mode");
+			$this->expect($this->getSession()->wait(5000, 'location.pathname === "/admin/users/"'),
+				"Sudo must return to user details.");
+			$popup = $this->assertSession()->elementExists("css", "#" . $id);
+
+			if(getenv("BEHAT_JAVASCRIPT") !== "1") {
+				$this->assertSession()->elementExists("css", 'button[data-icon=edit][popovertarget="' . $id . '"]')->click();
+			}
+		}
+
+		$popup->pressButton("Delete user");
+		$this->expect($this->getSession()->wait(5000,
+			'document.querySelector("#delete-dialog[open], #delete-confirmation:not([hidden])") !== null'),
+			"Deleting a user must first open confirmation.");
+	}
+
+	#[Then('user :email should exist in the provider and client')]
+	public function userExistsInBoth(string $email):void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		foreach(["User", "ClientUser"] as $table) {
+			$query = $database->prepare("select count(*) from $table where email = ?");
+			$query->execute([$email]);
+			$this->expect((int)$query->fetchColumn() === 1, "$email must exist in $table.");
+		}
+	}
+
+	#[Then('user :email should be deleted from the provider and client')]
+	public function userDeletedFromBoth(string $email):void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		foreach(["User", "ClientUser"] as $table) {
+			$query = $database->prepare("select count(*) from $table where email = ?");
+			$query->execute([$email]);
+			$this->expect((int)$query->fetchColumn() === 0, "$email must be deleted from $table.");
+		}
+	}
+
+	#[Then("stored user emails should be obscured without leaking their values")]
+	public function obscuredUserEmails():void {
+		$this->assertSession()->elementTextContains("css", "#all-users", "al•••@ex••••••••••");
+		$this->assertSession()->elementTextContains("css", "#all-users", "bo•@ex••••••••••");
+		$this->assertSession()->elementTextContains("css", "#all-users", "st•••••@ex••••••••••");
+		$this->assertSession()->elementTextContains("css", "#login-failures", "bo•@ex••••••••••");
+		$html = $this->getSession()->getPage()->getContent();
+
+		foreach(["alice@example.test", "bob@example.test", "staging@example.test", "private@example.test"] as $email) {
+			$this->expect(!str_contains($html, $email), "Protected email must not be present in HTML or attributes.");
+		}
+
+		$this->expect($this->getSession()->evaluateScript('Array.from(document.querySelectorAll("[data-sudo=email]")).every(field => {
+			const group = field.closest(".sudo-control");
+			return !group.querySelector("[data-sudo-view]").hidden && (!group.querySelector("[data-sudo-copy]") || group.querySelector("[data-sudo-copy]").hidden);
+		})'), "Obscured emails must show the eye control rather than Copy.");
+	}
+
+	#[When("I view a protected user email")]
+	public function viewUserEmail():void {
+		$this->assertSession()->elementExists("css", "#all-users [data-sudo-view]")->press();
+		$this->expect($this->getSession()->wait(5000, 'location.pathname === "/login/sudo/"'),
+			"Viewing an email without sudo must require password confirmation.");
+	}
+
+	#[Then("all stored user emails should be visible")]
+	public function visibleUserEmails():void {
+		$this->expect($this->getSession()->wait(5000, 'document.querySelector("#all-users")?.textContent.includes("alice@example.test")'),
+			"Email addresses must appear immediately after password confirmation.");
+		$this->assertSession()->elementTextContains("css", "#all-users", "alice@example.test");
+		$this->assertSession()->elementTextContains("css", "#all-users", "bob@example.test");
+		$this->assertSession()->elementTextContains("css", "#all-users", "staging@example.test");
+		$this->assertSession()->elementTextContains("css", "#login-failures", "bob@example.test");
+	}
+
+	#[Given("the Clipboard API is unavailable")]
+	public function clipboardUnavailable():void {
+		$this->getSession()->executeScript('Object.defineProperty(navigator, "clipboard", {value: undefined, configurable: true})');
+	}
+
+	#[Then("visible email controls should copy instead of viewing")]
+	public function copyVisibleUserEmail():void {
+		if(getenv("BEHAT_JAVASCRIPT") !== "1") {
+			$this->assertSession()->elementNotExists("css", "[data-sudo-copy]");
+			return;
+		}
+
+		$this->expect($this->getSession()->evaluateScript('Array.from(document.querySelectorAll("[data-sudo=email]")).every(field => {
+			const group = field.closest(".sudo-control");
+			return getComputedStyle(group.querySelector("[data-sudo-view]")).display === "none"
+				&& getComputedStyle(group.querySelector("[data-sudo-copy]")).display !== "none";
+		})'), "Every revealed email must replace its eye with Copy.");
+		$this->getSession()->executeScript('if(navigator.clipboard) {
+			const write = navigator.clipboard.writeText.bind(navigator.clipboard);
+			navigator.clipboard.writeText = async value => { await write(value); window.copiedEmail = value; };
+		}
+		else {
+			document.addEventListener("copy", () => { window.copiedEmail = document.activeElement.value; }, {once: true});
+		}');
+		$this->assertSession()->elementExists("css", "#all-users [data-sudo-copy]")->click();
+		$this->expect($this->getSession()->wait(5000, 'window.copiedEmail !== undefined'), "Copy must write to the clipboard.");
+		$this->expect($this->getSession()->evaluateScript("window.copiedEmail") === "alice@example.test",
+			"The clipboard must receive the full email address.");
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$count = $database->query("select count(*) from Audit where action = 'SUDO_FIELD_ACCESSED' and userId = 'administrator' and json_extract(detail, '$.action') = 'copy'")->fetchColumn();
+		$this->expect((int)$count > 0, "Copying a protected email must be audited.");
+	}
+
+	#[Then("email view icons should appear on hover and keyboard focus")]
+	public function userEmailIcons():void {
+		$field = $this->assertSession()->elementExists("css", "#all-users [data-sudo=email]");
+		$this->expect($this->getSession()->evaluateScript('getComputedStyle(document.querySelector("#all-users [data-sudo-view]")).opacity === (matchMedia("(hover: none)").matches ? "0.5" : "0")'),
+			"The eye icon should be unobtrusive before hovering.");
+		$field->mouseOver();
+		$this->expect($this->getSession()->evaluateScript('Number(getComputedStyle(document.querySelector("#all-users [data-sudo-view]")).opacity) > 0'),
+			"Hovering the email must show the eye icon.");
+		$this->getSession()->executeScript('document.querySelector("#all-users [data-sudo-view]").focus()');
+		$this->expect($this->getSession()->evaluateScript('getComputedStyle(document.querySelector("#all-users [data-sudo-view]")).opacity === "1"'),
+			"Keyboard focus must show the eye icon clearly.");
+	}
+
+	#[When('I search users for :search')]
+	public function searchUsers(string $search):void {
+		if(getenv("BEHAT_JAVASCRIPT") === "1") {
+			$this->getSession()->executeScript('window.usersResponseReceived = false; document.addEventListener("flux:after-render", () => window.usersResponseReceived = true, {once: true})');
+		}
+
+		$this->getSession()->getPage()->find("css", ".user-filters")->fillField("search", $search);
+
+		if(getenv("BEHAT_JAVASCRIPT") === "1") {
+			$this->getSession()->getPage()->find("css", "#all-users h2")->click();
+			$this->expect($this->getSession()->wait(5000, "window.usersResponseReceived === true"),
+				"Changing the email search must refresh results automatically.");
+		}
+		else {
+			$this->pressButton("Search Users");
+		}
+	}
+
+	#[When('I filter users by deployment :deployment')]
+	public function filterUserDeployment(string $deployment):void {
+		if(getenv("BEHAT_JAVASCRIPT") === "1") {
+			$this->getSession()->executeScript('window.usersResponseReceived = false; document.addEventListener("flux:after-render", () => window.usersResponseReceived = true, {once: true})');
+		}
+
+		$this->getSession()->getPage()->find("css", ".user-filters")->selectFieldOption("userDeployment", $deployment);
+
+		if(getenv("BEHAT_JAVASCRIPT") === "1") {
+			$this->expect($this->getSession()->wait(5000, "window.usersResponseReceived === true"),
+				"Changing a user filter must refresh results automatically.");
+		}
+		else {
+			$this->pressButton("Search Users");
+		}
+	}
+
+	#[Then('the deployment filter should show :deployment with only this application\'s deployments')]
+	public function userDeploymentOptions(string $deployment):void {
+		$select = $this->assertSession()->elementExists("css", ".user-filters select[name=userDeployment]");
+		$selected = $select->find("css", "option[selected]");
+		$this->expect($selected && $selected->getText() === $deployment, "The selected deployment must be retained.");
+		$options = array_map(fn($option) => $option->getText(), $select->findAll("css", "option"));
+		$this->expect($options === ["All deployments", "Development", "Staging"], "Only the selected application's deployments may be offered.");
+	}
+
+	#[Then("user search should adapt to narrow and wide containers")]
+	public function userSearchLayout():void {
+		$this->getSession()->resizeWindow(1440, 1000);
+		$enhanced = getenv("BEHAT_JAVASCRIPT") === "1" ? "true" : "false";
+
+		foreach([360, 720] as $width) {
+			$this->getSession()->executeScript("document.querySelector('#all-users').style.inlineSize = '$width' + 'px'");
+			$this->expect($this->getSession()->evaluateScript(<<<JS
+(() => {
+	const form = document.querySelector('.user-filters');
+	const [email, deployment, sort] = [...form.querySelectorAll('label')].map(label => label.getBoundingClientRect());
+	const button = form.querySelector('button');
+	const bounds = form.getBoundingClientRect();
+	const actions = form.querySelector('.actions').getBoundingClientRect();
+	const buttonBounds = button.getBoundingClientRect();
+	const same = (first, second) => Math.abs(first - second) < 2;
+	const wide = $width === 720;
+	const controlsFit = wide
+		? same(email.bottom, deployment.bottom) && same(deployment.bottom, sort.bottom)
+		: same(email.width, bounds.width) && deployment.top >= email.bottom && same(deployment.top, sort.top);
+	const enhanced = $enhanced;
+	return controlsFit && (enhanced
+		? getComputedStyle(button).display === 'none' && actions.height === 0
+		: buttonBounds.top >= sort.bottom && same(buttonBounds.right, bounds.right)
+			&& (wide ? buttonBounds.width < bounds.width : same(buttonBounds.width, bounds.width)));
+})()
+JS), "User search must follow its container width and keep the correct scripting fallback.");
+		}
+	}
+
+	#[Then("the Users page should fit narrow and wide screens")]
+	public function usersLayout():void {
+		foreach([1440, 390, 280] as $width) {
+			$this->getSession()->resizeWindow($width, 1000);
+			$this->expect($this->getSession()->evaluateScript("document.documentElement.scrollWidth <= innerWidth"),
+				"The Users page must fit a $width pixel viewport.");
+			$this->expect($this->getSession()->evaluateScript('(() => {
+				const panels = ["logged-in-users", "login-failures", "all-users", "add-user"]
+					.map(id => document.getElementById(id).getBoundingClientRect());
+				const [current, failures, users, add] = panels;
+				const same = (first, second) => Math.abs(first - second) < 2;
+				return same(users.left, current.left) && same(users.width, current.width)
+					&& same(add.left, failures.left) && same(add.width, failures.width)
+					&& (same(current.top, failures.top) ? same(users.top, add.top) : add.top >= users.bottom);
+			})()'), "Both rows of Users panels must share their column alignment.");
+			$this->expect($this->getSession()->evaluateScript('(() => {
+				const table = document.querySelector("#all-users table");
+				const labels = Array.from(table.querySelectorAll("thead th"), header => header.textContent);
+				return Array.from(table.querySelectorAll("tbody tr")).every(row =>
+					Array.from(row.cells).every((cell, index) => cell.dataset.label === labels[index]));
+			})()'), "Collapsed user cells must identify their values with the matching column labels.");
+			$this->expect($this->getSession()->evaluateScript('Array.from(document.querySelectorAll("#add-user-form .choice")).every(label => {
+				const input = label.querySelector("input");
+				const span = label.querySelector("span");
+				const range = document.createRange();
+				range.selectNodeContents(span);
+				const text = Array.from(range.getClientRects()).find(rect => rect.width > 0);
+				const box = input.getBoundingClientRect();
+				return getComputedStyle(label).display === "grid"
+					&& Math.abs(box.top + box.height / 2 - text.top - text.height / 2) <= 3;
+			})'), "Checkboxes must align with the first line of their labels at $width pixels.");
+			$this->expect($this->getSession()->evaluateScript('(() => {
+				const form = document.querySelector("#add-user-form");
+				const fields = Array.from(form.querySelectorAll(":scope > label"));
+				const gap = parseFloat(getComputedStyle(form).rowGap);
+				return form.querySelectorAll(".choice").length === 2 && gap >= 16
+					&& fields.every((field, index) => index === 0
+						|| Math.abs(field.getBoundingClientRect().top - fields[index - 1].getBoundingClientRect().bottom - gap) < 2);
+			})()'), "Checkboxes must share the other fields' spacing at $width pixels.");
+		}
+	}
+
+	#[When('I submit the Users page with :button')]
+	public function submitUsersForm(string $button):void {
+		if(getenv("BEHAT_JAVASCRIPT") === "1") {
+			$this->getSession()->executeScript('window.usersResponseReceived = false; document.addEventListener("flux:after-render", () => window.usersResponseReceived = true, {once: true})');
+		}
+
+		$this->pressButton($button);
+
+		if(getenv("BEHAT_JAVASCRIPT") === "1") {
+			$this->expect($this->getSession()->wait(5000, "window.usersResponseReceived === true"),
+				"The Users form response must finish rendering.");
+		}
+	}
+
+	#[When("I enable the new user password field")]
+	public function enableUserPassword():void {
+		$this->checkOption("Set password");
+
+		if(getenv("BEHAT_JAVASCRIPT") !== "1") {
+			$this->pressButton("Apply authentication options");
+		}
+
+		$this->expect($this->getSession()->getPage()->findField("Password")->isVisible(),
+			"The password field must appear when Set password is selected.");
+	}
+
+	#[When('I log in to deployment :deployment as :email with password :password')]
+	public function loginDeploymentUser(string $deployment, string $email, string $password):void {
+		$this->visit("/?dev-login=" . rawurlencode($deployment));
+		$this->fillField("Email address", $email);
+		$this->pressButton("Continue");
+		$this->expect($this->getSession()->wait(5000, "document.querySelector('input[name=password]') !== null"),
+			"The user must be offered password login immediately.");
+		$this->fillField("Password", $password);
+		$this->pressButton("Log in with password");
+		$this->expect($this->getSession()->wait(5000, "document.querySelector('#auth-title')?.textContent.includes(\"You're logged in!\")"),
+			"The administrator's chosen password must complete a real login.");
+	}
+
+	#[Then('user :email should have password :password and no queued instructions')]
+	public function createdPasswordUser(string $email, string $password):void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$query = $database->prepare("select hash from User where email = ?");
+		$query->execute([$email]);
+		$this->expect(password_verify($password, $query->fetchColumn()), "The chosen password must work immediately.");
+		$this->expect((int)$database->query("select count(*) from Email")->fetchColumn() === 0,
+			"Unchecked instructions must not queue an email.");
+		$this->expect((int)$database->query("select count(*) from UserAuthCode")->fetchColumn() === 0,
+			"Manual creation must not require a verification code.");
+		$this->assertNoUserCredentialsInAudit($database, $password);
+	}
+
+	#[Then('user :email should have email login instructions and no password')]
+	public function createdEmailUser(string $email):void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$query = $database->prepare("select hash from User where email = ?");
+		$query->execute([$email]);
+		$this->expect($query->fetchColumn() === null, "An email-only user must not have a password.");
+		$query = $database->prepare("select subject, textContent, htmlContent from Email where toEmail = ?");
+		$query->execute([$email]);
+		$message = $query->fetch(PDO::FETCH_OBJ);
+		$this->expect($message && str_contains($message->subject, "My website")
+			&& str_contains($message->textContent, "email security code")
+			&& str_contains($message->htmlContent, 'href="' . rtrim(getenv("BEHAT_CLIENT_URL"), "/") . '/login/"')
+			&& !str_contains($message->htmlContent, "{{"), "Instructions must contain the application login link and email method.");
+	}
+
+	private function assertNoUserCredentialsInAudit(PDO $database, string $password):void {
+		foreach($database->query("select detail from Audit")->fetchAll(PDO::FETCH_COLUMN) as $detail) {
+			$this->expect(!str_contains($detail ?? "", $password), "Audit records must never contain the password.");
+		}
+	}
+
+	#[Then('user :email should not exist')]
+	public function absentUser(string $email):void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$query = $database->prepare("select count(*) from User where email = ?");
+		$query->execute([$email]);
+		$this->expect((int)$query->fetchColumn() === 0, "Rejected user data must not be persisted.");
+	}
+
+	#[When("I attempt to add the user")]
+	public function attemptUserCreation():void {
+		$this->deploymentPostCount = $this->deploymentPosts();
+		$this->pressButton("Add user");
+	}
+
+	#[Then("the user password should fail native validation without a request")]
+	public function nativeUserPasswordValidation():void {
+		$this->expect($this->getSession()->evaluateScript('document.querySelector("#add-user-form [name=password]").validity.tooShort'),
+			"The browser must reject a password shorter than twelve characters.");
+		$this->noDeploymentRequest();
+	}
+
+	#[When("I add the user without browser validation")]
+	public function bypassUserValidation():void {
+		$this->getSession()->evaluateScript('document.querySelector("#add-user-form").noValidate = true');
+		$this->submitUsersForm("Add user");
+	}
+
 	#[Then('the login page should identify application :name')]
 	public function loginApplicationName(string $name):void {
 		$this->assertSession()->elementTextContains("css", "#main-content", $name);
@@ -67,6 +620,78 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 			"u" => bin2hex($this->getMinkParameter("base_url") . "/logged-out/"),
 		]);
 		$this->visit("http://$deployment->providerHost/?$query");
+	}
+
+	#[Then('the Users page should show :count active client sessions')]
+	public function activeClientSessions(int $count):void {
+		$label = $count === 1 ? "1 active session" : "$count active sessions";
+		$this->assertSession()->elementTextContains("css", "#logged-in-users", $label);
+		$this->assertSession()->elementsCount("css", "#logged-in-users .record-list > li", $count);
+	}
+
+	#[Then('the current users list should show :count distinct users and :message')]
+	public function currentUsersLimit(int $count, string $message):void {
+		$this->assertSession()->elementsCount("css", "#logged-in-users .current-users > li", $count);
+		$this->assertSession()->elementTextContains("css", "#logged-in-users", $message);
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$query = $database->prepare("select userId from UserSession where id=?");
+		$userIds = [];
+
+		foreach($this->getSession()->getPage()->findAll("css", ".current-users [data-sudo=email]") as $field) {
+			$sessionId = substr($field->getAttribute("id"), strlen("session-"), -strlen("-email"));
+			$query->execute([$sessionId]);
+			$userIds []= $query->fetchColumn();
+		}
+
+		$this->expect(count(array_unique($userIds)) === $count,
+			"Each user must appear once even with several active browser sessions.");
+	}
+
+	#[Then('the current users list should scroll five rows at a time')]
+	public function currentUsersScroll():void {
+		foreach([1440, 390] as $width) {
+			$this->getSession()->resizeWindow($width, 1000);
+			$this->expect($this->getSession()->evaluateScript('(() => {
+				const list = document.querySelector(".current-users");
+				const rows = [...list.children];
+				const height = rows[0].getBoundingClientRect().height;
+				const fiveFit = Math.abs(list.clientHeight - height * 5) <= 1;
+				list.scrollTop = list.scrollHeight;
+				return fiveFit && list.scrollHeight > list.clientHeight && list.scrollTop > 0;
+			})()'), "Only five user rows should fit in the scroll area at $width pixels.");
+		}
+	}
+
+	#[When('I log out from the production client')]
+	public function productionClientLogout():void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$deployment = $database->query("select id, secret, providerHost from ApplicationDeployment where id='managed-development'")->fetch(PDO::FETCH_OBJ);
+		$iv = new \GT\Cipher\InitVector();
+		$message = new \GT\Cipher\Message\PlainTextMessage(http_build_query([
+			"action" => "logout", "redirectTo" => "/logged-out/",
+		]), $iv);
+		$query = http_build_query([
+			"c" => (string)$message->encrypt(new \GT\Cipher\Key($deployment->secret)),
+			"i" => (string)$iv, "d" => $deployment->id,
+		]);
+		$this->visit("http://$deployment->providerHost/?$query");
+	}
+
+	#[When('the production client session expires')]
+	public function expireClientSession():void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$query = $database->prepare("update UserSession set expiresAt=? where userId='customer'");
+		$query->execute([(new DateTimeImmutable("-1 second"))->format("Y-m-d H:i:s")]);
+	}
+
+	#[Then("the production customer's session logout should be audited")]
+	public function auditedClientSessionLogout():void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$row = $database->query("select userId, detail from Audit where action='LOGOUT_REQUESTED' and userId='customer'")->fetch(PDO::FETCH_OBJ);
+		$this->expect($row && isset(json_decode($row->detail)->sessionId),
+			"Client logout must identify the user and the ended session even after the provider session was cleared.");
+		$this->expect((int)$database->query("select count(*) from UserSession where userId='customer' and endedAt is not null")->fetchColumn() === 1,
+			"The persisted client session must be ended.");
 	}
 
 	#[When('I visit the production provider directly')]
@@ -293,10 +918,65 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 		$this->expect($field->getValue() === $key, "The authorised key was not revealed.");
 	}
 
+	private int $sudoDeadline = 0;
+
+	#[When("I reload shortly before sudo expires")]
+	public function reloadBeforeSudoExpiry():void {
+		$this->sudoDeadline = (int)$this->assertSession()->elementExists("css", "[data-sudo-disable]")->getAttribute("data-sudo-until");
+		$this->expect($this->getSession()->wait(5000, "Date.now() >= " . (($this->sudoDeadline - 2) * 1000)),
+			"The test must approach the current idle deadline.");
+		$this->reload();
+	}
+
+	#[When("I type shortly before sudo expires")]
+	public function typeBeforeSudoExpiry():void {
+		$this->sudoDeadline = (int)$this->assertSession()->elementExists("css", "[data-sudo-disable]")->getAttribute("data-sudo-until");
+		$this->expect($this->getSession()->wait(5000, "Date.now() >= " . (($this->sudoDeadline - 2) * 1000)),
+			"The test must approach the current idle deadline.");
+		$field = $this->deploymentDetails("Development")->findField("Deployment name");
+		$field->keyDown(16);
+		$field->keyUp(16);
+	}
+
+	#[Then("the sudo inactivity deadline should be renewed")]
+	public function sudoDeadlineRenewed():void {
+		$this->expect($this->getSession()->wait(5000,
+			'Number(document.querySelector("[data-sudo-disable]")?.dataset.sudoUntil) > ' . $this->sudoDeadline),
+			"Activity must extend sudo beyond its previous deadline.");
+		$this->sudoEnabled();
+	}
+
+	#[When("the provider refreshes automatically until sudo expires")]
+	public function automaticRefreshDoesNotRenewSudo():void {
+		$this->getSession()->executeScript('window.backgroundRequests = 0;
+			window.backgroundRefresh = setInterval(async () => {
+				const detail = {requestOptions: {}, historyState: {action: null}};
+				document.dispatchEvent(new CustomEvent("flux:before-request", {detail}));
+				await fetch(location.href, {...detail.requestOptions, cache: "no-store"});
+				window.backgroundRequests++;
+			}, 1000)');
+
+		try {
+			$this->expireSudo();
+			$this->expect($this->getSession()->evaluateScript("window.backgroundRequests > 0"),
+				"Automatic refresh requests must have completed while sudo expired.");
+		}
+		finally {
+			$this->getSession()->executeScript('clearInterval(window.backgroundRefresh)');
+		}
+	}
+
+	#[Then("sudo should only have required one password confirmation")]
+	public function sudoAuthorisedOnce():void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$this->expect((int)$database->query("select count(*) from Audit where action='SUDO_AUTHORISED'")->fetchColumn() === 1,
+			"Continued activity must not request another password confirmation.");
+	}
+
 	#[When('the sudo period expires')]
 	public function expireSudo():void {
-		$until = (int)$this->assertSession()->elementExists("css", "[data-sudo-disable]")->getAttribute("data-sudo-until");
-		$this->expect($this->getSession()->wait(6500, "Date.now() >= " . ($until * 1000 + 100)), "The test sudo period did not expire.");
+		$this->expect($this->getSession()->wait(9000,
+			'Date.now() >= Number(document.querySelector("[data-sudo-disable]").dataset.sudoUntil) * 1000 + 100'), "The test sudo period did not expire.");
 		if(getenv("BEHAT_JAVASCRIPT") !== "1") {
 			$this->reload();
 		}
@@ -307,7 +987,9 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 	public function disableSudo():void {
 		$this->openSidebar();
 		$this->pressButton("SUDO");
-		$this->getSession()->wait(5000, 'document.querySelector("application-deployments") !== null && document.querySelector("[data-sudo-disable]:not([hidden])") === null');
+		$this->expect($this->getSession()->wait(5000,
+			'document.readyState === "complete" && document.querySelector("#main-content") !== null && document.querySelector("[data-sudo-disable]:not([hidden])") === null'),
+			"Disabling sudo must return to the page with authorisation removed.");
 	}
 
 	#[Then('the sudo audit trail should contain no credentials')]
@@ -426,6 +1108,11 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 		if(!$path) throw new RuntimeException("Run Behat using composer behat.");
 		$this->database = new DatabaseState($path, dirname(__DIR__) . "/database");
 		$this->database->apply($state);
+		if($state === "user_administration") {
+			$client = new PDO("sqlite:$path");
+			$client->prepare("update ApplicationDeployment set clientHost = ?, clientLoginPath = '/login/' where id = 'managed-development'")
+				->execute([rtrim(getenv("BEHAT_CLIENT_URL"), "/")]);
+		}
 		$connection = new PDO("sqlite:$path");
 		$host = parse_url($this->getMinkParameter("base_url"), PHP_URL_HOST);
 		$port = parse_url($this->getMinkParameter("base_url"), PHP_URL_PORT);
@@ -826,7 +1513,11 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 
 	#[Then('I should be on the settings page for application :name')]
 	public function applicationSettingsPage(string $name):void {
-		$this->getSession()->wait(5000, 'document.querySelector("application-settings form") !== null');
+		$this->expect($this->getSession()->wait(5000,
+			'document.querySelector("application-settings form") !== null'),
+			"Creating an application must reach its settings form.");
+		$actualName = $this->assertSession()->elementExists("css", 'application-settings input[name="name"]')->getValue();
+		$this->expect($actualName === $name, "Expected application '$name', received '$actualName'.");
 		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
 		$query = $database->prepare("select Application.id from Application join UserAdmin on UserAdmin.applicationId = Application.id where Application.name = ? and UserAdmin.userId = 'administrator'");
 		$query->execute([$name]);
@@ -949,6 +1640,16 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 			return $details;
 		}
 		throw new RuntimeException("Missing deployment expander: $summary");
+	}
+
+	#[Then('deployment :summary should retain:')]
+	public function retainedDeploymentValues(string $summary, \Behat\Gherkin\Node\TableNode $table):void {
+		$details = $this->deploymentDetails($summary);
+
+		foreach($table->getRows() as [$field, $value]) {
+			$this->expect($details->findField($field)->getValue() === $value,
+				"The saved $field value must be rendered in the deployment form.");
+		}
 	}
 
 	#[When('I complete the :summary deployment form:')]
@@ -1090,7 +1791,7 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 	public function confirmDeletion():void {
 		$this->deletionConfirmation()->pressButton('Confirm delete');
 		$this->getSession()->wait(5000,
-			"document.querySelector('application-settings [role=status]')?.textContent === 'Deployment deleted.' || document.querySelector('application-settings [role=alert]:not([hidden])') !== null");
+			"document.querySelector('#all-users [role=status]')?.textContent.trim().length > 0 || document.querySelector('application-settings [role=status]')?.textContent === 'Deployment deleted.' || document.querySelector('application-settings [role=alert]:not([hidden])') !== null");
 	}
 
 	#[Then('the deletion confirmation name should not contain HTML elements')]

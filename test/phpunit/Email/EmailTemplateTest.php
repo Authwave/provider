@@ -63,4 +63,14 @@ class EmailTemplateTest extends TestCase {
 		$sut = new EmailTemplate($this->directory);
 		$sut->render("example");
 	}
+	public function testRender_markdownLinksResolveEncodedPlaceholders():void {
+		file_put_contents("$this->directory/instructions.md", "# Sign in\n\n[Open the app]({{loginUrl}})");
+		$sut = new EmailTemplate($this->directory);
+
+		$result = $sut->render("instructions.md", ["loginUrl" => "https://client.test/?one=1&two=2"]);
+
+		self::assertStringContainsString('href="https://client.test/?one=1&amp;two=2"', $result["html"]);
+		self::assertStringNotContainsString("%7B", $result["html"]);
+	}
+
 }

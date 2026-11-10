@@ -54,6 +54,7 @@ readonly class EmailTemplate {
 				$plainValues[$placeholder] = (string) $value;
 				$htmlValues[$placeholder] = htmlspecialchars((string) $value,
 					ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8");
+				$htmlValues[rawurlencode($placeholder)] = $htmlValues[$placeholder];
 			}
 		}
 

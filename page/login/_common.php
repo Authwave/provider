@@ -1,8 +1,8 @@
 <?php
 use Authwave\Session\LoginSession;
 use Authwave\View\LoginBranding;
-use Gt\Dom\HTMLDocument;
-use Gt\DomTemplate\Binder;
+use GT\Dom\HTMLDocument;
+use GT\DomTemplate\Binder;
 
 function go(
 	HTMLDocument $document,

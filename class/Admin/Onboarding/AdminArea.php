@@ -1,6 +1,8 @@
 <?php
 namespace Authwave\Admin\Onboarding;
 
+use GT\Cookie\CookieHandler;
+
 use Authwave\Model\ApplicationRepository;
 use Authwave\Security\AdminAccess;
 use Authwave\Security\AdminAccessDenied;
@@ -50,9 +52,20 @@ class AdminArea {
 		}
 	}
 
-	public function logout(Session $session):void {
+	public function logout(Session $session, CookieHandler $cookies):void {
 		$administrator = $this->administrator();
-		$this->login->clearDataForLogout($administrator->deployment, $administrator);
+		$cookieName = UserRepository::SESSION_COOKIE_PREFIX . $administrator->deployment->id;
+
+		$sessionId = $cookies->get($cookieName)?->getValue();
+
+		if($this->users->endSession($administrator->deployment, $sessionId)) {
+			$this->login->resetAuthentication();
+		}
+		else {
+			$this->login->clearDataForLogout($administrator->deployment, $administrator);
+		}
+
+		$cookies->delete($cookieName);
 		$session->kill();
 	}
 

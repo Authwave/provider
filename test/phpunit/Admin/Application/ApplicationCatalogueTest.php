@@ -6,8 +6,8 @@ use Authwave\Model\ApplicationRepository;
 use Authwave\Admin\Application\ApplicationCatalogue;
 use Authwave\Admin\Application\ManagedApplication;
 use Authwave\Model\User;
-use Gt\Session\Session;
-use Gt\Session\SessionStore;
+use GT\Session\Session;
+use GT\Session\SessionStore;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

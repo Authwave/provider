@@ -2,8 +2,8 @@
 use Authwave\Admin\Onboarding\AdminArea;
 use GT\Dom\HTMLDocument;
 use GT\DomTemplate\Binder;
-use Gt\Http\Response;
-use Gt\Http\Uri;
+use GT\Http\Response;
+use GT\Http\Uri;
 
 function go(AdminArea $area, Uri $uri, Response $response, HTMLDocument $document, Binder $binder):void {
 	$area->enter($uri, $response);

@@ -19,6 +19,35 @@ body.dir--admin .sudo-control {
 		flex: none;
 	}
 
+	&:has(> [data-sudo="email"]) {
+		display: inline-flex;
+		position: relative;
+		padding-inline-end: var(--theme-icon-button-size);
+
+		> button {
+			@extend %o-icon-button-plain;
+			position: absolute;
+			inset-inline-end: 0;
+			inset-block-start: 50%;
+			translate: 0 -50%;
+			opacity: 0;
+		}
+
+		&:is(:hover, :focus-within) > button {
+			opacity: .5;
+		}
+
+		> button:is(:hover, :focus-visible, :active) {
+			opacity: 1;
+		}
+
+		@media (hover: none) {
+			> button {
+				opacity: .5;
+			}
+		}
+	}
+
 	&:has(> input) {
 		position: relative;
 
@@ -48,4 +77,8 @@ body.dir--admin .sudo-control {
 			inset-inline-end: calc(var(--theme-icon-button-size) + var(--theme-space-1));
 		}
 	}
+	> button[hidden] {
+		display: none;
+	}
+
 }

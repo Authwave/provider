@@ -4,18 +4,18 @@ namespace Authwave\Test\Integration\Model;
 
 use Authwave\Model\ApplicationRepository;
 use Authwave\Security\Audit;
-use Gt\Database\Query\QueryCollection;
-use Gt\Database\Result\Row;
+use GT\Database\Query\QueryCollection;
+use GT\Database\Result\Row;
 use PDO;
 use PHPUnit\Framework\TestCase;
 use Authwave\Admin\Application\ApplicationName;
-use Gt\Database\Database;
+use GT\Database\Database;
 use Authwave\Model\Application;
 use Authwave\Model\ApplicationDeployment;
 use Authwave\Model\User;
-use Gt\Database\Connection\Settings;
+use GT\Database\Connection\Settings;
 use Authwave\Admin\Application\DeploymentData;
-use Gt\Http\ResponseStatusException\ClientError\HttpNotFound;
+use GT\Http\ResponseStatusException\ClientError\HttpNotFound;
 
 class ApplicationRepositoryTest extends TestCase {
 	#[\PHPUnit\Framework\Attributes\DataProvider("data_colours")]
@@ -57,7 +57,7 @@ class ApplicationRepositoryTest extends TestCase {
 			return $result === false ? null : $result;
 		});
 
-		$database = $this->createStub(\Gt\Database\Database::class);
+		$database = $this->createStub(\GT\Database\Database::class);
 		$database->method("queryCollection")->willReturnMap([
 			["application", $applicationQueries],
 			["application_deployment", $deploymentQueries],
@@ -462,10 +462,10 @@ class ApplicationRepositoryTest extends TestCase {
 		foreach(["User", "Email"] as $dependent) {
 			$deployment = $this->store->saveDeployment($this->actor, "mine", null, $this->data());
 			if($dependent === "User") {
-				$this->database->executeSql("insert into User values ('dependent', ?, 'user@example.test', null)", [$deployment->id]);
+				$this->database->executeSql("insert into User (id, applicationDeploymentId, email, hash) values ('dependent', ?, 'user@example.test', null)", [$deployment->id]);
 			}
 			else {
-				$this->database->executeSql("insert into Email values ('dependent', ?)", [$deployment->id]);
+				$this->database->executeSql("insert into Email (id, deploymentId) values ('dependent', ?)", [$deployment->id]);
 			}
 			try {
 				$this->store->deleteDeployment($this->actor, "mine", $deployment->id);
@@ -478,7 +478,7 @@ class ApplicationRepositoryTest extends TestCase {
 				$this->database->executeSql("delete from ApplicationDeployment where id = ?", [$deployment->id]);
 				self::fail("Foreign key must prevent cascading deletion");
 			}
-			catch(\Gt\Database\StatementExecutionException) {}
+			catch(\GT\Database\StatementExecutionException) {}
 			self::assertSame(1, $this->database->executeSql("select count(*) as total from $dependent")->fetch()->getInt("total"));
 		}
 	}

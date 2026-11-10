@@ -1,6 +1,8 @@
 <?php
 namespace Authwave\Model;
 
+use DateTimeImmutable;
+
 readonly class User {
 	public string $applicationDeploymentId;
 
@@ -12,6 +14,10 @@ readonly class User {
 		public ApplicationDeployment $deployment,
 		public string $email,
 		public ?string $hash = null,
+		public ?DateTimeImmutable $createdAt = null,
+		public ?int $clientNotificationStatus = null,
+		public ?bool $clientNotificationAcknowledged = null,
+		public ?string $clientNotificationAction = null,
 	) {
 		$this->applicationDeploymentId = $deployment->id;
 	}

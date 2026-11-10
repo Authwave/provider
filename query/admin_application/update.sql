@@ -1,1 +1,9 @@
-update Application set name = ?, productionApplicationDeploymentId = ? where id = ?
+update
+	Application
+
+set
+	name = ?,
+	productionApplicationDeploymentId = ?
+
+where
+	id = ?

@@ -1,13 +1,14 @@
 <?php
 use Authwave\Admin\Onboarding\AdminArea;
 use Authwave\Admin\Onboarding\Onboarding;
-use Gt\Config\Config;
-use Gt\Http\Request;
-use Gt\Session\Session;
+use GT\Config\Config;
+use GT\Http\Request;
+use GT\Session\Session;
+use GT\Cookie\CookieHandler;
 use GT\Dom\Element;
 use GT\DomTemplate\Binder;
-use Gt\Http\Uri;
-use Gt\Http\Response;
+use GT\Http\Uri;
+use GT\Http\Response;
 use Authwave\Security\Sudo;
 use GT\Input\Input;
 
@@ -20,14 +21,18 @@ function go_before(
 }
 
 function go(Element $element, Binder $binder, Uri $uri, Onboarding $onboarding,
-	Sudo $sudo, AdminArea $area, Input $input):void {
+	Sudo $sudo, AdminArea $area, Input $input, Request $request):void {
 	if(is_string($input->get("verify", Input::DATA_QUERYSTRING))) {
 		$progress = $element->querySelector(".setup-card");
 		$progress->setAttribute("data-flux", "live");
 		$progress->setAttribute("data-flux-rate", "10");
 	}
 
-	$binder->bindKeyValue("sudoUntil", $sudo->expiresAt($area->administrator()));
+	// Components render before page logic: renew before binding the deadline.
+	$actor = $area->administrator();
+	$until = $request->getHeaderLine("X-Authwave-Background") === "1"
+		? $sudo->expiresAt($actor) : $sudo->renew($actor);
+	$binder->bindKeyValue("sudoUntil", $until);
 	$return = $uri->getPath() . ($uri->getQuery() ? "?" . $uri->getQuery() : "");
 	// This form submits to /sudo/ page logic, rather than a sidebar action.
 	$element->querySelector('[data-sudo-disable] input[name="__component"]')->remove();
@@ -66,12 +71,13 @@ function do_logout(
 	Response $response,
 	Session $session,
 	Config $config,
+	CookieHandler $cookies,
 ):void {
 	if($request->getMethod() !== "POST"
 	|| rtrim($request->getUri()->getPath(), "/") !== "/admin/logout") {
 		return;
 	}
 
-	$area->logout($session);
+	$area->logout($session, $cookies);
 	$response->redirect($config->getString("authwave.logout_redirect") ?: "/logged-out/");
 }

@@ -149,7 +149,7 @@ Application creation and its administrator assignment commit in the same
 transaction as `APPLICATION_CREATED`. An audit failure rolls everything back.
 Rejected names, application selection, authentication state changes, password/code
 outcomes, user creation, email scheduling and logout are also logged. Every page
-request records its method/path. Request logs omit query parameters
+request records its method/path. These database audit rows omit query parameters
 and POST bodies; detailed mutation events supply the relevant safe data instead.
 
 Browser-only interactions, including the current local-storage theme toggle and
@@ -204,12 +204,24 @@ this retains the prefix through the second underscore and four secret characters
 then obscures the remainder. Add `data-copy` to offer a clipboard button when
 JavaScript is available. Read-only inputs still need their normal `name`.
 
+Use `data-sudo="email"` for stored email addresses. It keeps the first two
+characters on each side of `@` and masks the remaining characters, for example
+`al•••@ex••••••••••`. Email addresses in both Users lists use this rule. Their
+View icon appears on hover or keyboard focus (and stays available on touch screens).
+All email fields remain visible throughout sudo mode, with a Copy icon replacing
+View when JavaScript is available. They are masked again when sudo expires or is
+disabled, restoring the View icon.
+
 The admin common logic masks values on the server and adds a native View button.
-Password confirmation at `/login/sudo/` enables sudo for 60 seconds; configure
-`authwave.sudo_duration` in seconds to change that period. A key is disclosed only
+Password confirmation at `/login/sudo/` enables sudo with a 60-second inactivity
+timeout; configure `authwave.sudo_duration` in seconds to change it. Each provider
+request renews active sudo mode, including page reloads. With JavaScript, user
+interaction also renews it; automatic background refreshes do not. Once the idle
+period expires, activity cannot restore sudo without password confirmation.
+A key is disclosed only
 in the response requested by View or Copy, rather than every response during the
 sudo period. Other sudo fields are available while sudo is active. JavaScript
-re-obscures authorised responses, provides view/copy controls, and clears visible
+re-obscures keys on arrival, provides view/copy controls, and clears visible
 values when sudo expires or the page is left. After password confirmation, the
 requested View resumes automatically using a one-use `sudo-view` query parameter.
 Copy still requires a fresh click. Without JavaScript the authorised View
@@ -310,6 +322,43 @@ The supplementary browser regression scripts remain available through
 this project's local Flair package, and exercise login and administration pages
 with isolated fixtures. They are separate from the basic Behat smoke coverage.
 
+User administration
+-------------------
+
+The Users page searches users in the selected application's deployments. Plain text
+matches any part of the email address; `*` patterns match the whole address, with
+`*` standing for zero or more characters. `%` and `_` are literal characters.
+The Deployment filter combines with the email search and sort order, and offers
+only deployments in the selected application. Accounts are deployment-specific;
+choose a deployment when creating a user. Administrators
+may set an immediately usable password (at least twelve characters), or leave the
+account using email security codes. With scripting disabled, use "Apply authentication
+options" after changing "Set password" to reveal the password field.
+
+Optional login instructions use `data/email/loginInstructions.md`. User creation,
+its audit entry and the queued email commit together; delivery happens afterwards
+using the application's email settings. Passwords are never included in the message
+or audit trail. Delivery failures leave the email queued.
+
+Client sessions are recorded in `UserSession` after successful client logins.
+They stop counting on logout or expiry. The default lifetime is 30 minutes:
+`UserRepository::DEFAULT_SESSION_DURATION` is expressed in seconds. Override it
+with `[authwave] client_session_duration=1800` in configuration. This is a reporting
+estimate; the client still controls its own authentication session.
+
+An HttpOnly, host-only cookie holds an opaque session identifier for each deployment,
+so client logout can identify the user even after the provider's login session has
+been cleared. Separate browsers count separately; repeated handoffs for the same
+browser session do not add to the count. Development login previews and provider
+administration logins do not create client sessions. The Users panel counts all
+active sessions for the selected application and lists up to 25 distinct users,
+with five visible rows in a scroll area and a count of any additional users.
+Email addresses are protected by sudo. Tracking begins with new client logins.
+
+Login counts and latest failures come from audit records. The failures panel shows
+up to ten users whose latest failed password or security code was within 24 hours.
+Older users without a recorded creation date display a dash rather than a fabricated date.
+
 Manual development login
 ------------------------
 
@@ -331,3 +380,64 @@ to start another login.
 This helper requires `authwave.dev_login=true` in `config.dev.ini`.
 It is always disabled when `app.production=true`. It still requires the normal
 deployment database and user authentication; it does not bypass credentials.
+
+New-user notifications
+----------------------
+
+New users are sent immediately by GET to the existing Client URL + Client login
+path. `AUTHWAVE_NEW_USER` contains the encrypted payload and `AUTHWAVE_NEW_USER_IV`
+contains its public IV, both URL-encoded. No request body, separate notification
+URL or endpoint is needed.
+
+The updated php-client recognises the request when `Authenticator` is constructed
+at that route. It exposes the user through the normal `getAuthUser()` API and
+invokes the existing `onAuthenticated` callback, so the application's usual user
+creation/upsert code runs. No custom route handler or JSON parsing is needed.
+
+The client marks the response with `Authwave-User-Change: received`. The provider
+requires both this acknowledgement and a final 2xx status. An older client returning
+its normal HTML page has no acknowledgement, and an application error returning
+5xx is a failed delivery even if construction already completed.
+
+The provider commits the user and its audit records before sending, and waits for
+the client response. Connection and total timeouts are three and ten seconds;
+redirects are not followed. Production delivery requires HTTPS.
+
+`User.clientNotificationStatus` stores the latest HTTP status (`0` for a transport
+failure), and `clientNotificationAcknowledged` records whether it was acknowledged.
+Attempts are audited without message contents or response bodies. If
+delivery cannot be confirmed, the user remains created and **Redeliver** appears
+in the user details synchronisation notice only after a recorded failed attempt, and only until
+the user has logged in through the client. Users with no notification attempt are
+not treated as failures. Redeliver retries immediately with fresh encryption, using
+the current client login URL and deployment secret. There is no queue or automatic
+retry. Clients must upsert by Authwave user ID because a timeout can happen after
+the client has already processed the message.
+
+User details and deletion
+-------------------------
+
+User popovers have bookmarkable URLs: `/admin/users/?application=APPLICATION_ID&user=USER_ID`.
+Opening or closing details updates browser history; bookmarks, reload and Back/Forward
+restore the selected user. Sudo returns to these details with Delete enabled;
+confirmation is still a separate action.
+
+The Edit column opens user details, including up to ten successful login timestamps
+and deployments in the selected application with the same email address. Email
+addresses remain protected by sudo mode. Failed synchronisation is marked with a
+negative row tint and cloud icon; its details notice contains the manual retry.
+
+Deletion requires active sudo mode, followed by a separate confirmation. Expired
+sudo authorisation must be renewed before confirming or retrying a deletion.
+
+Confirmed deletion sends `AUTHWAVE_DELETE_USER` and `AUTHWAVE_DELETE_USER_IV` to
+the existing client login URL, using the same encrypted payload with action
+`user-deleted`. The client must configure `Authenticator`'s `onDeleted` callback to
+remove its user by Authwave ID. No callback means no acknowledgement.
+
+Only after a final 2xx response with `Authwave-User-Change: received` does the
+provider delete the user and its sessions, recording `USER_DELETED` in the same
+transaction. A failed delivery retains the user and records the pending action
+in `User.clientNotificationAction`; Redeliver retries deletion rather than creation.
+Deletion callbacks must be idempotent because an acknowledgement can be lost after
+the client has already removed its user.

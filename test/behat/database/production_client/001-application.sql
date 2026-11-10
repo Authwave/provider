@@ -7,4 +7,4 @@ insert into ApplicationDeployment (id, applicationId, title, secret, providerHos
 update ApplicationDeployment set domainVerified = 1 where id = 'managed-development';
 
 update Application set productionApplicationDeploymentId = 'managed-development' where id = 'managed';
-insert into User values ('customer', 'managed-development', 'customer@example.test', null);
+insert into User (id, applicationDeploymentId, email, hash) values ('customer', 'managed-development', 'customer@example.test', null);

@@ -8,8 +8,9 @@ use GT\DomTemplate\Binder;
 use GT\Input\Input;
 use GT\Dom\Element;
 use GT\DomTemplate\ListElementCollection;
-use Gt\Http\{Request, Response};
-use Gt\Http\ResponseStatusException\ClientError\HttpNotFound;
+use GT\Http\Request;
+use GT\Http\Response;
+use GT\Http\ResponseStatusException\ClientError\HttpNotFound;
 
 function go(Binder $binder, Application $application, ApplicationRepository $applications,
 	AdminArea $area, Input $input, Request $request, FlashSession $flash, DomainVerification $domains,

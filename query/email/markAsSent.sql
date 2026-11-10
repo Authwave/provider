@@ -1,6 +1,8 @@
-update Email
+update
+	Email
+
 set
-	sentAt = now(),
+	sentAt = CURRENT_TIMESTAMP,
 	sentMessageId = :sentMessageId
 
 where

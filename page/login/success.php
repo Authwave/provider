@@ -6,15 +6,16 @@ use Authwave\Security\Audit;
 use Authwave\Security\AdminAccess;
 use Authwave\User\LoginState;
 use Authwave\User\UserRepository;
-use Gt\Cipher\InitVector;
-use Gt\Cipher\Key;
-use Gt\Cipher\Message\PlainTextMessage;
-use Gt\DomTemplate\Binder;
-use Gt\Http\Response;
-use Gt\Http\Request;
-use Gt\Http\Uri;
-use Gt\Input\Input;
-use Gt\Session\Session;
+use GT\Cipher\InitVector;
+use GT\Cipher\Key;
+use GT\Cipher\Message\PlainTextMessage;
+use GT\DomTemplate\Binder;
+use GT\Http\Response;
+use GT\Http\Request;
+use GT\Http\Uri;
+use GT\Input\Input;
+use GT\Session\Session;
+use GT\Cookie\CookieHandler;
 
 function go(
 	Input $input,
@@ -27,6 +28,7 @@ function go(
 	AdminAccess $adminAccess,
 	Request $request,
 	ApplicationRepository $applications,
+	CookieHandler $cookies,
 ):void {
 	if($loginSession->getState() !== LoginState::LOGGED_IN) {
 		$response->redirect("/login/");
@@ -92,12 +94,17 @@ function go(
 	$returnUri = $returnUri->withQuery($queryString);
 
 	$binder->bindKeyValue("returnUri", (string)$returnUri);
-	$audit->create(Action::LOGIN_COMPLETED, [
-		"deploymentId" => $deployment->id,
-	], $user);
 	$developmentLogin = $loginSession->getDataKey("developmentLogin");
 
-	if(!$developmentLogin) {
+	if($developmentLogin) {
+		$audit->create(Action::LOGIN_COMPLETED, ["deploymentId" => $deployment->id], $user);
+	}
+	else {
+		$cookieName = UserRepository::SESSION_COOKIE_PREFIX . $deployment->id;
+		$clientSession = $userRepo->startSession($user, $cookies->get($cookieName)?->getValue());
+		// Retain only an opaque reporting identifier after the provider login session is cleared.
+		$cookies->set($cookieName, $clientSession->id, new \DateTimeImmutable("@0"),
+			"", $request->getUri()->getScheme() === "https", true);
 		$applications->recordClientLogin($user);
 	}
 

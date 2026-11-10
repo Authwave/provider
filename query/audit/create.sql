@@ -6,6 +6,7 @@ insert into Audit (
 	anonUserId,
 	createdAt
 )
+
 values (
 	:id,
 	:action,

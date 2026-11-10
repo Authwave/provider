@@ -17,13 +17,13 @@ use Authwave\User\UserRepository;
 use GT\Cipher\InitVector;
 use GT\Cipher\Key;
 use GT\Cipher\Message\EncryptedMessage;
-use Gt\Http\Request;
-use Gt\Http\Response;
+use GT\Http\Request;
+use GT\Http\Response;
 use GT\Input\Input;
 use GT\Routing\LogicStream\LogicStreamNamespace;
 use GT\Routing\LogicStream\LogicStreamWrapper;
-use Gt\Session\Session;
-use Gt\Session\SessionStore;
+use GT\Session\Session;
+use GT\Session\SessionStore;
 use GT\WebEngine\Logic\LogicStreamHandler;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -68,6 +68,8 @@ class LoginDesignTest extends TestCase {
 		$this->flash = new FlashSession(new SessionStore("flash", $this->session));
 		$this->users = $this->createStub(UserRepository::class);
 		$this->user = new User("test-user", $this->deployment, "test@example.test");
+		$this->users->method("startSession")->willReturn(new \Authwave\Model\UserSession("session", $this->user->id,
+			new \DateTimeImmutable(), new \DateTimeImmutable("+30 minutes")));
 		$this->response = $this->createStub(Response::class);
 		$this->response->method("redirect")->willReturnCallback(static function($uri):void {
 			throw new Redirect((string)$uri);
@@ -243,7 +245,7 @@ class LoginDesignTest extends TestCase {
 		$this->users->method("get")->willReturn($this->user);
 		$this->session->expects(self::once())->method("kill");
 		$this->call("_common", "go", $view->document, $view->binder, $this->login);
-		$this->call("success", "go", new Input(["debug" => "1"]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), null), $this->createStub(Request::class), $this->createStub(ApplicationRepository::class));
+		$this->call("success", "go", new Input(["debug" => "1"]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\GT\Database\Query\QueryCollection::class), null), $this->createStub(Request::class), $this->createStub(ApplicationRepository::class), $this->createStub(\GT\Cookie\CookieHandler::class));
 		$uri = $view->document->querySelector("main p a")->getAttribute("href");
 		self::assertStringStartsWith("https://client.example.test/callback?", $uri);
 		parse_str(parse_url($uri, PHP_URL_QUERY), $query);
@@ -262,7 +264,7 @@ class LoginDesignTest extends TestCase {
 		$this->session->expects(self::never())->method("kill");
 		$this->response->expects(self::never())->method("redirect");
 		$this->call("_common", "go", $view->document, $view->binder, $this->login);
-		$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), $this->user->email), $this->createStub(Request::class), $this->createStub(ApplicationRepository::class));
+		$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\GT\Database\Query\QueryCollection::class), $this->user->email), $this->createStub(Request::class), $this->createStub(ApplicationRepository::class), $this->createStub(\GT\Cookie\CookieHandler::class));
 		$link = $view->document->querySelector('a[href="/admin/"]');
 		self::assertNotNull($link);
 		self::assertFalse($link->parentElement->hasAttribute("hidden"));
@@ -278,7 +280,7 @@ class LoginDesignTest extends TestCase {
 		$this->users->method("get")->willReturn($this->user);
 		$this->session->expects(self::once())->method("kill");
 		try {
-			$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), "someone-else@example.test"), $this->createStub(Request::class), $this->createStub(ApplicationRepository::class));
+			$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\GT\Database\Query\QueryCollection::class), "someone-else@example.test"), $this->createStub(Request::class), $this->createStub(ApplicationRepository::class), $this->createStub(\GT\Cookie\CookieHandler::class));
 			self::fail("Expected client redirect");
 		}
 		catch(Redirect $redirect) {
@@ -294,7 +296,7 @@ class LoginDesignTest extends TestCase {
 		$this->users->method("get")->willReturn($this->user);
 		$this->session->expects(self::never())->method("kill");
 		$view = new View("login/success");
-		$this->redirects("/admin/", fn() => $this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), $this->user->email), $this->createStub(Request::class), $this->createStub(ApplicationRepository::class)));
+		$this->redirects("/admin/", fn() => $this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\GT\Database\Query\QueryCollection::class), $this->user->email), $this->createStub(Request::class), $this->createStub(ApplicationRepository::class), $this->createStub(\GT\Cookie\CookieHandler::class)));
 	}
 
 	public function testChangingEmailOrDeploymentRequiresAuthenticationAgain():void {
@@ -310,10 +312,10 @@ class LoginDesignTest extends TestCase {
 	}
 
 	public function testAdminAccessIsDeniedWithoutGrantOrConfiguredEmail():void {
-		self::assertFalse((new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), null))->allows($this->user));
-		self::assertFalse((new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), ""))->allows($this->user));
-		self::assertFalse((new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), $this->user->email))->allows(null));
-		self::assertTrue((new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), strtoupper($this->user->email)))->allows($this->user));
+		self::assertFalse((new AdminAccess($this->createStub(\GT\Database\Query\QueryCollection::class), null))->allows($this->user));
+		self::assertFalse((new AdminAccess($this->createStub(\GT\Database\Query\QueryCollection::class), ""))->allows($this->user));
+		self::assertFalse((new AdminAccess($this->createStub(\GT\Database\Query\QueryCollection::class), $this->user->email))->allows(null));
+		self::assertTrue((new AdminAccess($this->createStub(\GT\Database\Query\QueryCollection::class), strtoupper($this->user->email)))->allows($this->user));
 	}
 
 	public function testAccessDeniedPageUsesLoginBrandingAndStartsClientHandshake():void {
@@ -340,7 +342,7 @@ class LoginDesignTest extends TestCase {
 		$this->login->setState(LoginState::LOGGED_IN);
 		$request = $this->createStub(Request::class);
 		$request->method("getMethod")->willReturn("POST");
-		$request->method("getUri")->willReturn(new \Gt\Http\Uri("https://login.example.test/login/access-denied/"));
+		$request->method("getUri")->willReturn(new \GT\Http\Uri("https://login.example.test/login/access-denied/"));
 		$this->redirects("/login/", fn() => $this->call("access-denied", "do_switch_account", $request, $this->login, $this->response));
 		self::assertNull($this->login->getEmail());
 		self::assertSame(LoginState::NOT_LOGGED_IN, $this->login->getState());
@@ -354,7 +356,7 @@ class LoginDesignTest extends TestCase {
 		foreach([["GET", "/login/access-denied/"], ["POST", "/admin/"]] as [$method, $path]) {
 			$request = $this->createStub(Request::class);
 			$request->method("getMethod")->willReturn($method);
-			$request->method("getUri")->willReturn(new \Gt\Http\Uri("https://login.example.test$path"));
+			$request->method("getUri")->willReturn(new \GT\Http\Uri("https://login.example.test$path"));
 			$this->call("access-denied", "do_switch_account", $request, $this->login, $this->response);
 			self::assertSame($this->user->email, $this->login->getEmail());
 			self::assertSame(LoginState::LOGGED_IN, $this->login->getState());
@@ -372,7 +374,7 @@ class LoginDesignTest extends TestCase {
 		$this->response->expects(self::never())->method("redirect");
 		$request = $this->createMock(Request::class);
 		$request->expects(self::atLeastOnce())->method("getHeaderLine")->with("X-Authwave-Flux")->willReturn("1");
-		$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class)), $request, $this->createStub(ApplicationRepository::class));
+		$this->call("success", "go", new Input([]), $this->response, $view->binder, $this->login, $this->users, $this->session, $this->audit, new AdminAccess($this->createStub(\GT\Database\Query\QueryCollection::class)), $request, $this->createStub(ApplicationRepository::class), $this->createStub(\GT\Cookie\CookieHandler::class));
 		$link = $view->document->querySelector("a[data-client-redirect]");
 		self::assertNotNull($link);
 		self::assertStringStartsWith("https://client.example.test/callback?AUTHWAVE_RESPONSE_DATA=", $link->getAttribute("href"));
@@ -385,10 +387,10 @@ class LoginDesignTest extends TestCase {
 		$this->session->expects(self::once())->method("kill");
 		$request = $this->createStub(Request::class);
 		$request->method("getMethod")->willReturn("POST");
-		$request->method("getUri")->willReturn(new \Gt\Http\Uri("https://login.example.test/admin/logout/"));
-		$config = $this->createMock(\Gt\Config\Config::class);
+		$request->method("getUri")->willReturn(new \GT\Http\Uri("https://login.example.test/admin/logout/"));
+		$config = $this->createMock(\GT\Config\Config::class);
 		$config->expects(self::atLeastOnce())->method("getString")->with("authwave.logout_redirect")->willReturn("https://public.example.test/");
-		$this->redirects("https://public.example.test/", fn() => $this->callFile("page/admin/logout.php", "do_logout", new \Authwave\Admin\Onboarding\AdminArea($this->login, $this->users, new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), $this->user->email), $this->createStub(\Authwave\Model\ApplicationRepository::class)), $request, $this->response, $this->session, $config));
+		$this->redirects("https://public.example.test/", fn() => $this->callFile("page/admin/logout.php", "do_logout", new \Authwave\Admin\Onboarding\AdminArea($this->login, $this->users, new AdminAccess($this->createStub(\GT\Database\Query\QueryCollection::class), $this->user->email), $this->createStub(\Authwave\Model\ApplicationRepository::class)), $request, $this->response, $this->session, $config, $this->createStub(\GT\Cookie\CookieHandler::class)));
 		self::assertNull($this->login->getEmail());
 		self::assertSame(LoginState::NOT_LOGGED_IN, $this->login->getState());
 	}
@@ -402,8 +404,8 @@ class LoginDesignTest extends TestCase {
 		foreach([["GET", "/admin/logout/"], ["POST", "/admin/security/"]] as [$method, $path]) {
 			$request = $this->createStub(Request::class);
 			$request->method("getMethod")->willReturn($method);
-			$request->method("getUri")->willReturn(new \Gt\Http\Uri("https://login.example.test$path"));
-			$this->callFile("page/admin/logout.php", "do_logout", new \Authwave\Admin\Onboarding\AdminArea($this->login, $this->users, new AdminAccess($this->createStub(\Gt\Database\Query\QueryCollection::class), $this->user->email), $this->createStub(\Authwave\Model\ApplicationRepository::class)), $request, $this->response, $this->session, new \Gt\Config\Config());
+			$request->method("getUri")->willReturn(new \GT\Http\Uri("https://login.example.test$path"));
+			$this->callFile("page/admin/logout.php", "do_logout", new \Authwave\Admin\Onboarding\AdminArea($this->login, $this->users, new AdminAccess($this->createStub(\GT\Database\Query\QueryCollection::class), $this->user->email), $this->createStub(\Authwave\Model\ApplicationRepository::class)), $request, $this->response, $this->session, new \GT\Config\Config(), $this->createStub(\GT\Cookie\CookieHandler::class));
 			self::assertSame(LoginState::LOGGED_IN, $this->login->getState());
 		}
 	}
@@ -413,7 +415,7 @@ class LoginDesignTest extends TestCase {
 		$apps = $this->createMock(\Authwave\Model\ApplicationRepository::class);
 		$apps->expects(self::never())->method("getDeploymentByProviderHost");
 		$this->response->expects(self::never())->method("redirect");
-		$this->callFile("page/_common.php", "go", $apps, new \Gt\Http\Uri("https://login.example.test/logged-out/"), new LoginSession(new SessionStore("empty", $this->session), $this->audit, $this->anonymous), $this->session, $this->response, new \Gt\Config\Config(), new \GT\Dom\HTMLDocument("<html><body></body></html>"), $this->createStub(\Authwave\Security\Audit::class), new \Authwave\Security\AnonUser("visitor"));
+		$this->callFile("page/_common.php", "go", $apps, $this->createStub(UserRepository::class), new \GT\Http\Uri("https://login.example.test/logged-out/"), new LoginSession(new SessionStore("empty", $this->session), $this->audit, $this->anonymous), $this->session, $this->response, new \GT\Config\Config(), new \GT\Dom\HTMLDocument("<html><body></body></html>"), new \Authwave\Security\AnonUser("visitor"), $this->createStub(\GT\Cookie\CookieHandler::class));
 	}
 
 	public function testThemeSelectionStartsFromTheSharedBrightMarkup():void {

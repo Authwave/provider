@@ -9,7 +9,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use GT\Dom\HTMLDocument;
-use Gt\Http\Uri;
+use GT\Http\Uri;
 
 class SudoTest extends TestCase {
 	private function actor(string $id = "admin"):User {
@@ -24,6 +24,73 @@ class SudoTest extends TestCase {
 
 	private function fieldDocument():HTMLDocument {
 		return new HTMLDocument('<html><body><details id="deployment-one"><form><label class="existing"><span>API key</span><input name="apiKey" readonly value="DEPLOYMENT_one_abcdefgh" data-sudo="key" data-copy></label></form></details></body></html>');
+	}
+
+	public function testRenew_activityKeepsSudoActiveForAnHourThenIdleExpiryRequiresAuthentication():void {
+		$now = 100;
+		$users = $this->createMock(UserRepository::class);
+		$users->expects(self::once())->method("checkLogin")->willReturn(true);
+		$sut = new Sudo($this->store(), $users, $this->createStub(Audit::class), 60,
+			function()use(&$now):int { return $now; });
+		$actor = $this->actor();
+		$sut->request($actor, "key", "/admin/", "copy");
+		$sut->authenticate($actor, "password");
+
+		for($now = 130; $now <= 3700; $now += 30) {
+			self::assertSame($now + 60, $sut->renew($actor));
+		}
+
+		$now = 3760;
+		self::assertSame(0, $sut->renew($actor));
+		self::assertSame(0, $sut->expiresAt($actor));
+	}
+
+	#[DataProvider("inactiveRenewals")]
+	public function testRenew_cannotEnableExpiredDisabledOrAnotherActorsSession(string $state):void {
+		$now = 100;
+		$users = $this->createStub(UserRepository::class);
+		$users->method("checkLogin")->willReturn(true);
+		$audit = $this->createMock(Audit::class);
+		$audit->expects($state === "expired" ? self::once() : self::never())->method("create")
+			->with(Action::SUDO_EXPIRED, null, self::anything());
+		$store = $this->store();
+		$store->set("actor", "admin");
+		$store->set("until", 160);
+		$sut = new Sudo($store, $users, $audit, clock: function()use(&$now):int { return $now; });
+		$actor = $this->actor();
+
+		if($state === "expired") {
+			$now = 160;
+		}
+		elseif($state === "disabled") {
+			$store->remove("until");
+		}
+		else {
+			$actor = $this->actor("other");
+		}
+
+		self::assertSame(0, $sut->renew($actor));
+		self::assertSame(0, $sut->renew($actor));
+	}
+
+	public static function inactiveRenewals():iterable {
+		yield ["expired"];
+		yield ["disabled"];
+		yield ["other actor"];
+	}
+
+	public function testRequest_deletionReturnsToTheUserWithoutPerformingTheAction():void {
+		$users = $this->createStub(UserRepository::class);
+		$users->method("checkLogin")->willReturn(true);
+		$sut = new Sudo($this->store(), $users, $this->createStub(Audit::class), clock: fn():int => 100);
+		$actor = $this->actor();
+		$return = "/admin/users/?application=app&user=user-one";
+
+		self::assertSame("/login/sudo/", (string)$sut->request($actor, "user-one", $return, "delete"));
+		self::assertTrue($sut->authenticate($actor, "password"));
+		self::assertSame($return, (string)$sut->destination($actor));
+		self::assertFalse($sut->pending($actor));
+		self::assertSame(160, $sut->expiresAt($actor));
 	}
 
 	public function testApply_masksBeforeRenderingAndAddsNativeViewOutsideLabel():void {
@@ -72,6 +139,37 @@ class SudoTest extends TestCase {
 		self::assertSame("••••••", $document->querySelector("output")->textContent);
 		self::assertSame("private", $document->querySelector("output")->id);
 		self::assertSame("private", $document->querySelector("button")->getAttribute("data-sudo-view"));
+	}
+
+	public function testApply_emailAddressesRemainVisibleThroughoutSudoAndAreMaskedAfterExpiry():void {
+		$now = 100;
+		$users = $this->createStub(UserRepository::class);
+		$users->method("checkLogin")->willReturn(true);
+		$sut = new Sudo($this->store(), $users, $this->createStub(Audit::class),
+			clock: function()use(&$now):int {
+				return $now;
+			});
+		$actor = $this->actor();
+		$html = '<html><body><p><span id="one" data-sudo="email">alice@example.test</span></p><p><span id="two" data-sudo="email">bob@example.test</span></p></body></html>';
+		$sut->request($actor, "one", "/admin/users/", "view");
+		$sut->authenticate($actor, "password");
+
+		$document = new HTMLDocument($html);
+		$sut->apply($document, $actor, new Uri("/admin/users/"));
+
+		self::assertSame("alice@example.test", $document->getElementById("one")->textContent);
+		self::assertSame("bob@example.test", $document->getElementById("two")->textContent);
+		self::assertSame("al•••@ex••••••••••", $document->getElementById("one")->getAttribute("data-sudo-enabled"));
+		self::assertSame("View email address", $document->querySelector("button")->getAttribute("aria-label"));
+		self::assertSame("span", $document->querySelector(".sudo-control")->tagName);
+
+		$now = 161;
+		$expired = new HTMLDocument($html);
+		$sut->apply($expired, $actor, new Uri("/admin/users/"));
+
+		self::assertSame("al•••@ex••••••••••", $expired->getElementById("one")->textContent);
+		self::assertStringNotContainsString("alice@example.test", $expired->documentElement->outerHTML);
+		self::assertStringNotContainsString("bob@example.test", $expired->documentElement->outerHTML);
 	}
 
 	#[DataProvider("returnActions")]
@@ -329,7 +427,7 @@ class SudoTest extends TestCase {
 		yield ["", "view"];
 		yield ["field[0]", "view"];
 		yield [str_repeat("a", 201), "view"];
-		yield ["key", "delete"];
+		yield ["key", "unknown"];
 	}
 
 	public function testConstruct_rejectsNonPositiveDuration():void {
@@ -364,5 +462,13 @@ class SudoTest extends TestCase {
 		yield ["abc", "", "•••"];
 		yield ["é😀", "unknown", "••"];
 		yield ["", "key", ""];
+		yield ["alice@example.test", "email", "al•••@ex••••••••••"];
+		yield ["a@b", "email", "a@b"];
+		yield ["ab@cd", "email", "ab@cd"];
+		yield ["é😀a@é😀b", "email", "é😀•@é😀•"];
+		yield ["invalid", "email", "•••••••"];
+		yield ["a@b@c", "email", "•••••"];
+		yield ["@host", "email", "•••••"];
+		yield ["", "email", ""];
 	}
 }

@@ -28,7 +28,7 @@ on
 where
 	sentAt is null
 and
-	scheduledToSendAt <= now()
+	scheduledToSendAt <= CURRENT_TIMESTAMP
 
 order by
-	id
+	Email.id

@@ -5,6 +5,7 @@ insert into UserAuthCode (
 	createdAt,
 	hash
 )
+
 values (
 	:id,
 	:userId,

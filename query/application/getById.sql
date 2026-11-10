@@ -14,13 +14,15 @@ left join
 	ApplicationTheme as light_theme
 on
 	light_theme.applicationId = Application.id
-	and light_theme.colourScheme = 'light'
+and
+	light_theme.colourScheme = 'light'
 
 left join
 	ApplicationTheme as dark_theme
 on
 	dark_theme.applicationId = Application.id
-	and dark_theme.colourScheme = 'dark'
+and
+	dark_theme.colourScheme = 'dark'
 
 where
 	Application.id = ?

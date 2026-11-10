@@ -1,5 +1,6 @@
 select
 	code
+
 from
 	UserAuthCode
 
@@ -11,4 +12,5 @@ and
 order by
 	createdAt desc
 
-limit 1
+limit
+	1

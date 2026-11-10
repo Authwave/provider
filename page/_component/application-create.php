@@ -6,8 +6,8 @@ use Authwave\Security\{Audit, Action};
 use Authwave\Session\FlashSession;
 use GT\DomTemplate\Binder;
 use GT\Input\Input;
-use Gt\Http\Request;
-use Gt\Http\Response;
+use GT\Http\Request;
+use GT\Http\Response;
 
 function go(Binder $binder, FlashSession $flash, Request $request):void {
 	if($request->getMethod() !== "GET") {

@@ -2,6 +2,8 @@
 namespace Authwave;
 
 use Authwave\Model\{Application, ApplicationRepository};
+use Authwave\Notification\UserNotifications;
+use GT\Fetch\Http;
 use Authwave\Admin\Application\ApplicationCatalogue;
 use Authwave\Admin\Application\ApplicationSettingsAction;
 use GT\Routing\Path\DynamicPath;
@@ -19,10 +21,29 @@ use Authwave\Security\DomainVerification;
 use Authwave\User\UserRepository;
 use GT\Database\Database;
 use GT\Input\Input;
+use GT\Cookie\CookieHandler;
+use Psr\Http\Message\ServerRequestInterface;
 use GT\Session\Session;
 use GT\WebEngine\Service\DefaultServiceLoader;
 
 class ServiceLoader extends DefaultServiceLoader {
+	public function loadHttp():Http {
+		return new Http([
+			CURLOPT_CONNECTTIMEOUT => 3,
+			CURLOPT_TIMEOUT => 10,
+			CURLOPT_FOLLOWLOCATION => false,
+			CURLOPT_PROTOCOLS => $this->config->getBool("app.production")
+				? CURLPROTO_HTTPS : CURLPROTO_HTTP | CURLPROTO_HTTPS,
+		]);
+	}
+
+	public function loadUserNotifications():UserNotifications {
+		return new UserNotifications($this->container->get(Database::class),
+			$this->container->get(Http::class), $this->container->get(Audit::class),
+			$this->container->get(ApplicationRepository::class),
+			$this->container->get(UserRepository::class));
+	}
+
 	public function loadDomainVerification():DomainVerification {
 		return new DomainVerification($this->config->getString("authwave.domain_confirmation")
 			?? DomainVerification::DEFAULT_CONFIRMATION);
@@ -121,12 +142,19 @@ class ServiceLoader extends DefaultServiceLoader {
 			$this->container->get(Audit::class), $this->container->get(DomainVerification::class));
 	}
 
+	public function loadCookieHandler():CookieHandler {
+		$request = $this->container->get(ServerRequestInterface::class);
+		return new CookieHandler($request->getCookieParams());
+	}
+
 	public function loadUserRepo():UserRepository {
 		return new UserRepository(
-			$this->container->get(Database::class)->queryCollection("user"),
+			$this->container->get(Database::class),
 			$this->container->get(ApplicationRepository::class),
 			$this->container->get(EmailRepository::class),
 			$this->container->get(Audit::class),
+			$this->config->getInt("authwave.client_session_duration")
+				?? UserRepository::DEFAULT_SESSION_DURATION,
 		);
 	}
 

@@ -1,6 +1,7 @@
 // Native modal UI; unsupported browsers retain the server confirmation form.
 let pending;
 const approvedForms = new WeakSet();
+let expiryTimer;
 
 document.addEventListener("submit", event => {
 	const button = event.submitter;
@@ -14,13 +15,36 @@ document.addEventListener("submit", event => {
 	event.stopImmediatePropagation();
 	if(pending) return;
 	pending = {form, button, identifier: button.dataset.confirmDelete};
-	dialog.querySelector("h2").textContent = `Confirm deleting ${button.dataset.deleteName}`;
+	let name = button.dataset.deleteName;
+
+	if(button.dataset.deleteNameFrom) {
+		name = document.getElementById(button.dataset.deleteNameFrom).textContent;
+	}
+
+	dialog.querySelector("h2").textContent = `Confirm deleting ${name}`;
+
+	if(button.hasAttribute("data-sudo-required")) {
+		const remaining = Number(button.dataset.sudoUntil) * 1000 - Date.now();
+		const expire = () => {
+			const remaining = Number(button.dataset.sudoUntil) * 1000 - Date.now();
+
+			if(remaining <= 0) {
+				dialog.close("cancel");
+				return;
+			}
+
+			expiryTimer = setTimeout(expire, remaining);
+		};
+		expiryTimer = setTimeout(expire, Math.max(0, remaining));
+	}
 	dialog.returnValue = "cancel";
 	dialog.showModal();
 }, {capture: true});
 
 document.addEventListener("close", event => {
 	if(event.target.id !== "delete-dialog" || !pending) return;
+	clearTimeout(expiryTimer);
+	event.target.querySelector("h2").textContent = "";
 	const {form, button, identifier} = pending;
 	pending = null;
 	if(!form.isConnected || !button.isConnected || button.disabled) return;

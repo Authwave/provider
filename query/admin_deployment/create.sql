@@ -1,3 +1,19 @@
-insert into ApplicationDeployment
-(id, applicationId, title, providerHost, clientHost, clientLoginPath, secret)
-values (?, ?, ?, ?, ?, ?, ?)
+insert into ApplicationDeployment (
+	id,
+	applicationId,
+	title,
+	providerHost,
+	clientHost,
+	clientLoginPath,
+	secret
+)
+
+values (
+	?,
+	?,
+	?,
+	?,
+	?,
+	?,
+	?
+)

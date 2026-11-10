@@ -19,6 +19,16 @@ body.dir--admin {
 		--theme-button-text: var(--theme-color-danger);
 	}
 
+	.conditional-fields:not([hidden]) {
+		display: contents;
+	}
+
+	@media (scripting: enabled) {
+		.authentication-options {
+			display: none;
+		}
+	}
+
 	.delete-dialog {
 		@extend %o-dialog;
 	}
@@ -85,6 +95,12 @@ body.dir--admin {
 			&:not(:has(> .badge:not([hidden]))) {
 				display: none;
 			}
+		}
+
+		.production-badge {
+			--theme-badge-text: var(--theme-color-success);
+			--theme-badge-border: var(--theme-color-success);
+			--theme-badge-background: color-mix(in srgb, var(--theme-color-success) 10%, transparent);
 		}
 
 		.new-deployment-icon {
@@ -233,6 +249,40 @@ body.dir--admin {
 		align-items: end;
 	}
 
+	#all-users {
+		container: users / inline-size;
+	}
+
+	.user-filters {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+
+		> label:first-of-type, > .actions {
+			grid-column: 1 / -1;
+		}
+
+		> .actions > button {
+			inline-size: 100%;
+		}
+	}
+
+	@container users (min-width: 38rem) {
+		.user-filters {
+			grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
+
+			> label:first-of-type {
+				grid-column: auto;
+			}
+
+			> .actions {
+				justify-content: end;
+
+				> button {
+					inline-size: auto;
+				}
+			}
+		}
+	}
+
 	.settings-panel {
 		@extend %o-settings-panel;
 		inline-size: 100%;
@@ -304,6 +354,27 @@ body.dir--admin {
 		}
 	}
 
+	.current-users {
+		--current-user-row-size: calc(2lh + var(--theme-space-1) + 2 * var(--theme-space-3) + 1px);
+		max-block-size: calc(5 * var(--current-user-row-size));
+		overflow-y: auto;
+		scrollbar-gutter: stable;
+
+		> li {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-rows: 1lh 1lh;
+			gap: var(--theme-space-1);
+			block-size: var(--current-user-row-size);
+		}
+
+		[data-sudo="email"], > li > small {
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+	}
+
 	.record-list {
 		@extend %p-record-list;
 	}
@@ -311,6 +382,10 @@ body.dir--admin {
 	.record-table {
 		@extend %p-record-table;
 		@include flair.record-table-columns;
+
+		button {
+			white-space: nowrap;
+		}
 
 		> tbody > tr:nth-child(even) {
 			background: color-mix(in srgb,
@@ -368,7 +443,7 @@ body.dir--admin {
 		}
 	}
 
-	.scope-switcher label, .filter-grid label, .settings-panel .form-fields label {
+	.scope-switcher label, .filter-grid label, .settings-panel .form-fields label:where(:not(.checkbox-field, .choice)) {
 		@extend %o-labelled-control;
 	}
 
@@ -386,17 +461,7 @@ body.dir--admin {
 	}
 
 	.checkbox-field {
-		display: flex;
-		gap: var(--theme-space-2);
-		align-items: center;
-
-		input {
-			flex-shrink: 0;
-		}
-
-		span {
-			margin: 0;
-		}
+		@extend %o-choice-field;
 	}
 
 	input, select, textarea {
@@ -515,4 +580,48 @@ body.dir--admin {
 	0%, 100% { translate: 0; }
 	25%, 75% { translate: -.2rem; }
 	50% { translate: .2rem; }
+}
+
+body.dir--admin {
+	.record-table > tbody > tr.sync-error {
+		background: color-mix(in srgb, var(--theme-color-danger) 10%, var(--theme-color-surface));
+	}
+
+	.user-row-controls, .user-details-heading {
+		display: flex;
+		align-items: center;
+		gap: var(--theme-space-2);
+	}
+
+	.user-row-controls { justify-content: end; }
+	.sync-error-icon, .user-delete { color: var(--theme-color-danger); }
+
+	.user-details {
+		@extend %o-popover;
+		--theme-popover-width: 42rem;
+		max-block-size: calc(100dvh - 2rem);
+		overflow-y: auto;
+		text-align: start;
+		white-space: normal;
+
+		&::backdrop { background: rgb(0 0 0 / 50%); }
+		.user-details-heading { justify-content: space-between; }
+		h2, h3, p { margin: 0; }
+		.user-facts {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr);
+			gap: var(--theme-space-2) var(--theme-space-4);
+			margin: 0;
+			dt { color: var(--theme-color-muted); }
+			dd { margin: 0 0 var(--theme-space-2); overflow-wrap: anywhere; }
+
+			@media(min-width: 36rem) {
+				grid-template-columns: max-content minmax(0, 1fr);
+				dd { margin: 0; }
+			}
+		}
+		.user-login-history { max-block-size: 12rem; overflow-y: auto; }
+		.user-sync-error { @extend %o-notice-danger; }
+		.actions { justify-content: end; }
+	}
 }

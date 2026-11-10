@@ -1,1 +1,9 @@
-insert into Application (id, name) values (?, ?)
+insert into Application (
+	id,
+	name
+)
+
+values (
+	?,
+	?
+)

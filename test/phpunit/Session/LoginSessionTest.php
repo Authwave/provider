@@ -7,8 +7,8 @@ use Authwave\Security\Audit;
 use Authwave\Security\AnonUser;
 use Authwave\Session\LoginSession;
 use Authwave\User\LoginState;
-use Gt\Session\SessionStore;
-use Gt\Session\Session;
+use GT\Session\SessionStore;
+use GT\Session\Session;
 use PHPUnit\Framework\TestCase;
 
 class LoginSessionTest extends TestCase {

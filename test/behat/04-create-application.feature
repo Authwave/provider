@@ -39,7 +39,8 @@ Feature: Creating real applications
   Scenario: Markup in an application name is displayed as text
     When I fill in "Application name" with "<strong>My website</strong>"
     And I press "Create application"
-    Then I should see "<strong>My website</strong>"
+    Then I should be on the settings page for application "<strong>My website</strong>"
+    And I should see "<strong>My website</strong>"
     And no application name markup should be interpreted as HTML
 
   Scenario Outline: Malformed creation requests are rejected and audited

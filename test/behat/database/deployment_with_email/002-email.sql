@@ -1,1 +1,1 @@
-insert into Email values ('deployment-email', 'managed-development');
+insert into Email (id, deploymentId) values ('deployment-email', 'managed-development');

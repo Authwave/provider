@@ -9,11 +9,11 @@ use Authwave\Session\LoginSession;
 use Authwave\User\LoginState;
 use Authwave\Model\User;
 use Authwave\User\UserRepository;
-use Gt\Config\Config;
-use Gt\Http\Request;
-use Gt\Http\Response;
-use Gt\Http\Uri;
-use Gt\Session\Session;
+use GT\Config\Config;
+use GT\Http\Request;
+use GT\Http\Response;
+use GT\Http\Uri;
+use GT\Session\Session;
 use PHPUnit\Framework\TestCase;
 
 class LogoutTest extends TestCase {
@@ -41,11 +41,11 @@ class LogoutTest extends TestCase {
 		$session->expects(self::once())->method("kill");
 		$response = $this->createMock(Response::class);
 		$response->expects(self::once())->method("redirect")->with("/logged-out/");
-		$container = new \Gt\ServiceContainer\Container();
+		$container = new \GT\ServiceContainer\Container();
 		$area = new \Authwave\Admin\Onboarding\AdminArea($login, $users, $access,
 			$this->createStub(\Authwave\Model\ApplicationRepository::class));
-		$container->set($request, $response, $session, new Config(), $area);
-		$executor = new \GT\WebEngine\Logic\LogicExecutor("Authwave", new \Gt\ServiceContainer\Injector($container));
+		$container->set($request, $response, $session, new Config(), $area, $this->createStub(\GT\Cookie\CookieHandler::class));
+		$executor = new \GT\WebEngine\Logic\LogicExecutor("Authwave", new \GT\ServiceContainer\Injector($container));
 		$assembly = new \GT\Routing\Assembly();
 		$assembly->add($file);
 		$invoked = iterator_to_array($executor->invoke($assembly, "do_logout"));

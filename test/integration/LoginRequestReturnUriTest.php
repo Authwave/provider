@@ -11,10 +11,10 @@ use Authwave\Session\LoginSession;
 use GT\Cipher\InitVector;
 use GT\Cipher\Key;
 use GT\Cipher\Message\PlainTextMessage;
-use Gt\Http\Response;
-use Gt\Http\Uri;
-use Gt\Session\Session;
-use Gt\Session\SessionStore;
+use GT\Http\Response;
+use GT\Http\Uri;
+use GT\Session\Session;
+use GT\Session\SessionStore;
 use PHPUnit\Framework\TestCase;
 
 class LoginRequestReturnUriTest extends TestCase {
@@ -45,7 +45,7 @@ class LoginRequestReturnUriTest extends TestCase {
 		$response = $this->createMock(Response::class);
 		$response->expects(self::once())->method("redirect")->with("/");
 
-		\go($apps, new Uri("https://login.example.test/?" . http_build_query($query)), $login, $session, $response, new \Gt\Config\Config(), new \GT\Dom\HTMLDocument("<html><body></body></html>"), $this->createStub(\Authwave\Security\Audit::class), new \Authwave\Security\AnonUser("visitor"));
+		\go($apps, $this->createStub(\Authwave\User\UserRepository::class), new Uri("https://login.example.test/?" . http_build_query($query)), $login, $session, $response, new \GT\Config\Config(), new \GT\Dom\HTMLDocument("<html><body></body></html>"), new \Authwave\Security\AnonUser("visitor"), $this->createStub(\GT\Cookie\CookieHandler::class));
 
 		self::assertSame($expected, $login->getDataKey("returnUri"));
 		self::assertSame($deployment, $login->getDeployment());

@@ -2,7 +2,7 @@
 use Authwave\Admin\Application\ApplicationSettingsAction;
 use GT\DomTemplate\Binder;
 use GT\Input\Input;
-use Gt\Http\{Request, Response};
+use GT\Http\{Request, Response};
 
 function go(Binder $binder, ApplicationSettingsAction $action, Input $input):void {
 	$identifier = $input->get("confirm-delete", Input::DATA_QUERYSTRING);

@@ -1,8 +1,8 @@
 <?php
 use Authwave\Session\LoginSession;
 use Authwave\User\LoginState;
-use Gt\Http\Request;
-use Gt\Http\Response;
+use GT\Http\Request;
+use GT\Http\Response;
 
 function go(
 	LoginSession $loginSession,

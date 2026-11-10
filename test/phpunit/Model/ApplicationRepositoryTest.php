@@ -6,19 +6,19 @@ use Authwave\Model\ApplicationRepository;
 use Authwave\Model\Application;
 use Authwave\Model\ApplicationDeployment;
 use Authwave\Model\User;
-use Gt\Database\Query\QueryCollection;
-use Gt\Database\Result\Row;
+use GT\Database\Query\QueryCollection;
+use GT\Database\Result\Row;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use UnexpectedValueException;
-use Gt\Database\Database;
+use GT\Database\Database;
 use Authwave\Security\Audit;
-use Gt\Http\Uri;
+use GT\Http\Uri;
 
 class ApplicationRepositoryTest extends TestCase {
-	private function database(QueryCollection $queries):\Gt\Database\Database {
-		$database = $this->createStub(\Gt\Database\Database::class);
+	private function database(QueryCollection $queries):\GT\Database\Database {
+		$database = $this->createStub(\GT\Database\Database::class);
 		$database->method("queryCollection")->willReturn($queries);
 		return $database;
 	}

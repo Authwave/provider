@@ -4,8 +4,8 @@ namespace Authwave\Test\Security;
 use Authwave\Security\AdminAccess;
 use Authwave\Model\User;
 use Authwave\Model\{Application, ApplicationDeployment};
-use Gt\Database\Query\QueryCollection;
-use Gt\Database\Result\Row;
+use GT\Database\Query\QueryCollection;
+use GT\Database\Result\Row;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

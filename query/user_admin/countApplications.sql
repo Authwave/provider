@@ -1,3 +1,8 @@
-select count(*) as applicationCount
-from UserAdmin
-where userId = ?
+select
+	count(*) as applicationCount
+
+from
+	UserAdmin
+
+where
+	userId = ?

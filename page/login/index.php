@@ -3,11 +3,11 @@ use Authwave\Session\LoginSession;
 use Authwave\Security\Action;
 use Authwave\Security\AnonUser;
 use Authwave\Security\Audit;
-use Gt\DomTemplate\Binder;
-use Gt\Http\Request;
-use Gt\Http\Response;
-use Gt\Input\Input;
-use Gt\Session\Session;
+use GT\DomTemplate\Binder;
+use GT\Http\Request;
+use GT\Http\Response;
+use GT\Input\Input;
+use GT\Session\Session;
 
 function go(
 	Input $input,

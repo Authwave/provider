@@ -41,6 +41,23 @@ readonly class EmailRepository {
 		string $fromName = self::DEFAULT_EMAIL_FROM_NAME,
 		?DateTimeInterface $when = null,
 	):string {
+		$emailId = $this->queue($user, $deployment, $toAddress, $templateName,
+			$kvp, $fromAddress, $fromName, $when);
+		$this->sendScheduled();
+		return $emailId;
+	}
+
+	/** @param array<string, string> $kvp */
+	private function queue(
+		User|AnonUser $user,
+		ApplicationDeployment $deployment,
+		string $toAddress,
+		string $templateName,
+		array $kvp = [],
+		string $fromAddress = self::DEFAULT_EMAIL_FROM_ADDRESS,
+		string $fromName = self::DEFAULT_EMAIL_FROM_NAME,
+		?DateTimeInterface $when = null,
+	):string {
 		$rendered = (new EmailTemplate())->render($templateName, $kvp);
 		$when ??= new DateTime();
 
@@ -68,10 +85,22 @@ readonly class EmailRepository {
 			actor: $user,
 		);
 
-// TODO: Move this to a background task.
-		$this->sendScheduled();
-
 		return $emailId;
+	}
+
+	public function queueLoginInstructions(User $actor, User $recipient):string {
+		$deployment = $recipient->deployment;
+		$url = (string)$deployment->getClientReturnUri();
+
+		return $this->queue($actor, $deployment, $recipient->email, "loginInstructions.md", [
+			"applicationName" => $deployment->application->name,
+			"email" => $recipient->email,
+			"loginUrl" => $url,
+			"authenticationInstructions" => $recipient->hash === null
+				? "Choose the email security code option. We will send a code to your inbox."
+				: "Use the password arranged with your administrator, or choose an email security code.",
+		], $deployment->application->emailSendFrom ?? self::DEFAULT_EMAIL_FROM_ADDRESS,
+			$deployment->application->name);
 	}
 
 	public function scheduleAuthCode(

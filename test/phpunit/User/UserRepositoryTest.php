@@ -10,12 +10,19 @@ use Authwave\User\UserRepository;
 use Authwave\Email\EmailRepository;
 use Authwave\Model\Application;
 use Authwave\Model\ApplicationDeployment;
-use Gt\Database\Query\QueryCollection;
+use GT\Database\Query\QueryCollection;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Gt\Database\Result\Row;
+use GT\Database\Result\Row;
 
 class UserRepositoryTest extends TestCase {
+	public function testConstruct_rejectsNonPositiveSessionDuration():void {
+		$this->expectException(\InvalidArgumentException::class);
+		$sut = new UserRepository($this->database($this->createStub(QueryCollection::class)),
+			$this->createStub(ApplicationRepository::class), $this->createStub(EmailRepository::class),
+			$this->createStub(Audit::class), sessionDuration: 0);
+	}
+
 	#[DataProvider("passwordAttempts")]
 	public function testCheckLogin_passwordAttemptsAreAuditedWithoutLoggingCredentials(
 		string $password, bool $success, Action $action,
@@ -26,7 +33,7 @@ class UserRepositoryTest extends TestCase {
 		$query->method("fetchString")->willReturn(password_hash("correct-password", PASSWORD_DEFAULT));
 		$audit = $this->createMock(Audit::class);
 		$audit->expects(self::once())->method("create")->with($action, ["deploymentId" => "deployment"], $user);
-		$sut = new UserRepository($query, $this->createStub(ApplicationRepository::class),
+		$sut = new UserRepository($this->database($query), $this->createStub(ApplicationRepository::class),
 			$this->createStub(EmailRepository::class), $audit);
 		self::assertSame($success, $sut->checkLogin($user, $password));
 	}
@@ -55,7 +62,7 @@ class UserRepositoryTest extends TestCase {
 		$query->expects($success ? self::once() : self::never())->method("update");
 		$query->expects($success ? self::once() : self::never())->method("delete");
 		$row = $this->createStub(Row::class);
-		$row->method("getString")->willReturnCallback(fn($key) => ["userId" => "user", "applicationDeploymentId" => "deployment", "email" => "user@example.test", "hash" => null][$key]);
+		$row->method("getString")->willReturnCallback(fn($key) => ["userId" => "user", "applicationDeploymentId" => "deployment", "email" => "user@example.test", "hash" => null, "createdAt" => null, "clientNotificationAction" => null][$key]);
 		$query->method("fetch")->willReturn($row);
 		$applications = $this->createStub(ApplicationRepository::class);
 		$applications->method("getDeploymentById")->willReturn($deployment);
@@ -72,7 +79,7 @@ class UserRepositoryTest extends TestCase {
 					self::assertNull($detail);
 				}
 			});
-		$sut = new UserRepository($query, $applications, $this->createStub(EmailRepository::class), $audit);
+		$sut = new UserRepository($this->database($query), $applications, $this->createStub(EmailRepository::class), $audit);
 		self::assertSame($success, $sut->checkAuthCode($user, $submitted));
 		self::assertSame($success ? Action::SECURITY_CODE_ACCEPTED : Action::SECURITY_CODE_REJECTED, $actions[0]);
 		if($changed) {
@@ -99,7 +106,7 @@ class UserRepositoryTest extends TestCase {
 			]));
 		$applications = $this->createStub(ApplicationRepository::class);
 		$applications->method("getDeploymentById")->willReturn($deployment);
-		$sut = new UserRepository($query, $applications, $this->createStub(EmailRepository::class), $this->createStub(Audit::class));
+		$sut = new UserRepository($this->database($query), $applications, $this->createStub(EmailRepository::class), $this->createStub(Audit::class));
 
 		self::assertSame($exists ? "user" : null, $sut->get($deployment, "user@example.test")?->id);
 	}
@@ -120,7 +127,7 @@ class UserRepositoryTest extends TestCase {
 		]));
 		$applications = $this->createMock(ApplicationRepository::class);
 		$applications->expects(self::once())->method("getDeploymentById")->with("deployment")->willReturn($deployment);
-		$sut = new UserRepository($query, $applications, $this->createStub(EmailRepository::class), $this->createStub(Audit::class));
+		$sut = new UserRepository($this->database($query), $applications, $this->createStub(EmailRepository::class), $this->createStub(Audit::class));
 
 		$user = $sut->getById("user");
 
@@ -133,4 +140,90 @@ class UserRepositoryTest extends TestCase {
 		yield "passwordless" => [null];
 		yield "password hash" => ["stored-password-hash"];
 	}
+	#[DataProvider("invalidSearchOptions")]
+	public function testSearch_rejectsUnsupportedOptions(string $sort, int $page):void {
+		$queries = $this->createMock(QueryCollection::class);
+		$queries->expects(self::never())->method("fetchAll");
+		$application = new Application("app", "Website", null);
+		$actor = new User("admin", new ApplicationDeployment("provider", $application, "Provider", "secret", "app.test", "/"),
+			"admin@example.test");
+		$applications = $this->createStub(ApplicationRepository::class);
+		$applications->method("get")->willReturn($application);
+		$sut = new UserRepository($this->database($queries), $applications,
+			$this->createStub(EmailRepository::class), $this->createStub(Audit::class));
+		$this->expectException(\InvalidArgumentException::class);
+
+		$sut->search($actor, "app", sort: $sort, page: $page);
+	}
+
+	public static function invalidSearchOptions():iterable {
+		yield "unsupported sort" => ["password", 1];
+		yield "negative page" => ["email", -1];
+		yield "zero page" => ["email", 0];
+		yield "overflowing page" => ["email", PHP_INT_MAX];
+	}
+
+	public function testCreateForAdministrator_deniesUnassignedApplicationBeforeMutation():void {
+		$application = new Application("app", "Website", null);
+		$actor = new User("admin", new ApplicationDeployment("provider", $application, "Provider", "secret", "app.test", "/"),
+			"admin@example.test");
+		$queries = $this->createMock(QueryCollection::class);
+		$queries->expects(self::never())->method("insert");
+		$applications = $this->createStub(ApplicationRepository::class);
+		$applications->method("get")->willThrowException(new \GT\Http\ResponseStatusException\ClientError\HttpNotFound());
+		$sut = new UserRepository($this->database($queries), $applications,
+			$this->createStub(EmailRepository::class), $this->createStub(Audit::class));
+		$this->expectException(\GT\Http\ResponseStatusException\ClientError\HttpNotFound::class);
+
+		$sut->createForAdministrator($actor, "foreign", "deployment", "new@example.test", null, false);
+	}
+
+	public function testDelete_rejectsAnUnassignedApplicationBeforeDeleting():void {
+		$applications = $this->createStub(ApplicationRepository::class);
+		$applications->method("get")->willThrowException(new \InvalidArgumentException("No access"));
+		$queries = $this->createMock(QueryCollection::class);
+		$queries->expects(self::never())->method("delete");
+		$user = new User("user", new ApplicationDeployment("deployment", new Application("app", "App", null),
+			"Development", "secret", "https://client.test", "/"), "user@example.test");
+		$sut = new UserRepository($this->database($queries), $applications,
+			$this->createStub(EmailRepository::class), $this->createStub(Audit::class));
+		$this->expectExceptionMessage("No access");
+
+		$sut->delete($this->createStub(User::class), $user);
+	}
+
+	public function testRecentLogins_rejectsAnUnassignedApplicationBeforeReadingHistory():void {
+		$applications = $this->createStub(ApplicationRepository::class);
+		$applications->method("get")->willThrowException(new \InvalidArgumentException("No access"));
+		$queries = $this->createMock(QueryCollection::class);
+		$queries->expects(self::never())->method("fetchAll");
+		$user = new User("user", new ApplicationDeployment("deployment", new Application("app", "App", null),
+			"Development", "secret", "https://client.test", "/"), "user@example.test");
+		$sut = new UserRepository($this->database($queries), $applications,
+			$this->createStub(EmailRepository::class), $this->createStub(Audit::class));
+		$this->expectExceptionMessage("No access");
+
+		$sut->recentLogins($user, $user);
+	}
+
+	public function testDeploymentsForEmail_rejectsAnUnassignedApplication():void {
+		$applications = $this->createStub(ApplicationRepository::class);
+		$applications->method("get")->willThrowException(new \InvalidArgumentException("No access"));
+		$queries = $this->createMock(QueryCollection::class);
+		$queries->expects(self::never())->method("fetchAll");
+		$user = new User("user", new ApplicationDeployment("deployment", new Application("app", "App", null),
+			"Development", "secret", "https://client.test", "/"), "user@example.test");
+		$sut = new UserRepository($this->database($queries), $applications,
+			$this->createStub(EmailRepository::class), $this->createStub(Audit::class));
+		$this->expectExceptionMessage("No access");
+
+		$sut->deploymentsForEmail($user, $user);
+	}
+
+	private function database(QueryCollection $queries):\GT\Database\Database {
+		$database = $this->createStub(\GT\Database\Database::class);
+		$database->method("queryCollection")->willReturn($queries);
+		return $database;
+	}
+
 }

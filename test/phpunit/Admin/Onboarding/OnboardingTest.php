@@ -3,7 +3,7 @@
 namespace Authwave\Test\Admin\Onboarding;
 
 use Authwave\Admin\Onboarding\Onboarding;
-use Gt\Http\Uri;
+use GT\Http\Uri;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

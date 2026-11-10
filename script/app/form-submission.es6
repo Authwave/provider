@@ -12,6 +12,9 @@ const lockedForms = new WeakSet();
 document.addEventListener("flux:before-request", event => {
 	const headers = new Headers(event.detail.requestOptions.headers);
 	headers.set("X-Authwave-Flux", "1");
+	if(event.detail.historyState?.action === null) {
+		headers.set("X-Authwave-Background", "1");
+	}
 	event.detail.requestOptions.headers = headers;
 	document.querySelectorAll("form[data-flux].flux-form-waiting").forEach(form => {
 		if(lockedForms.has(form)) {
@@ -66,8 +69,11 @@ export function updateCsrfTokens(incomingDocument) {
 		meta.content = token;
 	}
 
-	for(const input of document.querySelectorAll('input[name="csrf-token"]')) {
-		input.value = token;
+	const incomingTokens = incomingDocument.querySelectorAll('input[name="csrf-token"]');
+	const currentTokens = document.querySelectorAll('input[name="csrf-token"]');
+
+	for(let index = 0; index < Math.min(incomingTokens.length, currentTokens.length); index++) {
+		currentTokens[index].value = incomingTokens[index].value;
 	}
 }
 

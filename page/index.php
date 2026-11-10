@@ -1,5 +1,5 @@
 <?php
-use Gt\Http\Response;
+use GT\Http\Response;
 
 function go_after(Response $response):void {
 	$response->redirect("/login/");

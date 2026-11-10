@@ -53,6 +53,10 @@ function do_disable(Sudo $sudo, AdminArea $area, Input $input, Request $request,
 	$response->redirect($destination);
 }
 
-function go(Response $response):void {
+function go(Response $response, Request $request, Input $input):void {
+	if($request->getMethod() === "GET" && $input->get("activity", Input::DATA_QUERYSTRING) === "1") {
+		return;
+	}
+
 	$response->redirect("/admin/");
 }

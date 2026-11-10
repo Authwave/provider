@@ -3,7 +3,7 @@
 namespace Authwave\Test\Crypto;
 
 use Authwave\Crypto\ProviderUri;
-use Gt\Http\Uri;
+use GT\Http\Uri;
 use PHPUnit\Framework\TestCase;
 
 class ProviderUriTest extends TestCase {

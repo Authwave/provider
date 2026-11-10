@@ -1,4 +1,6 @@
-update User
+update
+	User
+
 inner join
 	UserAuthCode
 on
@@ -8,6 +10,7 @@ and
 
 set
 	User.hash = UserAuthCode.hash
+
 where
 	User.id = ?
 and

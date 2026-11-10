@@ -1,1 +1,7 @@
-delete from ApplicationDeployment where id = ? and applicationId = ?
+delete from
+	ApplicationDeployment
+
+where
+	id = ?
+and
+	applicationId = ?

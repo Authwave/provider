@@ -2,25 +2,39 @@
 use Authwave\Crypto\ProviderUri;
 use Authwave\Session\LoginSession;
 use Authwave\Model\ApplicationRepository;
-use Authwave\Security\{Audit, AnonUser, Action};
+use Authwave\Security\{Audit, AnonUser, Action, Sudo};
+use Authwave\User\LoginState;
 use Authwave\User\UserRepository;
 use Authwave\UI\TableLink;
 use GT\Cipher\EncryptedUri;
 use GT\Cipher\Key;
 use GT\Cipher\InitVector;
 use GT\Config\Config;
-use Gt\Http\ResponseStatusException\ClientError\HttpNotFound;
-use Gt\Http\Response;
-use Gt\Http\ResponseStatusException\HttpBadRequest;
-use Gt\Http\Uri;
-use Gt\Http\Request;
-use Gt\Session\Session;
+use GT\Http\ResponseStatusException\ClientError\HttpNotFound;
+use GT\Http\Response;
+use GT\Http\ResponseStatusException\HttpBadRequest;
+use GT\Http\Uri;
+use GT\Http\Request;
+use GT\Session\Session;
 use GT\Dom\HTMLDocument;
+use GT\Cookie\CookieHandler;
 
 function go_before(Audit $audit, Request $request, LoginSession $login,
-	UserRepository $users, AnonUser $anonymous):void {
+	UserRepository $users, AnonUser $anonymous, Sudo $sudo,
+	Response $response):void {
 	// Keep an audit trail of every request.
 	$audit->recordRequest($request, $login, $users, $anonymous);
+
+	if($login->getState() === LoginState::LOGGED_IN
+	&& ($deployment = $login->getDeployment()) && ($email = $login->getEmail())) {
+		$actor = $users->get($deployment, $email);
+
+		if($actor !== null) {
+			$until = $request->getHeaderLine("X-Authwave-Background") === "1"
+				? $sudo->expiresAt($actor) : $sudo->renew($actor);
+			$response->headers->set("X-Authwave-Sudo-Until", (string)$until);
+		}
+	}
 }
 
 function go(
@@ -33,6 +47,7 @@ function go(
 	Config $config,
 	HTMLDocument $document,
 	AnonUser $anonymous,
+	CookieHandler $cookies,
 ):void {
 	foreach($document->querySelectorAll("table:has(a[data-table-link])") as $table) {
 		new TableLink($table);
@@ -90,9 +105,18 @@ function go(
 			$response->redirect("/");
 		}
 		elseif($data["action"] === "logout") {
-			$email = $loginSession->getEmail();
-			$user = $email ? $userRepository->get($deployment, $email) : null;
-			$loginSession->clearDataForLogout($deployment, $user);
+			$cookieName = UserRepository::SESSION_COOKIE_PREFIX . $deployment->id;
+
+			if($userRepository->endSession($deployment, $cookies->get($cookieName)?->getValue())) {
+				$loginSession->resetAuthentication();
+			}
+			else {
+				$email = $loginSession->getEmail();
+				$user = $email ? $userRepository->get($deployment, $email) : null;
+				$loginSession->clearDataForLogout($deployment, $user);
+			}
+
+			$cookies->delete($cookieName);
 			$session->kill();
 
 			if(isset($data["redirectTo"])) {

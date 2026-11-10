@@ -2,8 +2,8 @@
 use Authwave\Admin\Onboarding\AdminArea;
 use Authwave\Admin\Application\ApplicationCatalogue;
 use GT\DomTemplate\Binder;
-use Gt\Http\Response;
-use Gt\Http\Uri;
+use GT\Http\Response;
+use GT\Http\Uri;
 use Authwave\Security\Sudo;
 use GT\Dom\HTMLDocument;
 

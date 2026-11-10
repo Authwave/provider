@@ -1,1 +1,9 @@
-insert into UserAdmin (userId, applicationId) values (?, ?)
+insert into UserAdmin (
+	userId,
+	applicationId
+)
+
+values (
+	?,
+	?
+)

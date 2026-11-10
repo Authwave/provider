@@ -2,7 +2,7 @@
 
 namespace Authwave\Test\Security;
 
-use Gt\Database\Database;
+use GT\Database\Database;
 use Authwave\Security\Action;
 use Authwave\Security\Audit;
 use Authwave\Security\AnonUser;
@@ -13,15 +13,15 @@ use Authwave\User\UserRepository;
 use Authwave\User\LoginState;
 use Authwave\Model\Application;
 use Authwave\Model\ApplicationDeployment;
-use Gt\Database\Query\QueryCollection;
-use Gt\Http\Request;
-use Gt\Http\Uri;
+use GT\Database\Query\QueryCollection;
+use GT\Http\Request;
+use GT\Http\Uri;
 use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 
 class AuditTest extends TestCase {
 	public function testCreate_eventsWithoutContextStoreANullDetail():void {
-		$queries = $this->createMock(\Gt\Database\Query\QueryCollection::class);
+		$queries = $this->createMock(\GT\Database\Query\QueryCollection::class);
 		$queries->expects(self::once())->method("insert")->with("create",
 			self::callback(function(array $row):bool {
 				self::assertNull($row["detail"]);
@@ -33,7 +33,7 @@ class AuditTest extends TestCase {
 	}
 
 	public function testRecordChange_nestedCredentialsAreOmittedAndMutationsAreNotRepeated():void {
-		$queries = $this->createMock(\Gt\Database\Query\QueryCollection::class);
+		$queries = $this->createMock(\GT\Database\Query\QueryCollection::class);
 		$queries->expects(self::once())->method("insert")->with("create",
 			self::callback(function(array $row):bool {
 				self::assertSame('{"applicationId":"app","from":{"name":"Old"},"to":{"name":"Café","nested":{"safe":true}}}', $row["detail"]);

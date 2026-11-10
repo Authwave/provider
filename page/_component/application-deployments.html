@@ -5,7 +5,7 @@
 	<ul class="deployment-list stack">
 		<li data-list="deployment-panels" data-bind:data-new="isNew">
 			<details class="settings-disclosure" name="application-deployments" data-bind:id="panelId" data-bind:open="?isOpen">
-				<summary><span class="deployment-summary"><span class="new-deployment-icon" data-icon="plus" aria-hidden="true"></span><span class="deployment-title" data-bind:text="summary">Create a deployment</span><span class="deployment-badges"><span class="badge" hidden data-bind:hidden="?!isLocal">Local</span><span class="badge" hidden data-bind:hidden="?!isProduction">Production</span></span></span></summary>
+				<summary><span class="deployment-summary"><span class="new-deployment-icon" data-icon="plus" aria-hidden="true"></span><span class="deployment-title" data-bind:text="summary">Create a deployment</span><span class="deployment-badges"><span class="badge" hidden data-bind:hidden="?!isLocal">Local</span><span class="badge production-badge" hidden data-bind:hidden="?!isProduction">Production</span></span></span></summary>
 				<form method="post" class="form-fields stack compact">
 					<p role="alert" tabindex="-1" hidden data-bind:hidden="?!error" data-bind:autofocus="?error" data-bind:text="error"></p>
 					<label class="existing-deployment-field">

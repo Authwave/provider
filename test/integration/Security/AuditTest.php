@@ -1,9 +1,9 @@
 <?php
 namespace Authwave\Test\Integration\Security;
 
-use Gt\Database\Database;
+use GT\Database\Database;
 use Authwave\Security\{Audit, Action, AnonUser};
-use Gt\Database\Connection\Settings;
+use GT\Database\Connection\Settings;
 use PHPUnit\Framework\TestCase;
 
 class AuditTest extends TestCase {

@@ -10,10 +10,11 @@ insert into Email (
 	textContent,
 	htmlContent
 )
+
 values (
 	:id,
 	:deploymentId,
-	now(),
+	CURRENT_TIMESTAMP,
 	:scheduledToSendAt,
 	:subject,
 	:toEmail,

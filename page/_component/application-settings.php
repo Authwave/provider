@@ -5,7 +5,7 @@ use Authwave\Admin\Onboarding\AdminArea;
 use Authwave\Session\FlashSession;
 use GT\DomTemplate\Binder;
 use GT\Input\Input;
-use Gt\Http\{Request, Response};
+use GT\Http\{Request, Response};
 
 function go(Binder $binder, Application $application, ApplicationRepository $applications,
 	AdminArea $area, FlashSession $flash, Request $request):void {

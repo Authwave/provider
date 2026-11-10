@@ -2,9 +2,9 @@
 use Authwave\Session\LoginSession;
 use Authwave\User\LoginState;
 use Authwave\User\UserRepository;
-use Gt\DomTemplate\Binder;
-use Gt\Http\Response;
-use Gt\Input\Input;
+use GT\DomTemplate\Binder;
+use GT\Http\Response;
+use GT\Input\Input;
 
 function go(
 	Response $response,

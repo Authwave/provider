@@ -9,13 +9,13 @@ use Authwave\Security\AnonUser;
 use Authwave\Security\Audit;
 use Authwave\Session\LoginSession;
 use Authwave\User\LoginState;
-use Gt\Config\Config;
-use Gt\Config\ConfigSection;
-use Gt\Http\Response;
-use Gt\Http\ResponseStatusException\ClientError\HttpNotFound;
-use Gt\Http\Uri;
-use Gt\Session\Session;
-use Gt\Session\SessionStore;
+use GT\Config\Config;
+use GT\Config\ConfigSection;
+use GT\Http\Response;
+use GT\Http\ResponseStatusException\ClientError\HttpNotFound;
+use GT\Http\Uri;
+use GT\Session\Session;
+use GT\Session\SessionStore;
 use PHPUnit\Framework\TestCase;
 
 class DevelopmentLoginTest extends TestCase {
@@ -30,7 +30,7 @@ class DevelopmentLoginTest extends TestCase {
 		);
 		$session = $this->createStub(Session::class);
 		$store = new SessionStore("login", $session);
-		$login = new LoginSession($store, $this->createStub(Audit::class), new AnonUser("visitor"));
+		$login = new LoginSession($store, $this->createStub(Audit::class), new AnonUser("visitor"), $this->createStub(\GT\Cookie\CookieHandler::class));
 		$store->set("email", "old@example.test");
 		$login->setState(LoginState::LOGGED_IN);
 		$login->setData(["returnUri" => "https://old.example.test/"]);
@@ -48,9 +48,9 @@ class DevelopmentLoginTest extends TestCase {
 			$response->expects(self::once())->method("redirect")->with("/login/");
 		}
 
-		\go($apps, new Uri("http://localhost/?dev-login=dev"), $login, $session, $response,
+		\go($apps, $this->createStub(\Authwave\User\UserRepository::class), new Uri("http://localhost/?dev-login=dev"), $login, $session, $response,
 			$config, new \GT\Dom\HTMLDocument("<html><body></body></html>"),
-			$this->createStub(Audit::class), new AnonUser("visitor"));
+			new AnonUser("visitor"), $this->createStub(\GT\Cookie\CookieHandler::class));
 
 		self::assertSame($deployment, $login->getDeployment());
 		self::assertNull($login->getEmail());

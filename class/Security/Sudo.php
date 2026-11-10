@@ -44,11 +44,21 @@ readonly class Sudo {
 		return $until;
 	}
 
+	public function renew(User $actor):int {
+		if($this->expiresAt($actor) === 0) {
+			return 0;
+		}
+
+		$until = ($this->clock)() + $this->duration;
+		$this->session->set("until", $until);
+		return $until;
+	}
+
 	public function request(User $actor, string $field, string $return, string $action):Uri {
 		$return = (string)$this->returnUri($return)->withoutQueryValue("sudo-view");
 
 		if(!preg_match('/^[a-zA-Z0-9_-]{1,200}$/', $field)
-		|| !in_array($action, ["view", "copy"], true)) {
+		|| !in_array($action, ["view", "copy", "delete"], true)) {
 			throw new InvalidArgumentException("Invalid sudo field or action.");
 		}
 
@@ -103,6 +113,12 @@ readonly class Sudo {
 			$uri = $uri->withQueryValue("sudo-view", $this->session->getString("field"));
 		}
 
+		if($this->session->get("action") === "delete") {
+			foreach(["field", "return", "action", "reveal"] as $key) {
+				$this->session->remove($key);
+			}
+		}
+
 		return $uri;
 	}
 
@@ -141,6 +157,16 @@ readonly class Sudo {
 
 	public function obscure(string $value, string $rule = ""):string {
 		$prefix = "";
+
+		if($rule === "email") {
+			$parts = explode("@", $value);
+
+			if(count($parts) === 2 && $parts[0] !== "" && $parts[1] !== "") {
+				[$local, $domain] = $parts;
+				return mb_substr($local, 0, 2) . str_repeat("•", max(0, mb_strlen($local) - 2))
+					. "@" . mb_substr($domain, 0, 2) . str_repeat("•", max(0, mb_strlen($domain) - 2));
+			}
+		}
 
 		if($rule === "key" && preg_match('/^[^_]+_[^_]+_/', $value, $match)) {
 			// Always leave some of the secret hidden, including unexpectedly short keys.
@@ -205,7 +231,7 @@ readonly class Sudo {
 	private function addFieldControls(Element $field, string $location, bool $empty):void {
 		$document = $field->ownerDocument;
 		$label = $field->closest("label");
-		$group = $document->createElement("div");
+		$group = $document->createElement($field->hasAttribute("value") ? "div" : "span");
 		$group->className = "sudo-control";
 		$field->before($group);
 		$group->appendChild($field);
@@ -231,6 +257,11 @@ readonly class Sudo {
 		$button->setAttribute("data-sudo-view", $field->id);
 		$button->setAttribute("data-icon", "eye");
 		$caption = trim($label->textContent ?? "protected field");
+
+		if(!$label && $field->getAttribute("data-sudo") === "email") {
+			$caption = "email address";
+		}
+
 		$button->setAttribute("aria-label", "View " . $caption);
 		$button->className = "icon-button";
 		$text = $document->createElement("span");

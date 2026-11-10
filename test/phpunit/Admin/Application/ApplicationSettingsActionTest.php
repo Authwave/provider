@@ -11,9 +11,9 @@ use Authwave\Session\FlashSession;
 use Authwave\Security\Audit;
 use Authwave\Security\Action;
 use GT\Input\Input;
-use Gt\Http\Request;
-use Gt\Http\Response;
-use Gt\Http\Uri;
+use GT\Http\Request;
+use GT\Http\Response;
+use GT\Http\Uri;
 use PHPUnit\Framework\TestCase;
 
 class ApplicationSettingsActionTest extends TestCase {

@@ -14,10 +14,10 @@ use GT\Cipher\InitVector;
 use GT\Cipher\Key;
 use GT\Cipher\Message\EncryptedMessage;
 use GT\DomTemplate\Binder;
-use Gt\Http\Response;
-use Gt\Http\Request;
+use GT\Http\Response;
+use GT\Http\Request;
 use GT\Input\Input;
-use Gt\Session\Session;
+use GT\Session\Session;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\UriInterface;
 
@@ -51,10 +51,12 @@ class LoginReturnUriTest extends TestCase {
 		][$key] ?? null);
 		$users = $this->createStub(UserRepository::class);
 		$users->method("get")->willReturn($user);
+		$users->method("startSession")->willReturn(new \Authwave\Model\UserSession("session", $user->id,
+			new \DateTimeImmutable(), new \DateTimeImmutable("+30 minutes")));
 		$response = $this->createMock(Response::class);
 		$response->expects($development ? self::never() : self::once())->method("redirect")
 			->willReturnCallback(function(UriInterface $uri) use ($secret, $iv, $expected):void {
-				self::assertSame($expected, (string)(new \Gt\Http\Uri((string)$uri))->withoutQueryValue("AUTHWAVE_RESPONSE_DATA"));
+				self::assertSame($expected, (string)(new \GT\Http\Uri((string)$uri))->withoutQueryValue("AUTHWAVE_RESPONSE_DATA"));
 				parse_str($uri->getQuery(), $query);
 				$decoded = (new EncryptedMessage($query["AUTHWAVE_RESPONSE_DATA"], $iv))->decrypt(new Key($secret));
 				self::assertSame("user-id", json_decode((string)$decoded)->id);
@@ -66,6 +68,7 @@ class LoginReturnUriTest extends TestCase {
 			$login, $users, $session, $this->createStub(Audit::class),
 			$this->createStub(AdminAccess::class), $this->createStub(Request::class),
 			$this->createStub(\Authwave\Model\ApplicationRepository::class),
+			$this->createStub(\GT\Cookie\CookieHandler::class),
 		);
 	}
 

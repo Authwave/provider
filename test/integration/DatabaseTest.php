@@ -2,11 +2,11 @@
 
 namespace Authwave\Test\Integration;
 
-use Gt\Database\Result\Row;
+use GT\Database\Result\Row;
 use PDO;
 use PHPUnit\Framework\TestCase;
-use Gt\Database\Database;
-use Gt\Database\Connection\Settings;
+use GT\Database\Database;
+use GT\Database\Connection\Settings;
 
 class DatabaseTest extends TestCase {
 
