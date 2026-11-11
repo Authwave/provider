@@ -1,91 +1,162 @@
-<main data-flux="update-link" id="main-content" class="stack">
+<main data-flux="update" id="main-content" class="stack">
 	<admin-header />
-	<p class="notice" role="note">This screen is not connected yet. Its controls are unavailable.</p>
 	<section id="report" class="report" aria-labelledby="overview-title">
+		<div class="toolbar report-toolbar">
+			<div class="toolbar report-controls">
+				<form method="get" data-flux class="toolbar deployment-filter" aria-label="Report deployment">
+					<input type="hidden" name="application" data-bind:value="applicationId" />
+					<input type="hidden" name="period" data-bind:value="period" />
+					<input type="hidden" name="comparison" data-bind:value="comparison" />
+					<input type="hidden" name="from" data-bind:value="from" />
+					<input type="hidden" name="to" data-bind:value="to" />
+					<input type="hidden" name="activityAction" data-bind:value="activityAction" />
+					<label><span class="visually-hidden">Deployment</span><select name="deployment">
+						<option value="" data-bind:selected="?allDeployments">All deployments</option>
+						<option data-list="report-deployments" data-bind:value="id" data-bind:text="title" data-bind:selected="?selected"></option>
+					</select></label>
+					<div class="actions"><button type="submit" data-flux="autosave">Apply deployment</button></div>
+				</form>
+				<form method="get" data-flux class="segmented-control" aria-label="Reporting period">
+					<input type="hidden" name="comparison" data-bind:value="comparison" />
+					<input type="hidden" name="application" data-bind:value="applicationId" />
+					<input type="hidden" name="deployment" data-bind:value="deployment" />
+					<button type="submit" name="period" value="30d" data-bind:aria-pressed="period30d"><span>30 days</span></button>
+					<button type="submit" name="period" value="7d" data-bind:aria-pressed="period7d"><span>7 days</span></button>
+					<button type="submit" name="period" value="24h" data-bind:aria-pressed="period24h"><span>Today</span></button>
+				</form>
+				<details class="disclosure-menu date-menu">
+					<summary class="control">Custom</summary>
+					<form method="get" data-flux class="disclosure-content form-fields">
+						<input type="hidden" name="application" data-bind:value="applicationId" />
+					<input type="hidden" name="deployment" data-bind:value="deployment" />
+						<input type="hidden" name="period" value="custom" />
+						<input type="hidden" name="comparison" data-bind:value="comparison" />
+						<label><span>From</span><input type="date" name="from" required data-bind:value="@" data-bind:max="today" /></label>
+						<label><span>To</span><input type="date" name="to" required data-bind:value="@" data-bind:max="today" /></label>
+						<p>Choose up to 366 days.</p>
+						<div class="actions"><button type="submit">Apply dates</button></div>
+					</form>
+				</details>
+			</div>
+			<div class="toolbar report-comparison">
+				<span>Compare to</span>
+				<details class="disclosure-menu">
+					<summary class="control" data-icon="calendar"><span data-bind:text="previousLabel"></span></summary>
+					<form method="get" data-flux class="disclosure-content form-fields">
+						<input type="hidden" name="application" data-bind:value="applicationId" />
+					<input type="hidden" name="deployment" data-bind:value="deployment" />
+						<input type="hidden" name="period" data-bind:value="period" />
+						<input type="hidden" name="from" data-bind:value="from" />
+						<input type="hidden" name="to" data-bind:value="to" />
+						<label><span>Chart comparison</span><select name="comparison" data-bind:value="@"><option value="previous">Previous period</option><option value="none">No comparison</option></select></label>
+						<div class="actions"><button type="submit">Apply comparison</button></div>
+					</form>
+				</details>
+				<a class="control" href="#activity" data-icon="filter">Filters</a>
+			</div>
+		</div>
 		<div class="report-layout">
 			<div class="report-chart stack">
 				<header>
-					<div class="toolbar">
-						<h2 id="overview-title">Overview</h2>
-
-						<div class="toolbar toolbar-end report-controls">
-							<admin-comparison />
-							<div class="segmented-control">
-								<form method="get" aria-label="Reporting period">
-
-									<button type="submit" name="period" value="30d" aria-pressed="true" disabled><span>30 days</span></button>
-									<button type="submit" name="period" value="7d" aria-pressed="false" disabled><span>7 days</span></button>
-									<button type="submit" name="period" value="24h" aria-pressed="false" disabled><span>Today</span></button>
-								</form>
-								<admin-date-range class="segment-menu" />
-							</div>
-						</div>
-					</div>
-					<p>An overview of activity <span>—</span></p>
+					<p>An overview of your authentication activity</p>
+					<h2 id="overview-title" data-bind:text="reportTitle">Overview</h2>
+					<p><span data-bind:text="periodLabel"></span> · <span data-bind:text="deploymentLabel">All deployments</span>.</p>
 				</header>
-				<div class="chart-placeholder" aria-hidden="true"></div>
+				<figure class="login-chart" data-report-chart hidden data-bind:hidden="?!hasChartData">
+					<figcaption class="visually-hidden">Successful logins for this and the previous period. Values are available in the chart data table below.</figcaption>
+					<div class="chart" data-bind:data-chart="chartData" role="img" aria-label="Successful logins over the selected period"></div>
+				</figure>
+				<p hidden data-bind:hidden="?!noLogins">No login activity in this period. Connect your application and sign in to see activity here.</p>
 			</div>
 			<dl class="metrics">
-				<div>
-					<dt>Total usage</dt>
-					<dd><strong>—</strong></dd>
-				</div>
-				<div>
-					<dt>New users</dt>
-					<dd><strong>—</strong></dd>
-				</div>
-				<div>
-					<dt>Security codes sent</dt>
-					<dd><strong>—</strong></dd>
-				</div>
-				<div>
-					<dt>Password changes</dt>
-					<dd><strong>—</strong></dd>
-				</div>
-				<div>
-					<dt>Login success ratio</dt>
-					<dd><strong>—</strong></dd>
-				</div>
-				<div>
-					<dt>Provider logins</dt>
-					<dd><strong>—</strong></dd>
-				</div>
+				<div><dt>Successful logins</dt><dd><strong id="metric-logins" data-bind:text="logins"></strong></dd><small>Previous: <span data-bind:text="previousLogins"></span></small></div>
+				<div><dt>New users</dt><dd><strong id="metric-newUsers" data-bind:text="newUsers"></strong></dd><small>Previous: <span data-bind:text="previousNewUsers"></span></small></div>
+				<div><dt>Security codes requested</dt><dd><strong id="metric-codes" data-bind:text="codes"></strong></dd><small>Previous: <span data-bind:text="previousCodes"></span></small></div>
+				<div><dt>Password changes</dt><dd><strong id="metric-passwords" data-bind:text="passwords"></strong></dd><small>Previous: <span data-bind:text="previousPasswords"></span></small></div>
+				<div><dt>Login success ratio</dt><dd><strong id="metric-successRatio" data-bind:text="successRatio"></strong></dd><small>Previous: <span data-bind:text="previousRatio"></span></small></div>
+				<div><dt>Failed login attempts</dt><dd><strong id="metric-failures" data-bind:text="failures"></strong></dd><small>Previous: <span data-bind:text="previousFailures"></span></small></div>
 			</dl>
 		</div>
-		<admin-chart-data />
+		<p class="muted">Compared with <span data-bind:text="previousLabel"></span>. Today is still in progress. Success ratio is completed logins divided by completed logins plus rejected password/code attempts.</p>
+		<details class="chart-data">
+			<summary>View chart data</summary>
+			<div class="table-scroll"><table>
+				<caption data-bind:text="chartCaption">Authentication totals (UTC)</caption>
+				<thead><tr><th scope="col" data-bind:text="bucketLabel">Date (UTC)</th><th scope="col">Successful logins</th><th scope="col">Previous period</th><th scope="col">Failed attempts</th></tr></thead>
+				<tbody><tr data-list="chart-data"><td data-bind:text="bucket"></td><td data-bind:text="logins"></td><td data-bind:text="previousLogins"></td><td data-bind:text="failures"></td></tr></tbody>
+			</table></div>
+		</details>
 	</section>
 	<section id="activity" class="activity-panel" aria-labelledby="activity-title">
-		<header class="panel-heading">
-			<h2 id="activity-title">Activity</h2>
-		</header>
-		<admin-activity-filters />
-		<div class="table-scroll">
-			<table class="activity-table">
-				<caption class="visually-hidden">Authentication activity</caption>
-				<thead>
-					<tr>
-						<th scope="col" class="selection-cell"><input type="checkbox" aria-label="Select all authentications" disabled /></th>
-						<th scope="col"><span class="compact-label">Auth ID</span><span class="full-label">Authentication ID</span></th>
-						<th scope="col">Date</th>
-						<th scope="col" data-priority="secondary">Status</th>
-						<th scope="col" data-priority="secondary">User</th>
-						<th scope="col" data-priority="disclosure"><span class="visually-hidden">Actions</span></th>
-					</tr>
-				</thead>
-				<tbody>
-
-				</tbody>
-			</table>
-		</div>
-		<p class="panel-body">Activity reporting is not connected yet.</p>
+		<header class="panel-heading"><h2 id="activity-title">Activity</h2></header>
+		<form method="get" data-flux class="toolbar panel-body activity-controls" aria-label="Activity filters">
+			<input type="hidden" name="application" data-bind:value="applicationId" />
+					<input type="hidden" name="deployment" data-bind:value="deployment" />
+			<input type="hidden" name="period" data-bind:value="period" />
+			<input type="hidden" name="comparison" data-bind:value="comparison" />
+			<input type="hidden" name="from" data-bind:value="from" />
+			<input type="hidden" name="to" data-bind:value="to" />
+			<label><span>Event</span><select name="activityAction" data-bind:value="@">
+				<option value="">All authentication activity</option>
+				<option value="LOGIN_COMPLETED">Logged in</option>
+				<option value="PASSWORD_LOGIN_FAILED">Password rejected</option>
+				<option value="SECURITY_CODE_REJECTED">Security code rejected</option>
+				<option value="SECURITY_CODE_REQUESTED">Security code requested</option>
+				<option value="PASSWORD_CHANGED">Password changed</option>
+				<option value="LOGOUT_REQUESTED">Logout requested</option>
+			</select></label>
+			<div class="actions"><button type="submit" data-flux="autosave">Apply filters</button></div>
+		</form>
+		<div class="table-scroll"><table class="activity-table">
+			<caption class="visually-hidden">Authentication activity</caption>
+			<thead><tr><th scope="col">Date (UTC)</th><th scope="col">Event</th><th scope="col">User</th><th scope="col">Deployment</th></tr></thead>
+			<tbody><tr data-list="activity">
+				<td data-bind:text="createdAt"></td><td><span class="status" data-bind:data-status="statusKind" data-bind:text="status"></span></td>
+				<td><a data-sudo="email" data-bind:id="emailId" data-bind:text="email" data-bind:href="userUri"></a></td><td><span data-bind:class="deploymentClass" data-bind:text="title"></span></td>
+			</tr></tbody>
+		</table></div>
+		<p class="panel-body" hidden data-bind:hidden="?!empty-activity">No authentication events match this period and filter.</p>
 		<footer class="toolbar panel-body">
-			<span>—</span>
-			<nav class="actions" aria-label="Activity pages"><a class="control" data-icon="chevron-left" aria-disabled="true">Previous</a><a class="control" data-icon="chevron-right" data-icon-right aria-disabled="true">Next</a></nav>
+			<span>Page <span data-bind:text="activityPage"></span></span>
+			<nav class="actions" aria-label="Activity pages">
+				<a class="control" data-icon="chevron-left" hidden data-bind:hidden="?!hasPrevious" data-bind:href="previousPage">Previous</a>
+				<a class="control" data-icon="chevron-right" data-icon-right hidden data-bind:hidden="?!hasNext" data-bind:href="nextPage">Next</a>
+			</nav>
 		</footer>
 	</section>
 	<div class="card-grid">
-		<admin-top-usage />
-		<admin-new-users />
-		<admin-abandoned-users />
+		<section id="admin-top-usage" class="settings-panel stack" aria-labelledby="top-usage-title">
+			<h2 id="top-usage-title">Top usage</h2>
+			<p class="muted">Up to five users by successful logins in this period.</p>
+			<table class="summary-table"><thead><tr><th scope="col">User</th><th scope="col">Logins</th></tr></thead>
+				<tbody><tr data-list="top-users">
+					<td><span data-sudo="email" data-bind:id="emailId" data-bind:text="email"></span><small><span data-bind:text="title"></span> · <a data-bind:href="userUri">Details</a></small></td>
+					<td data-bind:text="logins"></td>
+				</tr></tbody>
+			</table>
+			<p hidden data-bind:hidden="?!empty-top-users">No successful logins in this period.</p>
+			<footer><a class="card-link" data-bind:href="usersUri">See all users <span data-icon="arrow-right" aria-hidden="true"></span></a></footer>
+		</section>
+		<section id="admin-new-users" class="settings-panel stack" aria-labelledby="new-users-title">
+			<h2 id="new-users-title">New users</h2>
+			<p class="muted">Created in this period, newest first.</p>
+			<ul class="record-list"><li data-list="new-users">
+				<span data-sudo="email" data-bind:id="emailId" data-bind:text="email"></span> <a class="control icon-button" data-icon="edit" data-bind:href="userUri"><span>View user</span></a>
+				<small data-bind:text="title"></small><time data-bind:text="createdAt"></time>
+			</li></ul>
+			<p hidden data-bind:hidden="?!empty-new-users">No users were created in this period.</p>
+			<footer><a class="card-link" data-bind:href="newUsersUri">See all users <span data-icon="arrow-right" aria-hidden="true"></span></a></footer>
+		</section>
+		<section id="admin-abandoned-users" class="settings-panel stack" aria-labelledby="abandoned-users-title">
+			<h2 id="abandoned-users-title">Awaiting first login</h2>
+			<p class="muted">Created in this period with no recorded successful login. This includes manually added users.</p>
+			<ul class="record-list"><li data-list="awaiting-users">
+				<span data-sudo="email" data-bind:id="emailId" data-bind:text="email"></span> <a class="control icon-button" data-icon="edit" data-bind:href="userUri"><span>View user</span></a>
+				<small data-bind:text="title"></small><time data-bind:text="createdAt"></time>
+			</li></ul>
+			<p hidden data-bind:hidden="?!empty-awaiting-users">No users are awaiting their first login in this period.</p>
+			<footer><a class="card-link" data-bind:href="usersUri">See all users <span data-icon="arrow-right" aria-hidden="true"></span></a></footer>
+		</section>
 	</div>
+	<p class="muted">Events without an identifiable, retained user are excluded. New-user totals omit accounts with an unknown creation date.</p>
 </main>

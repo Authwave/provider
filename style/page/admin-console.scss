@@ -63,6 +63,12 @@ body.dir--admin {
 		display: block;
 	}
 
+	.production-badge {
+		--theme-badge-text: var(--theme-color-success);
+		--theme-badge-border: var(--theme-color-success);
+		--theme-badge-background: color-mix(in srgb, var(--theme-color-success) 10%, transparent);
+	}
+
 	.deployment-list {
 		list-style: none;
 		padding: 0;
@@ -97,11 +103,6 @@ body.dir--admin {
 			}
 		}
 
-		.production-badge {
-			--theme-badge-text: var(--theme-color-success);
-			--theme-badge-border: var(--theme-color-success);
-			--theme-badge-background: color-mix(in srgb, var(--theme-color-success) 10%, transparent);
-		}
 
 		.new-deployment-icon {
 			display: none;
@@ -223,8 +224,7 @@ body.dir--admin {
 		}
 	}
 
-	admin-header, admin-top-usage, admin-new-users, admin-abandoned-users,
-	admin-activity-filters {
+	admin-header {
 		display: contents;
 	}
 

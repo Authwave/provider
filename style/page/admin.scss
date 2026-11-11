@@ -261,22 +261,6 @@ body.dir--admin {
 		position: relative;
 		inline-size: 100%;
 		justify-content: flex-end;
-
-		> admin-comparison {
-			.disclosure-menu {
-				position: static;
-			}
-
-			summary {
-				block-size: var(--theme-icon-button-size);
-			}
-
-			.disclosure-content {
-				inset-inline-start: 0;
-				inset-inline-end: auto;
-				max-inline-size: 100%;
-			}
-		}
 	}
 
 	.report-layout {
@@ -284,10 +268,6 @@ body.dir--admin {
 		--theme-split-align: end;
 		--theme-split-side: 21rem;
 		--theme-split-main-max: var(--authwave-size-report-chart-max);
-	}
-
-	.chart-placeholder {
-		block-size: var(--authwave-size-chart);
 	}
 
 	.report-chart {
@@ -383,7 +363,17 @@ body.dir--admin {
 		padding: var(--theme-panel-body-padding-block, var(--theme-space-4)) var(--theme-table-padding-inline);
 	}
 
-	.activity-controls, .activity-panel > footer {
+	.activity-controls label {
+		@extend %o-form-field;
+		max-inline-size: 100%;
+	}
+
+	.activity-controls {
+		justify-content: flex-start;
+		align-items: end;
+	}
+
+	.activity-panel > footer {
 		justify-content: space-between;
 	}
 
@@ -476,21 +466,92 @@ body.dir--admin {
 		}
 		.report-controls {
 			inline-size: auto;
-
-			> admin-comparison {
-				.disclosure-menu {
-					position: relative;
-				}
-
-				.disclosure-content {
-					max-inline-size: none;
-				}
-			}
 		}
 	}
 
 	@media(min-width: break.$medium) {
 		--authwave-size-dashboard-header: calc(var(--theme-icon-button-size) + var(--theme-toolbar-gap, .75rem) + var(--theme-header-padding-block-end, var(--theme-space-4)) + var(--theme-divider-width, var(--theme-border-width)));
 		--authwave-size-sidebar-header: var(--authwave-size-dashboard-header);
+	}
+}
+
+body:has(#report) {
+	.report-toolbar {
+		justify-content: space-between;
+		margin-block-end: var(--theme-space-6);
+		align-items: start;
+	}
+
+	.report-toolbar > .report-controls {
+		inline-size: auto;
+		justify-content: flex-start;
+	}
+
+	.report-controls > .date-menu {
+		margin-inline-start: auto;
+	}
+
+	.deployment-filter {
+		margin: 0;
+		max-inline-size: 100%;
+		--theme-actions-padding-block-start: 0;
+
+		label, select {
+			max-inline-size: 100%;
+		}
+	}
+
+	.report-comparison {
+		margin-inline-start: auto;
+		justify-content: flex-end;
+		max-inline-size: 100%;
+
+		details, summary {
+			max-inline-size: 100%;
+		}
+
+		summary {
+			white-space: normal;
+		}
+	}
+
+	.login-chart {
+		margin: 0;
+		min-inline-size: 0;
+	}
+
+	.chart {
+		position: relative;
+		overflow: clip;
+		inline-size: 100%;
+		block-size: var(--authwave-size-chart);
+	}
+
+	@media (scripting: none) {
+		.chart {
+			display: none;
+		}
+	}
+
+	.report-layout[data-metrics-beside-chart] > .metrics {
+		margin-block-end: var(--authwave-space-chart-labels, 0px);
+	}
+
+	.chart-data {
+		max-inline-size: var(--authwave-size-report-chart-max);
+		font-size: var(--theme-compact-size);
+
+		summary {
+			cursor: pointer;
+			padding-block: var(--theme-space-2);
+		}
+	}
+
+	.summary-table td > small {
+		display: block;
+	}
+
+	.status[data-status="info"]::before {
+		background: var(--theme-color-muted);
 	}
 }

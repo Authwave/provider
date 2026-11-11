@@ -133,6 +133,59 @@ CSV export. Application selection uses the saved catalogue directly; application
 and deployment forms remain live. Admin browser checks run against the real
 application through Behat rather than a simulated HTTP backend.
 
+Dashboard reporting
+-------------------
+
+`/admin/` reports the selected application's saved data. Its deployment selector
+defaults to production when configured, otherwise All deployments. The selection
+scopes every dashboard section and survives period, comparison, filter and page
+changes. Select All deployments explicitly for combined reporting.
+`Admin\Dashboard\DashboardRepository` owns scoped reporting queries; each query
+checks `UserAdmin` membership and aggregates or limits results in SQL. A render
+uses ten reporting queries, independent of the number of displayed users. There
+are no per-row user/deployment lookups. Migration 028 adds indexes for audit
+aggregation and user creation-date filtering.
+
+Today and single-day custom ranges use 24 hourly chart buckets (00:00–23:00 UTC),
+with missing hours filled with zeroes. Their comparison uses matching hours from
+the previous day. Longer ranges use daily buckets.
+
+Reporting periods are UTC calendar days: Today, seven days, thirty days, or an
+inclusive custom range of at most 366 days. Comparison figures cover the preceding
+range of equal length. Today remains incomplete, so compare its totals cautiously
+with a complete previous period. Configure the database/server to store audit
+and user timestamps in UTC; these timestamp columns have no timezone information.
+
+Successful logins count `LOGIN_COMPLETED` audit events, including provider/admin
+and development logins within the selected application's deployments. Failed
+attempts count `PASSWORD_LOGIN_FAILED` and `SECURITY_CODE_REJECTED`. The success
+ratio is successful logins divided by successful logins plus those rejected
+attempts; no outcomes display a dash rather than an invented percentage.
+Security codes count requests, not confirmed email deliveries. Password changes
+count their audit events. New users count saved User records by `createdAt`,
+including manually added accounts. The same email in two deployments counts as
+two user records; top usage also ranks these identities separately. The daily
+line/area chart uses the restored Apache ECharts implementation, with
+SVG rendering, this/previous-period lines and an accessible data table. It follows
+the current theme, reduced-motion setting and Flux navigation, and disposes
+charts when their elements are replaced. The table remains available without
+JavaScript.
+
+Activity shows 25 events per page, with a bounded extra row for Next, and filters
+by event type. Top usage ranks five users by successful logins in the period.
+New users lists the five most recently created accounts; Awaiting first login
+lists up to five users created in the period with no recorded login at any time.
+This is not proof that signup was abandoned. Email values use the existing sudo
+protection; user-detail links keep the selected application in the URL.
+
+Country/device reporting and reliable signup-abandonment tracking are unavailable.
+Anonymous audit events and events whose user has been deleted cannot reliably
+be assigned to an application through the current reporting queries. Old users with null `createdAt` cannot
+be included in date-based creation totals. These figures are operational views,
+not an immutable billing ledger. Header search and Add user link to the existing
+Users screen within the current application.
+
+
 Audit logging
 -------------
 

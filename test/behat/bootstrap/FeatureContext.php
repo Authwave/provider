@@ -1042,7 +1042,8 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 	#[Then('unfinished controls should be disabled')]
 	public function unfinishedControlsDisabled():void {
 		$this->expect($this->getSession()->evaluateScript('(() => {
-			const controls = [...document.querySelectorAll("main input:not([type=hidden]), main button, main select, main textarea")];
+			const controls = [...document.querySelectorAll("main input:not([type=hidden]), main button, main select, main textarea")]
+				.filter(control => !control.closest("admin-header"));
 			return controls.length > 0 && controls.every(control => control.disabled);
 		})()'), "Unfinished screens must not offer simulated actions.");
 	}
@@ -1816,6 +1817,194 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 		$this->expect((int)$query->fetchColumn() === 1, 'Deployment was deleted before confirmation.');
 		$this->expect((int)$database->query("select count(*) from Audit where action = 'DEPLOYMENT_DELETED'")->fetchColumn() === 0,
 			'Unconfirmed deletion must not be audited as successful.');
+	}
+
+	#[Then("the dashboard should fit narrow and wide screens")]
+	public function dashboardLayout():void {
+		foreach([1440, 390, 280] as $width) {
+			$this->getSession()->resizeWindow($width, 1100);
+
+			foreach(["light", "dark"] as $scheme) {
+				$this->getSession()->executeScript("document.documentElement.dataset.colorScheme = '$scheme'; document.dispatchEvent(new Event('authwave:color-scheme-change'))");
+				$this->expect($this->getSession()->evaluateScript("document.documentElement.scrollWidth <= document.documentElement.clientWidth"),
+					"The dashboard must fit a $width pixel viewport in $scheme mode.");
+				$this->expect($this->getSession()->wait(5000, "(() => {
+					const container = document.querySelector('[data-report-chart] .chart');
+					const svg = container?.querySelector('svg');
+					return !svg || Math.abs(container.clientWidth - svg.getBoundingClientRect().width) < 1;
+				})()"), "ECharts must resize to its container.");
+			}
+		}
+	}
+
+	#[Then("the dashboard chart should show :points points with :current current and :previous previous logins")]
+	public function dashboardChart(int $points, int $current, int $previous):void {
+		$this->expect($this->getSession()->wait(5000, "(() => {
+			const chart = document.querySelector('[data-report-chart] .chart');
+			if(!chart?.querySelector('svg')) return false;
+			const data = JSON.parse(chart.dataset.chart);
+			return data.current.length === $points
+				&& data.current.reduce((sum, value) => sum + value, 0) === $current
+				&& data.previous.reduce((sum, value) => sum + value, 0) === $previous;
+		})()"), "ECharts must render the selected period's actual database totals.");
+	}
+
+	#[When("I mark the current dashboard document")]
+	public function markDashboardDocument():void {
+		$this->getSession()->executeScript("window.dashboardDocumentMarker = true");
+	}
+
+	#[Then("the dashboard document should not have reloaded")]
+	public function dashboardDocumentPreserved():void {
+		$this->expect($this->getSession()->evaluateScript("window.dashboardDocumentMarker === true"),
+			"Reporting forms must progressively update the dashboard through Flux.");
+	}
+
+	#[When("I open the dashboard comparison controls")]
+	public function openDashboardComparison():void {
+		$this->getSession()->getPage()->find("css", ".report-comparison summary")->click();
+	}
+
+	#[Then("the dashboard chart should hide the previous period")]
+	public function dashboardChartWithoutComparison():void {
+		$this->expect($this->getSession()->wait(5000, "(() => {
+			const chart = document.querySelector('[data-report-chart] .chart');
+			return chart?.querySelector('svg') && JSON.parse(chart.dataset.chart).comparison === 'none'
+				&& !chart.querySelector('svg').textContent.includes('Previous period');
+		})()"), "Disabling comparison must remove its ECharts series and legend.");
+	}
+
+	#[Then("the dashboard heading should be :heading")]
+	public function dashboardHeading(string $heading):void {
+		$this->expect($this->getSession()->wait(5000,
+			"document.querySelector('#overview-title')?.textContent === " . json_encode($heading)),
+			"The selected reporting period must finish rendering.");
+	}
+
+	#[Then("the dashboard activity should show only :status")]
+	public function dashboardActivityStatus(string $status):void {
+		$this->expect($this->getSession()->wait(5000, "(() => {
+			const rows = [...document.querySelectorAll('.activity-table .status')];
+			return rows.length > 0 && rows.every(row => row.textContent === " . json_encode($status) . ");
+		})()"), "The selected activity filter must finish rendering.");
+	}
+
+	#[Then("the chart data table should show 24 hourly buckets")]
+	public function dashboardHourlyTable():void {
+		$this->expect($this->getSession()->wait(5000, "(() => {
+			const rows = [...document.querySelectorAll('.chart-data tbody tr')];
+			return rows.length === 24 && rows[0].cells[0].textContent === '00:00'
+				&& rows[23].cells[0].textContent === '23:00';
+		})()"), "Today and its comparison must have 24 hourly buckets in the accessible data table.");
+	}
+
+	#[When("I apply the dashboard activity filters")]
+	public function applyDashboardActivityFilters():void {
+		if(getenv("BEHAT_JAVASCRIPT") === "1") {
+			$this->expect($this->getSession()->evaluateScript("(() => {
+				const button = document.querySelector('.activity-controls button[type=submit]');
+				return getComputedStyle(button).display === 'none'
+					&& getComputedStyle(button.parentElement).display === 'none';
+			})()"), "Flux must hide the Apply filters button and its spacing before submission.");
+			return;
+		}
+
+		$this->expect($this->getSession()->evaluateScript("(() => {
+			const select = document.querySelector('.activity-controls select').getBoundingClientRect();
+			const button = document.querySelector('.activity-controls button').getBoundingClientRect();
+			return button.left >= select.right && button.left - select.right <= 24
+				&& Math.abs(button.bottom - select.bottom) < 2;
+		})()"), "Without JavaScript, Apply filters must sit next to its select and align with it.");
+		$this->pressButton("Apply filters");
+	}
+
+	#[Given("the dashboard application's production deployment is :deployment")]
+	public function dashboardProductionDeployment(string $deployment):void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$database->prepare("update Application set productionApplicationDeploymentId = ? where id = 'managed'")
+			->execute([$deployment]);
+	}
+
+	#[When("I apply the report deployment")]
+	public function applyReportDeployment():void {
+		if(getenv("BEHAT_JAVASCRIPT") !== "1") {
+			$this->pressButton("Apply deployment");
+		}
+	}
+
+	#[Then("the dashboard should report :deployment with :logins logins")]
+	public function dashboardDeployment(string $deployment, int $logins):void {
+		$this->expect($this->getSession()->wait(5000, "(() => {
+			const label = document.querySelector('.report-chart header p:last-child span:last-child');
+			return label?.textContent === " . json_encode($deployment) . "
+				&& document.querySelector('#metric-logins')?.textContent === '$logins';
+		})()"), "The deployment selection must finish updating all dashboard data.");
+	}
+
+	#[Then("the deployment selector should align with the period controls")]
+	public function dashboardControlAlignment():void {
+		$this->getSession()->resizeWindow(1440, 1100);
+
+		foreach(["base", "bright"] as $theme) {
+			$this->getSession()->executeScript("document.documentElement.dataset.flairTheme = '$theme'");
+			$this->expect($this->getSession()->evaluateScript("(() => {
+				const select = document.querySelector('.deployment-filter select').getBoundingClientRect();
+				const segments = document.querySelector('.report-controls .segmented-control').getBoundingClientRect();
+				return Math.abs(select.top - segments.top) < 1 && Math.abs(select.bottom - segments.bottom) < 1;
+			})()"), "The deployment selector and period controls must share top and bottom edges in $theme.");
+		}
+	}
+
+	#[Then("the custom date menu should align right when it wraps")]
+	public function dashboardWrappedDateMenu():void {
+		$wrapped = 0;
+
+		foreach([280, 320, 360, 390, 480, 640, 1024] as $width) {
+			$this->getSession()->resizeWindow($width, 1100);
+			$result = $this->getSession()->evaluateScript("(() => {
+				const controls = document.querySelector('.report-controls').getBoundingClientRect();
+				const segments = document.querySelector('.report-controls .segmented-control').getBoundingClientRect();
+				const menu = document.querySelector('.report-controls > .date-menu').getBoundingClientRect();
+				return {wrapped: menu.top > segments.top + 1, aligned: Math.abs(menu.right - controls.right) < 1};
+			})()");
+
+			if($result["wrapped"]) {
+				$wrapped++;
+				$this->expect($result["aligned"], "The wrapped date menu must align right at $width pixels.");
+			}
+		}
+
+		$this->expect($wrapped > 0, "The responsive check must exercise a wrapped date menu.");
+	}
+
+	#[Then("activity email addresses should link to user details")]
+	public function activityEmailLinks():void {
+		$this->expect($this->getSession()->evaluateScript("(() => {
+			const table = document.querySelector('.activity-table');
+			const links = [...table.querySelectorAll('a[data-sudo=email]')];
+			return links.length === table.tBodies[0].rows.length && links.length > 0
+				&& !table.querySelector('[data-icon=edit], a button')
+				&& links.every(link => {
+					const url = new URL(link.href);
+					return url.pathname === '/admin/users/' && url.searchParams.has('user')
+						&& link.closest('.sudo-control').querySelector('[data-sudo-view]');
+				});
+		})()"), "Activity emails must link to user details with separate sudo controls and no edit icons.");
+	}
+
+	#[When("I follow an email in dashboard activity")]
+	public function followActivityEmail():void {
+		$this->getSession()->getPage()->find("css", ".activity-table a[data-sudo=email]")->click();
+	}
+
+	#[Then("activity for deployment :title should have a production badge")]
+	public function activityProductionBadge(string $title):void {
+		$this->expect($this->getSession()->evaluateScript("(() => {
+			const names = [...document.querySelectorAll('.activity-table tbody tr td:last-child > span')];
+			return names.length > 0 && names.every(name => name.textContent === " . json_encode($title) . "
+				&& name.matches('.badge.production-badge')
+				&& getComputedStyle(name).color !== getComputedStyle(name.parentElement).color);
+		})()"), "Production activity must show the deployment's own name using the shared green badge.");
 	}
 
 }

@@ -2,6 +2,7 @@
 namespace Authwave;
 
 use Authwave\Model\{Application, ApplicationRepository};
+use Authwave\Admin\Dashboard\DashboardRepository;
 use Authwave\Notification\UserNotifications;
 use GT\Fetch\Http;
 use Authwave\Admin\Application\ApplicationCatalogue;
@@ -27,6 +28,11 @@ use GT\Session\Session;
 use GT\WebEngine\Service\DefaultServiceLoader;
 
 class ServiceLoader extends DefaultServiceLoader {
+	public function loadDashboardRepository():DashboardRepository {
+		return new DashboardRepository(
+			$this->container->get(Database::class)->queryCollection("dashboard"));
+	}
+
 	public function loadHttp():Http {
 		return new Http([
 			CURLOPT_CONNECTTIMEOUT => 3,

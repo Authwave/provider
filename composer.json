@@ -33,7 +33,10 @@
 		}
 	},
 	"scripts": {
-		"behat": "test/behat/run-behat",
+		"behat": [
+			"Composer\\Config::disableProcessTimeout",
+			"test/behat/run-behat"
+		],
 		"phpunit": "vendor/bin/phpunit --configuration phpunit.xml",
 		"phpcs": "vendor/bin/phpcs class/ --standard=phpcs.xml",
 		"phpmd": "vendor/bin/phpmd class/ text phpmd.xml",

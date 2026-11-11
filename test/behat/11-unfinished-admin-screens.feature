@@ -11,7 +11,6 @@ Feature: Administration without prototype behaviour
 
     Examples:
       | path                   |
-      | /admin/                |
       | /admin/security/       |
       | /admin/emails/         |
       | /admin/customisation/  |

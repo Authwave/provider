@@ -2,14 +2,15 @@
 	<a hidden data-bind:hidden="?!hasClient" data-bind:href="clientUri">Go to <span data-bind:text="applicationName">your application</span></a>
 	<div class="toolbar header-actions">
 		<form class="search-field" action="/admin/users/" method="get" role="search">
+			<input type="hidden" name="application" data-bind:value="applicationId" />
 			<label data-icon="search">
 				<span class="visually-hidden">Search</span>
-				<input type="search" name="search" disabled aria-label="Search is not available yet" placeholder="Search" />
+				<input type="search" name="search" disabled data-bind:disabled="?!hasApplication" placeholder="Search" />
 			</label>
 		</form>
 		<div class="toolbar quick-actions" aria-label="Quick actions">
 			<a class="control icon-button" data-icon="bell" href="/admin/security/" title="Security events"><span>Security events</span></a>
-			<a class="control primary icon-button" data-icon="plus" aria-disabled="true" title="Add user"><span>Add user</span></a>
+			<a class="control primary icon-button" data-icon="plus" data-bind:href="addUserUri" data-bind:aria-disabled="?!hasApplication" title="Add user"><span>Add user</span></a>
 		</div>
 	</div>
 </header>
