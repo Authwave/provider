@@ -70,5 +70,5 @@ function do_cancel(
 		$session->kill();
 	}
 
-	$response->redirect($deployment->getClientReturnUri()->withQueryValue("do", "cancel"));
+	$response->redirect($deployment->getClientReturnUri());
 }

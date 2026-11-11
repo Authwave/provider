@@ -233,7 +233,7 @@ class LoginDesignTest extends TestCase {
 		$view = new View("login/security-check");
 		self::assertNotNull($view->document->querySelector('a[href="/login/?do=cancel"]'));
 		$this->session->expects(self::once())->method("kill");
-		$this->redirects("https://client.example.test/callback?do=cancel", fn() => $this->call("index", "do_cancel", $this->response, $this->session, $this->login, $this->audit, $this->anonymous));
+		$this->redirects("https://client.example.test/callback", fn() => $this->call("index", "do_cancel", $this->response, $this->session, $this->login, $this->audit, $this->anonymous));
 	}
 
 	public function testSuccessRendersEncryptedClientReturn():void {

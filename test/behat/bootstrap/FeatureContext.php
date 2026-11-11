@@ -743,7 +743,7 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 	public function hostedDomainInstructions():void {
 		$request = curl_init($this->getSession()->getCurrentUrl());
 		curl_setopt_array($request, [CURLOPT_RETURNTRANSFER => true,
-			CURLOPT_HTTPHEADER => ["Host: login.authwave.com"],
+			CURLOPT_HTTPHEADER => ["Host: admin.authwave.com"],
 			CURLOPT_COOKIE => "GT=" . $this->getSession()->getCookie("GT")]);
 		$html = curl_exec($request);
 		$this->expect(curl_getinfo($request, CURLINFO_HTTP_CODE) === 200 && is_string($html),

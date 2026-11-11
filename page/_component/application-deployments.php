@@ -82,7 +82,7 @@ function go(Binder $binder, Application $application, ApplicationRepository $app
 		$binder->bindKeyValue("checking", $checking, $item);
 		$binder->bindKeyValue("verified", $verified && !$local && !$isNew, $item);
 		$binder->bindKeyValue("hostname", $domains->hostname($fields["providerHost"]), $item);
-		$binder->bindKeyValue("providerMessage", $domains->hostname($request->getUri()->getHost()) === "login.authwave.com"
+		$binder->bindKeyValue("providerMessage", $domains->hostname($request->getUri()->getHost()) === "admin.authwave.com"
 			? "You are using the hosted Authwave provider" : "You are self-hosting the Authwave provider", $item);
 
 		$isSubmitted = $submitted && $submittedId === $id;
