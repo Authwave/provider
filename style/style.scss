@@ -1,136 +1,109 @@
-$fa-font-path: "/asset/font/fontawesome";
+@forward "../node_modules/flair/style/lib/flair" with ($icon-names: (
+	facebook,
+	github,
+	google,
+	linkedin,
+	lock,
+	login,
+	mail,
+	home,
+	chart-bar,
+	shield,
+	apps,
+	chart-pie,
+	users,
+	lifebuoy,
+	settings,
+	credit-card,
+	search,
+	menu-2,
+	selector,
+	plus,
+	bell,
+	download,
+	filter,
+	calendar,
+	adjustments-horizontal,
+	trending-up,
+	trending-down,
+	dots-vertical,
+	chevron-left,
+	chevron-right,
+	arrow-right,
+	logout,
+	sun,
+	moon,
+	sun-moon,
+	check,
+	circle-check,
+	eye,
+	loader-4,
+	copy,
+	trash,
+	cloud-x,
+	edit,
+	x,
+));
+@use "../node_modules/flair/style/lib/flair";
+@use "../node_modules/flair/style/lib/theme/base";
+@use "../node_modules/flair/style/lib/theme/bright";
+@use "font/fira-mono";
+@use "font/inter";
 
-@import "font/roboto";
-@import "font/fontawesome/fontawesome";
-@import "font/fontawesome/regular";
+@use "variable/size";
+@use "variable/space";
 
-@import "variable/palette";
+@use "element/a";
+@use "element/body";
+@use "element/button";
+@use "element/h";
+@use "element/html";
+@use "element/input";
+@use "element/select";
+@use "element/textarea";
+@use "element/label";
 
-@import "flair/flair-main";
+@use "component/security-code";
+@use "component/admin-sidebar";
+@use "component/application-switcher";
+@use "component/site-footer";
+@use "component/table-link";
+@use "component/sudo";
 
-body.dir--login {
-	>login-header {
-		@extend %o-container--small;
-		padding: 6rem 0 2rem;
+@use "vendor/flux";
 
-		img {
-			display: block;
-			margin: 0 auto;
-			max-width: 80%;
-			height: 3rem;
-			box-sizing: border-box;
-		}
-	}
+@use "page/login";
+@use "page/authenticate";
+@use "page/security-check";
+@use "page/information";
+@use "page/admin";
+@use "page/admin-console";
+@use "page/logged-out";
 
-	>form {
-		@extend %p-form-fields, %o-card, %o-container--small;
 
-		.pw {
-			position: absolute;
-			transform: translateX(-1000vw) scale(0.01, 0.01);
-		}
+// Remove the attribute or choose base for the fully usable monochrome design.
+:root {
+	@include base.base;
+	--theme-control-placeholder-opacity: .5;
+	--theme-control-placeholder-font-style: italic;
 
-		.login-options {
-			>* {
-				&:not(:last-of-type) {
-					margin-bottom: 4rem;
+	&[data-flair-theme="bright"] {
+		@include bright.bright;
 
-					&::before {
-						position: absolute;
-						z-index: 2;
-						left: 0;
-						right: 0;
-						transform: translateY(2.5rem);
-						content: "or";
-						display: block;
-						box-sizing: border-box;
-						width: 2rem;
-						margin: 0 auto;
-						padding: 0.5rem;
-						text-align: center;
-						background-color: white;
-					}
-					&::after {
-						position: absolute;
-						z-index: 1;
-						left: 0;
-						right: 0;
-						transform: translateY(1.5rem);
-						content: "";
-						display: block;
-						box-sizing: border-box;
-						width: 16rem;
-						margin: 0 auto;
-						height: 2px;
-						background-color: var(--pal-border-ui);
-						text-align: center;
-						opacity: 0.25;
-					}
+		--theme-button-primary-background-hover: color-mix(in srgb, var(--theme-button-primary-background) 80%, white);
+		--theme-control-border-hover: color-mix(in srgb, var(--theme-control-border) 70%, var(--theme-color-heading));
+		--theme-button-border-hover: var(--theme-control-border-hover);
+		--theme-button-primary-border-hover: color-mix(in srgb, var(--theme-button-primary-border) 70%, var(--theme-color-heading));
 
-				}
-			}
-		}
-	}
-
-	>login-footer {
-		@extend %o-container--small;
-		padding-top: 2rem;
-
-		footer {
-			display: flex;
-			justify-content: space-between;
-		}
-
-		label {
-			span {
-				display: none;
-			}
-		}
-		select {
-			background-color: transparent;
-			border: none;
-			font-size: 0.75rem;
-			opacity: 0.75;
-
-			&:hover, &:focus {
-				opacity: 1;
-			}
-
-			@media(min-width: $break-small) {
-				margin-left: -0.5rem;
-			}
-		}
-		ul {
-			display: flex;
-
-			@media(min-width: $break-small) {
-				margin-right: -0.5rem;
-			}
-
-			>li {
-				a {
-					display: block;
-					padding: 0.5rem;
-					font-size: 0.75rem;
-					color: var(--pal-text);
-					opacity: 0.75;
-				}
-			}
-		}
+		// Buttons and button-like controls share the metric cards' elevation.
+		--theme-button-shadow: var(--theme-surface-shadow);
+		--theme-button-shadow-hover: var(--theme-surface-shadow);
+		--theme-button-shadow-active: var(--theme-surface-shadow);
+		--theme-button-primary-shadow: var(--theme-surface-shadow);
+		--theme-button-primary-shadow-hover: var(--theme-surface-shadow);
+		--theme-button-primary-shadow-active: var(--theme-surface-shadow);
 	}
 }
 
-body.uri--login--success {
-	form {
-		$size: 12rem;
-
-		position: relative;
-		height: $size + 4rem + 2rem;
-	}
-}
-
-body.uri--login--error {
-	form {
-		margin-top: 8rem;
-	}
-}
+@include flair.init;
+@include flair.icon;

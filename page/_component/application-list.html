@@ -1,0 +1,23 @@
+<section class="settings-panel stack" hidden data-bind:hidden="?!hasApplications">
+	<div class="table-scroll">
+		<table class="record-table">
+			<caption class="visually-hidden">Applications</caption>
+			<thead>
+				<tr>
+					<th scope="col">Name</th>
+					<th scope="col">ID</th>
+					<th scope="col">Client</th>
+					<th scope="col">Login host</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr data-list="managed-applications" data-bind:data-application-id="identifier">
+					<td data-label="Name"><a data-table-link data-bind:href="settingsUrl" data-bind:text="name"></a></td>
+					<td data-label="ID"><code data-bind:text="identifier"></code></td>
+					<td data-label="Client" data-bind:text="client"></td>
+					<td data-label="Login host" data-bind:text="loginHost"></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+</section>

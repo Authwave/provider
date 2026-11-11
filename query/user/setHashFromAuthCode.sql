@@ -1,14 +1,17 @@
-update user
+update
+	User
+
 inner join
-	user_auth_code
+	UserAuthCode
 on
-	user_auth_code.userId = user.id
+	UserAuthCode.userId = User.id
 and
-	user_auth_code.hash is not null
+	UserAuthCode.hash is not null
 
 set
-	user.hash = user_auth_code.hash
+	User.hash = UserAuthCode.hash
+
 where
-	user.id = ?
+	User.id = ?
 and
-	user_auth_code.code = ?
+	UserAuthCode.code = ?

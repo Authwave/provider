@@ -1,4 +1,4 @@
-create table audit (
+create table Audit (
 	id char(64) not null primary key,
 	action varchar(64) not null,
 	detail json null,
@@ -13,7 +13,7 @@ create table audit (
 
 	constraint audit__userId__fk
 		foreign key(userId)
-		references user(id)
+		references User(id)
 		on update cascade
 		on delete set null
 )

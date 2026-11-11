@@ -1,0 +1,19 @@
+body.uri--login--authenticate {
+	.providers {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: var(--theme-icon-gap);
+
+		> button {
+			--theme-icon-gap: 0;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: var(--authwave-space-providers-gap);
+			min-inline-size: 0;
+			padding: var(--authwave-space-providers-padding);
+			font-size: var(--authwave-size-providers-font);
+		}
+	}
+}

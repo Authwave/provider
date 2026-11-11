@@ -1,0 +1,13 @@
+<details class="disclosure-menu">
+	<summary class="control" data-icon="filter" aria-label="Filters"><span class="control-label">Filters</span></summary>
+	<form class="disclosure-content form-fields" action="/admin/" method="get">
+
+		<label><span>Status</span><select name="status" disabled><option value="all">All statuses</option><option value="success">Success</option><option value="failed">Failed</option><option value="abandoned">Abandoned</option></select></label>
+		<label><span>Authentication method</span><select name="method" disabled><option value="all">All methods</option><option value="password">Password</option><option value="email">Email security code</option></select></label>
+		<label><span>Email or authentication ID</span><input type="search" name="search" placeholder="Search activity" maxlength="100" disabled /></label>
+		<div class="actions">
+			<button type="submit" class="primary" disabled>Apply filters</button>
+			<a href="/admin/">Reset filters</a>
+		</div>
+	</form>
+</details>

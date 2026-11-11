@@ -1,0 +1,15 @@
+<main data-flux="update-link" id="main-content" class="stack">
+	<admin-header />
+	<header class="stack compact">
+		<h1>Log out</h1>
+		<p data-bind:text="scopeLabel">No applications</p>
+	</header>
+	<section data-flux="update" class="settings-panel stack">
+		<h2>Log out</h2>
+		<p>End your administrator session on this provider.</p>
+		<form method="post" class="toolbar">
+			<button type="submit" name="do" value="logout" class="primary">Log out</button>
+			<a class="control" href="/admin/">Stay signed in</a>
+		</form>
+	</section>
+</main>

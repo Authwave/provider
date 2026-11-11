@@ -1,2 +1,2 @@
-alter table application
+alter table Application
     add emailSettings json null;

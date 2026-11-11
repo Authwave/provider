@@ -1,0 +1,139 @@
+@use "../../node_modules/flair/style/lib/flair";
+
+admin-sidebar {
+	display: contents;
+
+	> aside {
+		display: block;
+		position: relative;
+		min-inline-size: 0;
+		border-block-end: var(--theme-divider-width, var(--theme-border-width)) solid var(--theme-color-border);
+		background: var(--theme-color-surface);
+	}
+
+	.sidebar-header {
+		justify-content: center;
+		min-block-size: var(--authwave-size-sidebar-header);
+		margin: 0;
+		padding: var(--theme-space-3) calc(var(--theme-space-8) * 2) var(--theme-space-3) var(--theme-space-4);
+
+		label > span:not(.select-control) {
+			@extend %d-visually-hidden;
+		}
+
+		select {
+			block-size: var(--theme-icon-button-size);
+		}
+	}
+
+	.sidebar-menu > summary {
+		@extend %d-focus;
+		position: absolute;
+		inset-block-start: .9rem;
+		inset-inline-end: var(--theme-space-4);
+		list-style: none;
+		cursor: pointer;
+		padding: var(--theme-space-2);
+		--theme-icon-gap: 0;
+
+		span {
+			position: absolute;
+			inline-size: 1px;
+			block-size: 1px;
+			overflow: hidden;
+			clip-path: inset(50%);
+		}
+
+		&::-webkit-details-marker {
+			display: none;
+		}
+	}
+
+	.sidebar-content {
+		padding: 0 var(--theme-space-4) var(--theme-space-4);
+	}
+
+	.sidebar-bottom {
+		margin-block-start: var(--theme-space-8);
+
+		.setup-card {
+			margin-block: 0;
+		}
+	}
+
+	.sidebar-account {
+		justify-content: space-between;
+		gap: var(--theme-space-2);
+
+		[data-sudo-disable] {
+			margin-inline-end: auto;
+
+			> button {
+				@extend %o-badge;
+				--theme-badge-text: var(--theme-color-danger);
+				--theme-badge-border: var(--theme-color-danger);
+				--theme-badge-background: color-mix(in srgb, var(--theme-color-danger) 10%, transparent);
+				--theme-button-background: var(--theme-badge-background);
+				--theme-button-background-hover: var(--theme-badge-background);
+				--theme-button-background-active: var(--theme-badge-background);
+				--theme-button-border-hover: var(--theme-color-danger);
+				--theme-button-shadow: none;
+				--theme-button-shadow-hover: none;
+				--theme-button-shadow-active: none;
+				min-block-size: 0;
+			}
+		}
+
+		form {
+			margin: 0;
+		}
+	}
+
+	@media(min-width: flair.$break-shell) {
+		> aside {
+			display: flex;
+			flex-direction: column;
+			position: fixed;
+			inset-block-start: 0;
+			inset-inline-start: 0;
+			inline-size: var(--theme-sidebar-width);
+			block-size: 100svh;
+			z-index: 1;
+			overflow-y: auto;
+			overscroll-behavior: contain;
+			border-block-end: 0;
+			border-inline-end: var(--theme-divider-width, var(--theme-border-width)) solid var(--theme-color-border);
+		}
+		.sidebar-header {
+			flex: none;
+			padding-inline: var(--theme-space-4);
+		}
+		.sidebar-menu {
+			display: flex;
+			flex-direction: column;
+			flex: 1;
+			> summary {
+				display: none;
+			}
+
+			// Keep the same disclosure visible on desktop without JS or an open attribute.
+			&::details-content {
+				content-visibility: visible;
+				display: flex;
+				flex: 1;
+			}
+
+			> .sidebar-content {
+				display: flex;
+				flex-direction: column;
+				flex: 1;
+				min-block-size: 0;
+				box-sizing: border-box;
+			}
+		}
+		.sidebar-bottom {
+			margin-block-start: auto;
+			padding-block-start: var(--theme-space-8);
+		}
+	}
+}

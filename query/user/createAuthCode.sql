@@ -1,10 +1,11 @@
-insert into user_auth_code (
+insert into UserAuthCode (
 	id,
 	userId,
 	code,
 	createdAt,
 	hash
 )
+
 values (
 	:id,
 	:userId,

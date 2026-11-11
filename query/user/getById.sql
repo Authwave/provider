@@ -1,11 +1,15 @@
 select
-	user.id as userId,
-	user.applicationDeploymentId,
-	user.email,
-	user.hash
+	User.id as userId,
+	User.applicationDeploymentId,
+	User.email,
+	User.hash,
+	User.createdAt,
+	User.clientNotificationStatus,
+	User.clientNotificationAcknowledged,
+	User.clientNotificationAction
 
 from
-	user
+	User
 
 where
-	user.id = ?
+	User.id = ?

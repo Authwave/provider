@@ -1,0 +1,13 @@
+html {
+	&:has(> body.dir--admin) {
+		--authwave-size-body-font: var(--theme-workspace-font-size, var(--theme-font-size));
+	}
+
+	font-family: var(--theme-font-body);
+	font-size: var(--authwave-size-body-font);
+	height: 100%;
+	// Clip the page edge without creating a scroll container for sticky headers.
+	overflow-x: clip;
+	background-color: var(--theme-color-page);
+	color: var(--theme-color-text);
+}

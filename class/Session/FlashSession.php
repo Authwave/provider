@@ -1,13 +1,13 @@
 <?php
 namespace Authwave\Session;
 
-use Gt\Session\SessionStore;
+use GT\Session\SessionStoreInterface;
 
-class FlashSession {
+readonly class FlashSession {
 	const SESSION_KEY = "flash";
 
 	public function __construct(
-		private readonly SessionStore $session
+		private SessionStoreInterface $session
 	) {}
 
 	public function setFlash(string $message, string $category = "main"):void {

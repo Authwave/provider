@@ -1,10 +1,13 @@
-insert into user (
+insert into User (
 	id,
 	applicationDeploymentId,
-	email
+	email,
+	createdAt
 )
+
 values (
 	:id,
 	:applicationDeploymentId,
-	:email
+	:email,
+	CURRENT_TIMESTAMP
 )

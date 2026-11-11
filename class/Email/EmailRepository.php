@@ -6,32 +6,31 @@ use Authwave\Model\EmailSettings;
 use Authwave\Security\Audit;
 use Authwave\Security\Action;
 use Authwave\Security\AnonUser;
-use Authwave\User\User;
+use Authwave\Model\User;
 use DateTime;
 use DateTimeInterface;
-use Gt\Database\Query\QueryCollection;
-use Gt\Logger\Log;
-use Gt\Ulid\Ulid;
-use League\CommonMark\CommonMarkConverter;
-use League\CommonMark\Environment\Environment;
-use League\CommonMark\Extension\Attributes\AttributesExtension;
-use League\CommonMark\Extension\Autolink\AutolinkExtension;
+use GT\Database\Query\QueryCollection;
+use GT\Logger\Log;
+use GT\Ulid\Ulid;
 use Symfony\Component\Mailer\Mailer;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 
-class EmailRepository {
+readonly class EmailRepository {
 	const DEFAULT_EMAIL_FROM_ADDRESS = "support@authwave.com";
 	const DEFAULT_EMAIL_FROM_NAME = "Authwave";
 
 	public function __construct(
-		private readonly QueryCollection $db,
-		private readonly EmailSettings $defaultEmailSettings,
-		private readonly Audit $audit,
-		private readonly ?Mailer $mailer = null,
+		private QueryCollection $database,
+		private EmailSettings $defaultEmailSettings,
+		private Audit $audit,
+		private ?Mailer $mailer = null,
+		private bool $ignoreTransportErrors = false,
 	) {}
 
+	/** @param array<string, string> $kvp */
 	public function schedule(
 		User|AnonUser $user,
 		ApplicationDeployment $deployment,
@@ -40,64 +39,68 @@ class EmailRepository {
 		array $kvp = [],
 		string $fromAddress = self::DEFAULT_EMAIL_FROM_ADDRESS,
 		string $fromName = self::DEFAULT_EMAIL_FROM_NAME,
-		DateTimeInterface $when = null,
+		?DateTimeInterface $when = null,
 	):string {
-		$filePath = "data/email/$templateName.md";
-		if(!is_file($filePath)) {
-			throw new EmailTemplateNotFoundException($templateName);
-		}
+		$emailId = $this->queue($user, $deployment, $toAddress, $templateName,
+			$kvp, $fromAddress, $fromName, $when);
+		$this->sendScheduled();
+		return $emailId;
+	}
 
-		if(!$when) {
-			$when = new DateTime();
-		}
-
-		$markdown = file_get_contents($filePath);
-		$markdown = trim($markdown);
-
-		foreach($kvp as $key => $value) {
-			if(!is_scalar($value)) {
-				continue;
-			}
-
-			$markdown = str_replace(
-				"{{" . $key . "}}",
-				$value,
-				$markdown
-			);
-		}
-
-		$subject = trim(substr($markdown, 1, strpos($markdown, "\n")));
-		$markdown = substr($markdown, strpos($markdown, "\n") + 2);
-
-		$environment = new Environment();
-		$environment->addExtension(new AutolinkExtension());
-		$environment->addExtension(new AttributesExtension());
-
-		$converter = new CommonMarkConverter();
-		$html = $converter->convert($markdown);
+	/** @param array<string, string> $kvp */
+	private function queue(
+		User|AnonUser $user,
+		ApplicationDeployment $deployment,
+		string $toAddress,
+		string $templateName,
+		array $kvp = [],
+		string $fromAddress = self::DEFAULT_EMAIL_FROM_ADDRESS,
+		string $fromName = self::DEFAULT_EMAIL_FROM_NAME,
+		?DateTimeInterface $when = null,
+	):string {
+		$rendered = (new EmailTemplate())->render($templateName, $kvp);
+		$when ??= new DateTime();
 
 		$emailId = new Ulid();
-		$this->audit->create(Action::EMAIL_SCHEDULED, [
-			"deploymentId" => $deployment->id,
-			"emailId" => (string)$emailId,
-			"template" => $templateName,
-		], $user);
-		$this->db->insert("schedule", [
+		$this->database->insert("schedule", [
 			"id" => $emailId,
 			"deploymentId" => $deployment->id,
 			"scheduledToSendAt" => $when,
-			"subject" => $subject,
+			"subject" => $rendered["subject"],
 			"toEmail" => $toAddress,
 			"senderName" => $fromName,
 			"senderAddress" => $fromAddress,
-			"textContent" => $markdown,
-			"htmlContent" => (string)$html,
+			"textContent" => $rendered["text"],
+			"htmlContent" => $rendered["html"],
 		]);
-
-// TODO: Move this to a background task.
-		$this->sendScheduled();
+		$this->audit->recordChange(
+			Action::EMAIL_SCHEDULED,
+			before: null,
+			after: (object)[
+				"emailId" => (string)$emailId,
+				"deploymentId" => $deployment->id,
+				"template" => $templateName,
+				"recipient" => $toAddress,
+			],
+			actor: $user,
+		);
 
 		return $emailId;
+	}
+
+	public function queueLoginInstructions(User $actor, User $recipient):string {
+		$deployment = $recipient->deployment;
+		$url = (string)$deployment->getClientReturnUri();
+
+		return $this->queue($actor, $deployment, $recipient->email, "loginInstructions.md", [
+			"applicationName" => $deployment->application->name,
+			"email" => $recipient->email,
+			"loginUrl" => $url,
+			"authenticationInstructions" => $recipient->hash === null
+				? "Choose the email security code option. We will send a code to your inbox."
+				: "Use the password arranged with your administrator, or choose an email security code.",
+		], $deployment->application->emailSendFrom ?? self::DEFAULT_EMAIL_FROM_ADDRESS,
+			$deployment->application->name);
 	}
 
 	public function scheduleAuthCode(
@@ -116,7 +119,7 @@ class EmailRepository {
 			[
 				"code" => $code,
 				"siteName" => $siteName,
-			],
+			] + (new EmailBranding())->placeholders($deployment),
 			$fromEmail,
 			$siteName,
 		);
@@ -126,7 +129,7 @@ class EmailRepository {
 	public function sendScheduled():array {
 		$sentEmailIdList = [];
 
-		foreach($this->db->fetchAll("getScheduled") as $row) {
+		foreach($this->database->fetchAll("getScheduled") as $row) {
 			$emailSettings = $this->defaultEmailSettings;
 
 			if($emailSettingsObj = json_decode($row->getString("emailSettings"), true)) {
@@ -148,7 +151,11 @@ class EmailRepository {
 				$emailSettings,
 			);
 
-			$this->db->update("markAsSent", [
+			if($sentMessageId === null) {
+				continue;
+			}
+
+			$this->database->update("markAsSent", [
 				"id" => $row->getString("id"),
 				"sentMessageId" => $sentMessageId,
 			]);
@@ -159,6 +166,9 @@ class EmailRepository {
 		return $sentEmailIdList;
 	}
 
+	/** Uses stateless utility/framework APIs.
+	* @SuppressWarnings("PHPMD.StaticAccess")
+	*/
 	public function send(
 		string $fromName,
 		string $fromAddress,
@@ -167,7 +177,7 @@ class EmailRepository {
 		string $markdown,
 		string $html,
 		EmailSettings $emailSettings,
-	):string {
+	):?string {
 		$transport = Transport::fromDsn(implode("", [
 			"smtp://",
 			$emailSettings->username,
@@ -194,7 +204,17 @@ class EmailRepository {
 		$authwaveVersion = trim($authwaveVersion);
 		$headers->addHeader("X-AUTHWAVE-VERSION", $authwaveVersion);
 
-		$mailer->send($email);
+		try {
+			$mailer->send($email);
+		}
+		catch(TransportExceptionInterface $exception) {
+			if(!$this->ignoreTransportErrors) {
+				throw $exception;
+			}
+
+			return null;
+		}
+
 		return $ulid;
 	}
 }

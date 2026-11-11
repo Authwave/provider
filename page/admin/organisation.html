@@ -1,0 +1,18 @@
+<main data-flux="update-link" id="main-content" class="stack">
+	<admin-header />
+	<header class="stack compact">
+		<h1>Organisation</h1>
+		<p data-bind:text="scopeLabel">No applications</p>
+	</header>
+	<p class="notice" role="note">This screen is not connected yet. Its controls are unavailable.</p>
+	<section class="settings-panel stack">
+		<h2>Create an organisation</h2>
+		<form method="post" class="form-fields stack compact">
+
+			<label><span>Organisation name</span><input type="text" name="name" required maxlength="100" disabled /></label>
+			<div class="actions">
+				<button type="submit" class="primary" disabled>Create organisation</button>
+			</div>
+		</form>
+	</section>
+</main>

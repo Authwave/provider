@@ -1,4 +1,4 @@
-insert into audit (
+insert into Audit (
 	id,
 	action,
 	detail,
@@ -6,11 +6,12 @@ insert into audit (
 	anonUserId,
 	createdAt
 )
+
 values (
 	:id,
 	:action,
 	:detail,
 	:userId,
 	:anonUserId,
-	now()
+	CURRENT_TIMESTAMP
 )

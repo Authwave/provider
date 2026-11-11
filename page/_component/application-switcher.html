@@ -1,0 +1,9 @@
+<label>
+	<span>Application</span>
+	<span class="select-control" data-icon="selector">
+		<select name="application" data-bind:disabled="?!hasApplications">
+			<option value="" disabled data-bind:hidden="?hasApplications" data-bind:selected="?!hasApplications">No applications yet</option>
+			<option data-list="scope-applications" data-bind:value="value" data-bind:text="label" data-bind:selected="?selected"></option>
+		</select>
+	</span>
+</label>

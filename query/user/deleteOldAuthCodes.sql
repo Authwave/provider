@@ -1,3 +1,5 @@
-delete from user_auth_code
+delete from
+	UserAuthCode
+
 where
 	createdAt < date_sub(now(), interval 30 minute)

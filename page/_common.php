@@ -1,24 +1,88 @@
 <?php
-
 use Authwave\Crypto\ProviderUri;
 use Authwave\Session\LoginSession;
 use Authwave\Model\ApplicationRepository;
-use Gt\Cipher\EncryptedUri;
-use Gt\Cipher\Key;
-use Gt\Http\Response;
-use Gt\Http\Uri;
-use Gt\Session\Session;
+use Authwave\Security\{Audit, AnonUser, Action, Sudo};
+use Authwave\User\LoginState;
+use Authwave\User\UserRepository;
+use Authwave\UI\TableLink;
+use GT\Cipher\EncryptedUri;
+use GT\Cipher\Key;
+use GT\Cipher\InitVector;
+use GT\Config\Config;
+use GT\Http\ResponseStatusException\ClientError\HttpNotFound;
+use GT\Http\Response;
+use GT\Http\ResponseStatusException\HttpBadRequest;
+use GT\Http\Uri;
+use GT\Http\Request;
+use GT\Session\Session;
+use GT\Dom\HTMLDocument;
+use GT\Cookie\CookieHandler;
+
+function go_before(Audit $audit, Request $request, LoginSession $login,
+	UserRepository $users, AnonUser $anonymous, Sudo $sudo,
+	Response $response):void {
+	// Keep an audit trail of every request.
+	$audit->recordRequest($request, $login, $users, $anonymous);
+
+	if($login->getState() === LoginState::LOGGED_IN
+	&& ($deployment = $login->getDeployment()) && ($email = $login->getEmail())) {
+		$actor = $users->get($deployment, $email);
+
+		if($actor !== null) {
+			$until = $request->getHeaderLine("X-Authwave-Background") === "1"
+				? $sudo->expiresAt($actor) : $sudo->renew($actor);
+			$response->headers->set("X-Authwave-Sudo-Until", (string)$until);
+		}
+	}
+}
 
 function go(
-	ApplicationRepository $appRepo,
+	ApplicationRepository $applicationRepository,
+	UserRepository $userRepository,
 	Uri $uri,
 	LoginSession $loginSession,
 	Session $session,
 	Response $response,
+	Config $config,
+	HTMLDocument $document,
+	AnonUser $anonymous,
+	CookieHandler $cookies,
 ):void {
+	foreach($document->querySelectorAll("table:has(a[data-table-link])") as $table) {
+		new TableLink($table);
+	}
+
+	if($uri->getPath() === "/logged-out/") {
+		return;
+	}
+
+	if($deploymentId = $uri->getQueryValue("dev-login")) {
+		if($config->isProduction()) {
+			throw new HttpNotFound();
+		}
+
+		if(!is_string($deploymentId)) {
+			throw new HttpBadRequest();
+		}
+
+		$deployment = $applicationRepository->getDeploymentById($deploymentId) ?? throw new HttpNotFound();
+		$loginSession->setDeploymentForLogin($deployment);
+		$loginSession->resetAuthentication();
+		$loginSession->setData([
+			"secretIv" => (string)new InitVector(),
+// Prevents automatic navigation to the client after authentication:
+			"developmentLogin" => true,
+		]);
+
+		$response->redirect("/login/");
+		return;
+	}
+
 	$providerUri = new ProviderUri($uri);
+
 	if($deploymentId = $providerUri->getDeploymentId()) {
-		$deployment = $appRepo->getDeploymentById($deploymentId);
+		$deployment = $applicationRepository->getDeploymentById($deploymentId) ?? throw new HttpNotFound();
 
 		$enc = new EncryptedUri(
 			$uri,
@@ -30,19 +94,34 @@ function go(
 
 		if($data["action"] === "login") {
 			$loginSession->setDeploymentForLogin($deployment);
-			unset($data["returnUri"]);
+			unset($data["returnUri"], $data["action"]);
+
 			if($returnUri = $providerUri->getReturnUri($deployment->getClientReturnUri())) {
 				$data["returnUri"] = (string)$returnUri;
 			}
+
 			$loginSession->setData($data);
+			$applicationRepository->recordClientConnection($deployment->id, $uri, $anonymous);
 			$response->redirect("/");
 		}
 		elseif($data["action"] === "logout") {
-			$loginSession->clearDataForLogout($deployment);
+			$cookieName = UserRepository::SESSION_COOKIE_PREFIX . $deployment->id;
+
+			if($userRepository->endSession($deployment, $cookies->get($cookieName)?->getValue())) {
+				$loginSession->resetAuthentication();
+			}
+			else {
+				$email = $loginSession->getEmail();
+				$user = $email ? $userRepository->get($deployment, $email) : null;
+				$loginSession->clearDataForLogout($deployment, $user);
+			}
+
+			$cookies->delete($cookieName);
 			$session->kill();
 
 			if(isset($data["redirectTo"])) {
 				$redirectUri = new Uri($data["redirectTo"]);
+
 				if(!$redirectUri->getHost()) {
 					$clientReturnUri = new Uri($deployment->getClientReturnUri());
 					$redirectUri = $clientReturnUri
@@ -54,21 +133,30 @@ function go(
 				$response->redirect($redirectUri);
 			}
 			else {
-				$response->redirect(
-					(new Uri($deployment->getClientReturnUri()))
-						->withQueryValue("do", "logout")
-				);
+				$response->redirect(new Uri($deployment->getClientReturnUri()));
 			}
 		}
 	}
 	elseif(!$loginSession->getDeployment()) {
 		$host = $uri->getHost();
 		$port = $uri->getPort();
+
 		if($port && $port !== 443) {
 			$host .= ":$port";
 		}
 
-		$deployment = $appRepo->getDeploymentByProviderHost($host);
-		$appRepo->redirectToDeployment($deployment, $host, $response);
+		$deployment = $applicationRepository->getDeploymentByProviderHost($host) ?? throw new HttpNotFound();
+
+		if($uri->getPath() === "/admin" || str_starts_with($uri->getPath(), "/admin/")) {
+			$loginSession->setDeploymentForLogin($deployment);
+			return;
+		}
+
+		$applicationRepository->redirectDeployment(
+			$deployment,
+			$host,
+			$anonymous,
+			$response->redirect(...),
+		);
 	}
 }

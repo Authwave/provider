@@ -1,11 +1,10 @@
 <?php
 use Authwave\Session\LoginSession;
 use Authwave\User\LoginState;
-use Authwave\User\User;
 use Authwave\User\UserRepository;
-use Gt\DomTemplate\Binder;
-use Gt\Http\Response;
-use Gt\Input\Input;
+use GT\DomTemplate\Binder;
+use GT\Http\Response;
+use GT\Input\Input;
 
 function go(
 	Response $response,
@@ -27,7 +26,7 @@ function do_password(
 	LoginSession $loginSession,
 	Response $response,
 ):void {
-	usleep(rand(500_000, 1_500_000));
+	usleep(rand(500_000, 1_000_000));
 	$email = $loginSession->getEmail();
 	$deployment = $loginSession->getDeployment();
 	$password = $input->getString("password");

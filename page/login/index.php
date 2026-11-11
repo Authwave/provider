@@ -1,16 +1,13 @@
 <?php
-use Authwave\Model\ApplicationDeployment;
-use Authwave\Model\ApplicationRepository;
 use Authwave\Session\LoginSession;
 use Authwave\Security\Action;
 use Authwave\Security\AnonUser;
 use Authwave\Security\Audit;
-use Gt\DomTemplate\Binder;
-use Gt\Http\Request;
-use Gt\Http\Response;
-use Gt\Http\ServerInfo;
-use Gt\Input\Input;
-use Gt\Session\Session;
+use GT\DomTemplate\Binder;
+use GT\Http\Request;
+use GT\Http\Response;
+use GT\Input\Input;
+use GT\Session\Session;
 
 function go(
 	Input $input,
@@ -35,7 +32,6 @@ function go(
 
 	$clientHost = $deployment->clientHost;
 	$binder->bindKeyValue("clientHost", $clientHost);
-	$binder->bindKeyValue("title", $deployment->title);
 }
 
 function do_continue(
@@ -69,8 +65,10 @@ function do_cancel(
 	$audit->create(Action::LOGIN_CANCELLED, [
 		"deploymentId" => $deployment->id,
 	], $anonUser);
+
 	if(strtok($deployment->getClientReturnUri()->getHost(), ":") !== "localhost") {
 		$session->kill();
 	}
+
 	$response->redirect($deployment->getClientReturnUri()->withQueryValue("do", "cancel"));
 }

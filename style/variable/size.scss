@@ -1,0 +1,26 @@
+@use "break";
+
+:root {
+	--authwave-size-login-logo: 12rem;
+	--authwave-size-code-input-font: var(--theme-code-input-font-size, var(--theme-font-size));
+	--authwave-size-code-input-border: var(--theme-code-input-border-width, var(--theme-border-width));
+	--theme-icon-size: var(--theme-space-5);
+	--authwave-size-providers-font: var(--theme-caption-size, var(--theme-font-size));
+	--authwave-size-report-chart-max: 64rem;
+	--authwave-size-body-font: var(--theme-font-size-compact, var(--theme-font-size));
+	--authwave-size-title-font: calc(var(--authwave-size-body-font) * 2);
+	--authwave-size-label-font: calc(var(--authwave-size-body-font) * 0.8);
+
+	@media(min-width: break.$small) {
+		--authwave-size-body-font: var(--theme-font-size-comfortable, var(--theme-font-size));
+	}
+	@media(min-width: break.$medium) {
+		--authwave-size-body-font: var(--theme-font-size-wide, var(--theme-font-size));
+	}
+	@media(min-width: break.$large) {
+		--authwave-size-body-font: var(--theme-font-size-large, var(--theme-font-size));
+	}
+	@media(min-width: break.$x-large) {
+		--authwave-size-body-font: var(--theme-font-size-expanded, var(--theme-font-size));
+	}
+}

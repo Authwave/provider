@@ -1,6 +1,8 @@
 select
-	user.hash
+	User.hash
+
 from
-	user
+	User
+
 where
-	user.id = ?
+	User.id = ?

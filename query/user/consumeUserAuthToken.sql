@@ -1,4 +1,6 @@
-delete from user_auth_code
+delete from
+	UserAuthCode
+
 where
 	userId = ?
 and

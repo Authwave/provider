@@ -1,1 +1,13 @@
-require("./flair/flair.es6").go();
+import "./component/flair-theme.es6";
+import "@phpgt/flux";
+import "./app/form-submission.es6";
+import "./ui/delete-confirmation.es6";
+import "./ui/sudo.es6";
+import "./ui/user-details.es6";
+import "./app/form-viewport.es6";
+import "./ui/color-scheme.es6";
+import "./ui/toolbar-dropdown.es6";
+import "./component/security-code.es6";
+import "./app/autofocus.es6";
+import "./app/conditional-fields.es6";
+import "./component/admin-chart.es6";

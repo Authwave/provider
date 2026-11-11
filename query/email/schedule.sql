@@ -1,4 +1,4 @@
-insert into email (
+insert into Email (
 	id,
 	deploymentId,
 	createdAt,
@@ -10,10 +10,11 @@ insert into email (
 	textContent,
 	htmlContent
 )
+
 values (
 	:id,
 	:deploymentId,
-	now(),
+	CURRENT_TIMESTAMP,
 	:scheduledToSendAt,
 	:subject,
 	:toEmail,

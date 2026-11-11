@@ -6,59 +6,36 @@ on:
 
 permissions:
   contents: read
-  actions: read
 
 jobs:
-  composer:
+  test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        php: [ 8.4, 8.5 ]
+        php: ['8.4', '8.5']
 
     steps:
       - uses: actions/checkout@v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: curl, dom, mbstring, pdo_sqlite, sodium
+          coverage: none
+          tools: composer:v2
 
       - name: Cache Composer dependencies
         uses: actions/cache@v5
         with:
           path: /tmp/composer-cache
-          key: ${{ runner.os }}-${{ matrix.php }}-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-php-${{ matrix.php }}-${{ hashFiles('composer.lock') }}
 
-      - name: Composer install
-        uses: php-actions/composer@v6
-        with:
-          php_version: ${{ matrix.php }}
-          php_extensions: pcntl
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+        env:
+          COMPOSER_CACHE_DIR: /tmp/composer-cache
 
-      - name: Archive build
-        run: mkdir /tmp/github-actions/ && tar --exclude=".git" -cvf /tmp/github-actions/build.tar ./
-
-      - name: Upload build archive for test runners
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifact-${{ matrix.php }}
-          path: /tmp/github-actions
-          retention-days: 1
-
-  phpunit:
-    runs-on: ubuntu-latest
-    needs: [ composer ]
-    strategy:
-      matrix:
-        php: [ 8.4, 8.5 ]
-
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: build-artifact-${{ matrix.php }}
-          path: /tmp/github-actions
-
-      - name: Extract build archive
-        run: tar -xvf /tmp/github-actions/build.tar ./
-
-      - name: PHP Unit tests
-        uses: php-actions/phpunit@v4
-        with:
-          php_version: ${{ matrix.php }}
-          php_extensions: pcntl
-          configuration: phpunit.xml
+      - name: Run tests and quality checks
+        run: composer test

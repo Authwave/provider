@@ -1,0 +1,6 @@
+@use "../../node_modules/flair/style/lib/flair";
+
+textarea {
+	@extend %o-control;
+	inline-size: auto;
+}

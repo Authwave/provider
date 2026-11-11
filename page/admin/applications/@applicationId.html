@@ -1,0 +1,19 @@
+<main data-flux="update-link" id="main-content" class="stack">
+	<admin-header />
+
+	<header class="application-heading" data-flux="update">
+		<nav class="breadcrumbs" aria-label="Breadcrumb">
+			<h1>
+				<a href="/admin/applications/" aria-current="false">Applications</a>
+				<span><span class="separator" aria-hidden="true">&gt;</span><span aria-current="page" data-bind:text="currentName"></span></span>
+			</h1>
+		</nav>
+	</header>
+
+	<delete-confirmation data-flux="update" />
+
+	<div class="applications-layout">
+		<application-settings data-flux="update" />
+		<application-deployments />
+	</div>
+</main>

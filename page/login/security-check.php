@@ -6,11 +6,11 @@ use Authwave\Security\AnonUser;
 use Authwave\Security\Audit;
 use Authwave\User\LoginState;
 use Authwave\User\UserRepository;
-use Gt\Dom\HTMLDocument;
-use Gt\DomTemplate\Binder;
-use Gt\DomTemplate\ListElementCollection;
-use Gt\Http\Response;
-use Gt\Input\Input;
+use GT\Dom\HTMLDocument;
+use GT\DomTemplate\Binder;
+use GT\DomTemplate\ListElementCollection;
+use GT\Http\Response;
+use GT\Input\Input;
 
 function go(
 	LoginSession $loginSession,

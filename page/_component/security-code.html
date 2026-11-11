@@ -1,0 +1,17 @@
+<fieldset>
+	<legend>Security code</legend>
+	<label class="security-code-fallback">
+		<span>Enter the five-digit code</span>
+		<input type="text" name="token" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{5}" maxlength="5" required data-autofocus />
+	</label>
+
+	<template>
+		<div class="security-code-digits">
+			<input type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]" maxlength="5" aria-label="Digit 1 of 5" required data-autofocus />
+			<input type="text" inputmode="numeric" autocomplete="off" pattern="[0-9]" maxlength="5" aria-label="Digit 2 of 5" required />
+			<input type="text" inputmode="numeric" autocomplete="off" pattern="[0-9]" maxlength="5" aria-label="Digit 3 of 5" required />
+			<input type="text" inputmode="numeric" autocomplete="off" pattern="[0-9]" maxlength="5" aria-label="Digit 4 of 5" required />
+			<input type="text" inputmode="numeric" autocomplete="off" pattern="[0-9]" maxlength="5" aria-label="Digit 5 of 5" required />
+		</div>
+	</template>
+</fieldset>

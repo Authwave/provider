@@ -1,5 +1,5 @@
 select
-	email.id,
+	Email.id,
 	sentAt,
 	sentMessageId,
 	createdAt,
@@ -10,25 +10,25 @@ select
 	senderAddress,
 	textContent,
 	htmlContent,
-	application.emailSettings
+	Application.emailSettings
 
 from
-	email
+	Email
 
 inner join
-	application_deployment
+	ApplicationDeployment
 on
-	application_deployment.id = deploymentId
+	ApplicationDeployment.id = deploymentId
 
 inner join
-	application
+	Application
 on
-	application.id = application_deployment.applicationId
+	Application.id = ApplicationDeployment.applicationId
 
 where
 	sentAt is null
 and
-	scheduledToSendAt <= now()
+	scheduledToSendAt <= CURRENT_TIMESTAMP
 
 order by
-	id
+	Email.id

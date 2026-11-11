@@ -1,10 +1,10 @@
 <?php
 namespace Authwave\Crypto;
 
-use Gt\Http\Uri;
+use GT\Http\Uri;
 use Psr\Http\Message\UriInterface;
 
-class ProviderUri {
+readonly class ProviderUri {
 	const QUERY_STRING_CIPHER = "c";
 	const QUERY_STRING_INIT_VECTOR = "i";
 	const QUERY_STRING_CONSUMER_URI = "u";
@@ -16,7 +16,7 @@ class ProviderUri {
 		self::QUERY_STRING_DEPLOYMENT_ID,
 	];
 
-	public function __construct(private readonly Uri $uri) {}
+	public function __construct(private Uri $uri) {}
 
 	public function getDeploymentId():?string {
 		if(!$this->isLoginAttempt()) {
@@ -28,18 +28,21 @@ class ProviderUri {
 
 	public function getReturnUri(UriInterface $default):?UriInterface {
 		$encoded = $this->uri->getQueryValue(self::QUERY_STRING_CONSUMER_URI);
+
 		if(!is_string($encoded) || $encoded === ""
 		|| strlen($encoded) % 2 !== 0 || !ctype_xdigit($encoded)) {
 			return null;
 		}
 
 		$requested = hex2bin($encoded);
+
 		if(preg_match('/[\\\\\x00-\x20\x7f]/', $requested)
 		|| str_starts_with($requested, "//")) {
 			return null;
 		}
 
 		$parts = parse_url($requested);
+
 		if($parts === false || isset($parts["user"]) || isset($parts["pass"])) {
 			return null;
 		}
@@ -48,6 +51,7 @@ class ProviderUri {
 			$scheme = strtolower($parts["scheme"] ?? "");
 			$defaultPort = $default->getPort() ?? ($default->getScheme() === "https" ? 443 : 80);
 			$port = $parts["port"] ?? ($scheme === "https" ? 443 : 80);
+
 			if($scheme !== strtolower($default->getScheme())
 			|| strtolower($parts["host"] ?? "") !== strtolower($default->getHost())
 			|| $port !== $defaultPort) {

@@ -1,0 +1,10 @@
+:root {
+	--authwave-space-code-input-gap: var(--theme-code-input-gap, var(--theme-space-2));
+	--authwave-space-code-input-text-offset: 0.15em;
+	--theme-icon-gap: var(--theme-space-2);
+	--authwave-space-providers-gap: var(--theme-space-1);
+	--authwave-space-providers-padding: var(--theme-space-2);
+	--authwave-space-topper: var(--theme-content-panel-section-gap, var(--theme-space-8));
+	--authwave-space-footer-block: var(--theme-page-footer-padding-block, var(--theme-space-4));
+	--authwave-space-label-margin: var(--theme-space-2);
+}

@@ -1,0 +1,64 @@
+@use "../animation/flux-loader-spin";
+
+// Apply Flux's autosave presentation before its deferred script starts.
+// Without scripting, retain the ordinary HTTP submit button.
+@media (scripting: enabled) {
+	[data-flux="autosave"], body.dir--admin .actions > [data-flux="autosave"],
+	.actions:has(> [data-flux="autosave"]:only-child) {
+		display: none;
+	}
+}
+
+form[data-flux] {
+	&.flux-form-waiting {
+		cursor: wait;
+		--theme-button-cursor: wait;
+
+		button, input, select, textarea, [contenteditable] {
+			cursor: wait;
+		}
+	}
+
+	button[type="submit"], button:not([type]) {
+		position: relative;
+
+		> span, &::before {
+			transition: opacity 1s ease;
+		}
+
+		&::after {
+			@extend %flux-loader-icon;
+			content: "";
+			position: absolute;
+			inset: 0;
+			margin: auto;
+			z-index: 1;
+			opacity: 0;
+			transition: opacity 0.2s ease;
+		}
+
+		&.flux-button-waiting {
+			> span, &::before {
+				opacity: 0;
+			}
+
+			&::after {
+				opacity: 1;
+				transition: opacity 1s ease;
+				@extend %flux-loader-spinner;
+			}
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		button[type="submit"], button:not([type]) {
+			> span, &::before, &::after {
+				transition: none;
+			}
+
+			&.flux-button-waiting::after {
+				transition: none;
+			}
+		}
+	}
+}

@@ -1,0 +1,6 @@
+@use "../../node_modules/flair/style/lib/flair";
+
+select {
+	@extend %o-control;
+	inline-size: auto;
+}

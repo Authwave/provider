@@ -1,0 +1,18 @@
+@use "../../node_modules/flair/style/lib/flair";
+
+a {
+	color: var(--theme-link-color);
+
+	&[href] {
+		@extend %d-focus;
+	}
+
+	&[href]:hover:not([aria-disabled="true"]) {
+		color: var(--theme-link-hover-color);
+	}
+
+	&[href]:active:not([aria-disabled="true"]) {
+		color: var(--theme-link-active-color);
+		background-color: var(--theme-link-active-background);
+	}
+}

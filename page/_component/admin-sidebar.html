@@ -1,0 +1,45 @@
+<aside aria-label="Application sidebar">
+	<form class="sidebar-header scope-switcher stack compact" data-scope-form method="get" aria-label="Application">
+		<application-switcher />
+		<button type="submit" data-flux="autosave" data-bind:hidden="?needsApplication">Apply scope</button>
+	</form>
+	<details class="sidebar-menu">
+		<summary data-icon="menu-2"><span>Menu</span></summary>
+		<div class="sidebar-content">
+			<nav class="side-navigation" aria-label="Administration">
+				<ul>
+					<li><a data-nav="dashboard" aria-current="page" href="/admin/" data-icon="chart-bar">Dashboard</a></li>
+					<li><a data-nav="applications" href="/admin/applications/" data-icon="apps">Applications</a></li>
+					<li><a data-nav="users" href="/admin/users/" data-icon="users">Users</a></li>
+					<li><a data-nav="security" href="/admin/security/" data-icon="shield">Security</a></li>
+					<li><a data-nav="emails" href="/admin/emails/" data-icon="mail">Emails</a></li>
+					<li><a data-nav="customisation" href="/admin/customisation/" data-icon="settings">Customisation</a></li>
+					<li><a data-nav="integrations" href="/admin/integrations/" data-icon="lifebuoy">Integrations</a></li>
+					<li><a data-nav="billing" href="/admin/billing/" data-icon="credit-card">Billing</a></li>
+				</ul>
+			</nav>
+			<div class="sidebar-bottom stack">
+				<section id="account-setup" class="setup-card" aria-labelledby="sidebar-setup-title">
+					<div class="toolbar"><h2 id="sidebar-setup-title">Complete account</h2><span><span data-bind:text="completedCount"></span> of 7 complete</span></div>
+					<progress max="7" data-bind:value="completedCount" aria-label="Account setup progress"></progress>
+					<ul class="checklist">
+						<li data-list="setup-steps" data-bind:data-icon="icon" data-bind:data-complete="complete"><span data-bind:text="title"></span></li>
+					</ul>
+					<a class="control" href="/integrations/help/">Continue setup</a>
+				</section>
+
+				<div class="sidebar-account toolbar">
+					<nav class="side-navigation" aria-label="Account">
+						<form method="post" action="/admin/logout/" data-admin-logout>
+							<button type="submit" name="do" value="logout" data-nav="logout" data-icon="logout">Log out</button>
+						</form>
+					</nav>
+					<form method="post" action="/sudo/" data-sudo-disable hidden data-bind:hidden="?!sudoUntil" data-bind:data-sudo-until="sudoUntil">
+						<button type="submit" name="do" value="disable" title="Disable sudo mode">SUDO</button>
+					</form>
+					<button type="button" class="icon-button" data-theme-toggle data-icon="sun-moon" hidden><span>System theme</span></button>
+				</div>
+			</div>
+		</div>
+	</details>
+</aside>

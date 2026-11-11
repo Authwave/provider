@@ -1,0 +1,7 @@
+body.page--logged-out {
+	.logged-out-panel {
+		max-inline-size: 30rem;
+		margin: calc(var(--theme-space-8) * 2) auto;
+		padding: var(--theme-space-4);
+	}
+}

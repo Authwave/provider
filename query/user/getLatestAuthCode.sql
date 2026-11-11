@@ -1,7 +1,8 @@
 select
 	code
+
 from
-	user_auth_code
+	UserAuthCode
 
 where
 	userId = ?
@@ -11,4 +12,5 @@ and
 order by
 	createdAt desc
 
-limit 1
+limit
+	1

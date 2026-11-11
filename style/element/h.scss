@@ -1,0 +1,32 @@
+@use "../decoration/heading";
+
+
+h1 {
+	@extend %d-heading;
+	font-size: var(--authwave-size-title-font);
+}
+
+h2 {
+	@extend %d-heading;
+	font-size: calc(var(--authwave-size-title-font) * .8);
+}
+
+h3 {
+	@extend %d-heading;
+	font-size: calc(var(--authwave-size-title-font) * .6);
+}
+
+h4 {
+	@extend %d-heading;
+	font-size: calc(var(--authwave-size-title-font) * .5);
+}
+
+h5 {
+	@extend %d-heading;
+	font-size: calc(var(--authwave-size-title-font) * .5);
+}
+
+h6 {
+	@extend %d-heading;
+	font-size: calc(var(--authwave-size-title-font) * .5);
+}

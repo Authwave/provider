@@ -1,0 +1,40 @@
+<main data-flux="update-link" id="main-content" class="stack">
+	<admin-header />
+	<header class="stack compact">
+		<h1>Customisation</h1>
+		<p data-bind:text="scopeLabel">No applications</p>
+	</header>
+	<p class="notice" role="note">This screen is not connected yet. Its controls are unavailable.</p>
+	<section class="settings-panel stack">
+		<h2>Visual customisation</h2>
+		<p>—</p>
+		<p>The provider admin theme stays unchanged. These settings describe your login screens and authentication emails.</p>
+		<form method="post" class="form-fields stack compact">
+
+			<label><span>Light logo URL</span><input type="text" name="logoUrl"  disabled /></label>
+			<label><span>Dark logo URL</span><input type="text" name="darkLogoUrl"  disabled /></label>
+			<label><span>Primary colour</span><input type="color" name="primaryColour"  disabled /></label>
+			<label><span>Secondary colour</span><input type="color" name="secondaryColour"  disabled /></label>
+			<label><span>CSS overrides</span><textarea name="cssOverrides" rows="8" placeholder=".auth-heading { ... }" disabled></textarea></label>
+			<div class="actions">
+				<button type="submit" class="primary" disabled>Save settings</button>
+			</div>
+		</form>
+		<details class="settings-disclosure">
+			<summary>Preview colours</summary>
+			<div class="settings-content">
+				<div class="theme-preview">
+					<span>Primary colour</span>
+					<span>Secondary colour</span>
+				</div>
+				<p>Preview reflects the saved colours.</p>
+			</div>
+		</details>
+	</section>
+	<section class="settings-panel stack">
+		<h2>Application overrides</h2>
+		<ul class="record-list">
+
+		</ul>
+	</section>
+</main>
