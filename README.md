@@ -517,7 +517,9 @@ Each deployment's settings form includes **Sender email prefix** and **Reply-To
 email address**. The sender prefix is grouped with a disabled domain suffix
 taken from the Authwave host, excluding its port: `account` with
 `login.example.com` sends from `account@login.example.com`. New forms start with
-`security`. An empty prefix preserves the application's existing
+`security`. PHP renders the domain suffix and Reply-To placeholder. The **Update
+email preview** button refreshes these values without saving; Flux progressively
+enhances it to preview field changes in the background. An empty prefix preserves the application's existing
 `Application.emailSendFrom` sender. Verify the sending domain with your SMTP
 provider before using it.
 

@@ -37,9 +37,11 @@ function go(Binder $binder, Application $application, ApplicationRepository $app
 	$binder->bindKeyValue("hasDeployments", count($deployments) > 0);
 	$binder->bindKeyValue("success", $request->getMethod() === "GET"
 		? $flash->getFlash("deployment_success") ?? "" : "");
+	$action = $input->get("do", Input::DATA_BODY);
 	$submitted = $request->getMethod() === "POST"
-		&& $input->get("do", Input::DATA_BODY) === "save-deployment";
-	$error = $submitted ? $flash->getFlash("deployment_error") ?? "" : "";
+		&& in_array($action, ["save-deployment", "preview-deployment"], true);
+	$error = $submitted && $action === "save-deployment"
+		? $flash->getFlash("deployment_error") ?? "" : "";
 	$submittedId = $input->get("id", Input::DATA_BODY);
 
 	if(!in_array($submittedId, $ids, true)) {
@@ -92,6 +94,7 @@ function go(Binder $binder, Application $application, ApplicationRepository $app
 		$binder->bindKeyValue("isNew", $isNew, $item);
 		$binder->bindKeyValue("isOpen", $isSubmitted || (!$submitted && $opened === $id), $item);
 		$binder->bindKeyValue("panelId", "deployment-" . ($isNew ? "new" : $id), $item);
+		$binder->bindKeyValue("deploymentFormId", "deployment-form-" . ($isNew ? "new" : $id), $item);
 		$binder->bindKeyValue("summary", $isNew ? "Create a deployment" : $fields["title"], $item);
 		$binder->bindKeyValue("submitLabel", $isNew ? "Create deployment" : "Save deployment", $item);
 		$binder->bindKeyValue("apiKey", $isNew ? "" : $id . "_" . $fields["secret"], $item);
@@ -112,7 +115,6 @@ function go(Binder $binder, Application $application, ApplicationRepository $app
 		$settings = new EmailSettings(null, null, null, null, $replyToConfigured);
 		$binder->bindKeyValue("replyToDefault", $settings->getReplyTo(preg_match('/^[A-Za-z0-9]+(?:[.\-][A-Za-z0-9]+)*$/',
 			$domains->hostname($fields["providerHost"])) ? $domains->hostname($fields["providerHost"]) : "") ?? "", $item);
-		$binder->bindKeyValue("replyToConfigured", $replyToConfigured ?? "", $item);
 
 		return $fields;
 	}, templateName: "deployment-panels");
@@ -128,3 +130,6 @@ function do_delete_deployment(ApplicationSettingsAction $action, Input $input,
 	Request $request, Response $response):void {
 	$action->deleteDeployment($input, $request, $response);
 }
+
+/** Re-render the submitted draft without validating or persisting it. */
+function do_preview_deployment():void {}

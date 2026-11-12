@@ -9,7 +9,7 @@
 	}
 }
 
-form[data-flux] {
+form:is([data-flux], [data-flux-obj]) {
 	&.flux-form-waiting {
 		cursor: wait;
 		--theme-button-cursor: wait;

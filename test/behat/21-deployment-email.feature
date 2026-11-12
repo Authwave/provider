@@ -15,6 +15,7 @@ Feature: Deployment email identity
       | Sender email prefix    | account                 |
       | Reply-To email address | help@example.test       |
     Then deployment "Create a deployment" should show sender domain "@login.example.test"
+    And no deployment changes should have been saved
     And the deployment email group should fit narrow and wide screens
     When I save deployment "Create a deployment"
     Then I should see "Deployment saved."
@@ -26,6 +27,7 @@ Feature: Deployment email identity
       | Sender email prefix    | security                |
       | Reply-To email address |                         |
     Then deployment "Production" should show sender domain "@account.example.test"
+    And stored deployment "Production" should use host "login.example.test"
     When I save deployment "Production"
     Then I should see "Deployment saved."
     And deployment "Production" email settings should be "security" and ""
@@ -43,3 +45,46 @@ Feature: Deployment email identity
       | Sender email prefix    | forged@example.org      |
       | Reply-To email address | help@example.test       |
     And there should be 1 deployment expander
+
+  Scenario: A read-only preview supports incomplete drafts and ordinary form submissions
+    When I complete the "Create a deployment" deployment form:
+      | Authwave host          | LOGIN.Example.TEST:8443 |
+      | Sender email prefix    | account                |
+      | Reply-To email address | help@example.test      |
+    And I update the email preview for deployment "Create a deployment"
+    Then deployment "Create a deployment" should show sender domain "@login.example.test"
+    And deployment "Create a deployment" should have Reply-To placeholder "support@example.test"
+    And deployment "Create a deployment" should retain:
+      | Deployment name        |                        |
+      | Authwave host          | LOGIN.Example.TEST:8443 |
+      | Sender email prefix    | account                |
+      | Reply-To email address | help@example.test      |
+    And no deployment changes should have been saved
+    When I complete the "Create a deployment" deployment form:
+      | Authwave host | https://invalid.test/path |
+    And I update the email preview for deployment "Create a deployment"
+    Then no deployment changes should have been saved
+    And deployment "Create a deployment" should retain:
+      | Authwave host | https://invalid.test/path |
+    When I complete the "Create a deployment" deployment form:
+      | Deployment name   | Production           |
+      | Authwave host     | login.example.test   |
+      | Client URL        | https://example.test |
+      | Client login path | /login/              |
+    And I save deployment "Create a deployment"
+    Then I should see "Deployment saved."
+    And deployment "Production" email settings should be "account" and "help@example.test"
+
+  @javascript
+  Scenario: Save clicked immediately after a host change waits for the preview
+    When I complete the "Create a deployment" deployment form:
+      | Deployment name        | Production           |
+      | Authwave host          | login.example.test   |
+      | Client URL             | https://example.test |
+      | Client login path      | /login/              |
+      | Sender email prefix    | account              |
+      | Reply-To email address | help@example.test    |
+    And I change the host to "account.example.test" and immediately save deployment "Create a deployment"
+    Then I should see "Deployment saved."
+    And stored deployment "Production" should use host "account.example.test"
+    And deployment "Production" email settings should be "account" and "help@example.test"

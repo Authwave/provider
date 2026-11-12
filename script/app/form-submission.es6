@@ -1,8 +1,44 @@
-// Capture duplicate submissions before they reach Flux's form listeners.
+// Autosave forms are registered by Flux with data-flux-obj rather than data-flux.
+const fluxForms = "form:is([data-flux], [data-flux-obj])";
+const pendingSubmissions = new Map();
+
+function submitWhenReady(formId) {
+	const submission = pendingSubmissions.get(formId);
+	const form = document.getElementById(formId);
+	if(!submission || !form) {
+		pendingSubmissions.delete(formId);
+		return;
+	}
+	if(form.matches(".flux-form-waiting") || form.querySelector(".input-changed")) {
+		setTimeout(() => submitWhenReady(formId), 100);
+		return;
+	}
+	pendingSubmissions.delete(formId);
+	const button = Array.from(form.elements).find(element =>
+		element instanceof HTMLButtonElement && element.name === submission.name
+		&& element.value === submission.value);
+	if(button) form.requestSubmit(button);
+}
+
+// Preserve an explicit action clicked while a preview is still completing.
 document.addEventListener("submit", event => {
-	if(event.target.matches("form[data-flux].flux-form-waiting")) {
-		event.preventDefault();
-		event.stopImmediatePropagation();
+	const form = event.target;
+	if(!form.matches(fluxForms)) return;
+	const busy = form.classList.contains("flux-form-waiting");
+	const changing = form.fluxObj?.autoSave && form.querySelector(".input-changed");
+	if(!busy && !changing) return;
+	event.preventDefault();
+	event.stopImmediatePropagation();
+	const button = event.submitter;
+	const autoSave = form.fluxObj?.autoSave;
+	const waitingButton = form.querySelector("button.flux-button-waiting");
+	const previewing = autoSave && (!waitingButton
+		|| (waitingButton.name === autoSave.key && waitingButton.value === autoSave.value));
+	const formId = form.getAttribute("id");
+	if(formId && previewing && button) {
+		const alreadyQueued = pendingSubmissions.has(formId);
+		pendingSubmissions.set(formId, {name: button.name, value: button.value});
+		if(!alreadyQueued) setTimeout(() => submitWhenReady(formId), 100);
 	}
 }, {capture: true});
 
@@ -16,7 +52,7 @@ document.addEventListener("flux:before-request", event => {
 		headers.set("X-Authwave-Background", "1");
 	}
 	event.detail.requestOptions.headers = headers;
-	document.querySelectorAll("form[data-flux].flux-form-waiting").forEach(form => {
+	document.querySelectorAll(`${fluxForms}.flux-form-waiting`).forEach(form => {
 		if(lockedForms.has(form)) {
 			return;
 		}
