@@ -513,14 +513,22 @@ Set a provider-wide default in `config.production.ini`:
 reply_to=support@authwave.com
 ```
 
-An application's existing `Application.emailSettings` JSON can override this
-with `"replyTo":"help@example.com"`. Partial SMTP settings continue to inherit
-the provider-wide reply address. A blank reply address uses the hostname-based
-default. The email settings administration screen remains unfinished; this
-change adds configuration support without enabling its disabled controls.
+Each deployment's settings form includes **Sender email prefix** and **Reply-To
+email address**. The sender prefix is grouped with a disabled domain suffix
+taken from the Authwave host, excluding its port: `account` with
+`login.example.com` sends from `account@login.example.com`. New forms start with
+`security`. An empty prefix preserves the application's existing
+`Application.emailSendFrom` sender. Verify the sending domain with your SMTP
+provider before using it.
 
-`Reply-To` changes where replies go. It does not change `From`, the SMTP
-credentials, or the envelope sender. Continue to configure the authenticated
-sender through `Application.emailSendFrom` (for example,
-`security@login.example.com`) after verifying its sending domain. No database
-migration is needed for the reply address.
+The deployment Reply-To address takes priority over the application's existing
+`Application.emailSettings` JSON `replyTo`, then the provider-wide
+`email.reply_to` setting, then the hostname-based default above. Empty deployment
+values inherit these defaults. Partial SMTP settings still inherit the provider
+reply address. Reply-To does not change SMTP credentials or the envelope sender.
+
+Migration `029-deployment-email-settings.sql` adds nullable `emailPrefix` and
+`emailReplyTo` columns to `ApplicationDeployment`. Existing rows keep their
+current sender and inherited Reply-To; saving email settings does not rotate
+the API key or reset domain verification and connection progress. The grouped
+control uses Flair's input-group pattern (BrightFlair/flair#7).

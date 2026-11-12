@@ -64,6 +64,10 @@ body.dir--admin {
 		@extend %p-identity;
 	}
 
+	.input-group {
+		@extend %p-input-group;
+	}
+
 	.form-fields {
 		@extend %p-form-fields;
 	}

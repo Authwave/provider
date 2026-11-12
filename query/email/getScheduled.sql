@@ -11,7 +11,8 @@ select
 	textContent,
 	htmlContent,
 	Application.emailSettings,
-	ApplicationDeployment.providerHost
+	ApplicationDeployment.providerHost,
+	ApplicationDeployment.emailReplyTo
 
 from
 	Email

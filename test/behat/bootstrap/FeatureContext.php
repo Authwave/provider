@@ -2007,4 +2007,37 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 		})()"), "Production activity must show the deployment's own name using the shared green badge.");
 	}
 
+	#[Then('deployment :summary should show sender domain :domain')]
+	public function deploymentSenderDomain(string $summary, string $domain):void {
+		$field = $this->deploymentDetails($summary)->find("css", "[data-email-domain]");
+		$this->expect($field->getValue() === $domain, "The sender suffix must follow the provider host.");
+		$this->expect($field->hasAttribute("disabled") && !$field->hasAttribute("name"),
+			"The fixed suffix must be disabled and excluded from form submission.");
+	}
+
+	#[Then('deployment :summary email settings should be :prefix and :replyTo')]
+	public function deploymentEmailSettings(string $summary, string $prefix, string $replyTo):void {
+		$details = $this->deploymentDetails($summary);
+		$this->expect($details->findField("Sender email prefix")->getValue() === $prefix,
+			"Sender prefix was not saved.");
+		$this->expect($details->findField("Reply-To email address")->getValue() === $replyTo,
+			"Reply-To address was not saved.");
+	}
+
+	#[Then('the deployment email group should fit narrow and wide screens')]
+	public function deploymentEmailGroupLayout():void {
+		foreach([390, 1440] as $width) {
+			$this->getSession()->resizeWindow($width, 1000);
+			file_put_contents("/tmp/authwave-email-" . $width . ".png", $this->getSession()->getScreenshot());
+			$this->expect($this->getSession()->evaluateScript('(() => {
+				const group = document.querySelector("application-deployments details[open] .input-group");
+				const bounds = group.getBoundingClientRect();
+				const controls = [...group.querySelectorAll("input")].map(input => input.getBoundingClientRect());
+				return bounds.left >= 0 && bounds.right <= innerWidth
+					&& controls.every(control => control.width > 40)
+					&& Math.abs(controls[0].right - controls[1].left) <= 2;
+			})()'), "The email input group must fit and share an edge.");
+		}
+	}
+
 }

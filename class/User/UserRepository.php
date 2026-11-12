@@ -137,7 +137,7 @@ readonly class UserRepository {
 			$user->email,
 			$user->deployment->application->name,
 			$code,
-			$user->deployment->application->emailSendFrom ?? EmailRepository::DEFAULT_EMAIL_FROM_ADDRESS
+			$user->deployment->getSenderAddress() ?? EmailRepository::DEFAULT_EMAIL_FROM_ADDRESS
 		);
 	}
 

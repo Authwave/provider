@@ -45,6 +45,19 @@
 							</div>
 						</div>
 					</div>
+					<div class="field">
+						<label class="field-label" data-bind:for="senderInputId"><span>Sender email prefix</span></label>
+						<div class="input-group">
+							<input name="emailPrefix" data-bind:id="senderInputId" data-bind:value="@" maxlength="64" pattern="^(?:[A-Za-z0-9]+(?:[._+\-][A-Za-z0-9]+)*)?$" placeholder="security" autocomplete="off" spellcheck="false" data-bind:aria-describedby="senderHelpId" />
+							<input disabled data-email-domain data-span="narrow" aria-label="Sender email domain" data-bind:value="senderDomain" />
+						</div>
+						<small data-bind:id="senderHelpId">The domain follows the Authwave host. Leave the prefix empty to keep the application's existing sender.</small>
+					</div>
+					<label>
+						<span>Reply-To email address</span>
+						<input type="email" name="emailReplyTo" maxlength="254" data-bind:value="@" data-bind:placeholder="replyToDefault" data-bind:data-reply-to-default="replyToConfigured" />
+						<small>Replies go here. Leave empty to use the application or provider default, or support at the parent domain.</small>
+					</label>
 					<div class="actions">
 						<button type="submit" name="do" value="save-deployment" data-bind:class=":isNew primary" data-bind:text="submitLabel">Create deployment</button>
 						<button type="submit" name="do" value="delete-deployment" formnovalidate class="existing-deployment-field action-start icon-button danger" data-icon="trash" data-bind:data-confirm-delete="id" data-bind:data-delete-name="deleteName"><span>Delete deployment</span></button>

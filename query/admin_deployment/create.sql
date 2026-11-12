@@ -5,10 +5,14 @@ insert into ApplicationDeployment (
 	providerHost,
 	clientHost,
 	clientLoginPath,
-	secret
+	secret,
+	emailPrefix,
+	emailReplyTo
 )
 
 values (
+	?,
+	?,
 	?,
 	?,
 	?,

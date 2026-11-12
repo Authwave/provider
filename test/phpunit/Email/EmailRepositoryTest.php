@@ -55,9 +55,9 @@ class EmailRepositoryTest extends TestCase {
 
 	#[\PHPUnit\Framework\Attributes\DataProvider("replyToSettings")]
 	public function testSendScheduled_setsReplyToWithoutChangingSender(?string $default, array $settings,
-		string $expected):void {
+		string $expected, ?string $deploymentReplyTo = null):void {
 		$sut = $this->repository(false, replyTo: $default, applicationSettings: $settings,
-			inspect: function(Email $email) use ($expected):void {
+			deploymentReplyTo: $deploymentReplyTo, inspect: function(Email $email) use ($expected):void {
 				self::assertSame($expected, $email->getReplyTo()[0]->getAddress());
 				self::assertSame("sender@example.com", $email->getFrom()[0]->getAddress());
 				self::assertSame("recipient@example.com", $email->getTo()[0]->getAddress());
@@ -66,9 +66,10 @@ class EmailRepositoryTest extends TestCase {
 		self::assertSame(["test-email"], $sut->sendScheduled());
 	}
 
-	/** @return array<string, array{?string, array<string, mixed>, string}> */
+	/** @return array<string, array{0: ?string, 1: array<string, mixed>, 2: string, 3?: ?string}> */
 	public static function replyToSettings():array {
 		return [
+			"deployment override" => ["provider@example.com", ["replyTo" => "app@example.com"], "team@example.com", "team@example.com"],
 			"domain default" => [null, [], "support@example.com"],
 			"provider setting" => ["help@provider.example", [], "help@provider.example"],
 			"application override" => ["help@provider.example", ["replyTo" => "team@example.com"], "team@example.com"],
@@ -77,7 +78,7 @@ class EmailRepositoryTest extends TestCase {
 	}
 
 	private function repository(bool $ignoreErrors, ?RuntimeException $error = null,
-		?string $replyTo = null, array $applicationSettings = [], ?Closure $inspect = null):EmailRepository {
+		?string $replyTo = null, array $applicationSettings = [], ?Closure $inspect = null, ?string $deploymentReplyTo = null):EmailRepository {
 		$transport = $this->createMock(TransportInterface::class);
 		$send = $transport->expects(self::once())->method("send");
 		if($error) {
@@ -91,6 +92,7 @@ class EmailRepositoryTest extends TestCase {
 			"id" => "test-email",
 			"emailSettings" => json_encode($applicationSettings, JSON_THROW_ON_ERROR),
 			"providerHost" => "login.example.com",
+			"emailReplyTo" => $deploymentReplyTo,
 			"senderName" => "Authwave",
 			"senderAddress" => "sender@example.com",
 			"toEmail" => "recipient@example.com",

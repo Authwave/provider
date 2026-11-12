@@ -11,3 +11,4 @@ import "./component/security-code.es6";
 import "./app/autofocus.es6";
 import "./app/conditional-fields.es6";
 import "./component/admin-chart.es6";
+import "./component/deployment-email.es6";

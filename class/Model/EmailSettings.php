@@ -12,7 +12,11 @@ readonly class EmailSettings {
 		public ?string $replyTo = null,
 	) {}
 
-	public function getReplyTo(string $providerHost):?string {
+	public function getReplyTo(string $providerHost, ?string $deploymentReplyTo = null):?string {
+		$deploymentReplyTo = trim($deploymentReplyTo ?? "");
+		if($deploymentReplyTo !== "") {
+			return $deploymentReplyTo;
+		}
 		$replyTo = trim($this->replyTo ?? "");
 		if($replyTo !== "") {
 			return $replyTo;
