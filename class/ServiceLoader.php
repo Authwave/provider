@@ -170,6 +170,7 @@ class ServiceLoader extends DefaultServiceLoader {
 			$this->config->getInt("email.port"),
 			$this->config->getString("email.username"),
 			$this->config->getString("email.password"),
+			$this->config->getString("email.reply_to"),
 		);
 
 		return new EmailRepository(

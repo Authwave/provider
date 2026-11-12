@@ -494,3 +494,33 @@ transaction. A failed delivery retains the user and records the pending action
 in `User.clientNotificationAction`; Redeliver retries deletion rather than creation.
 Deletion callbacks must be idempotent because an acknowledgement can be lost after
 the client has already removed its user.
+
+Email replies
+-------------
+
+Outgoing provider emails include a `Reply-To` address. By default it is
+`support@` on the parent of the provider hostname: `login.example.com` uses
+`support@example.com`, and `login.example.co.uk` uses `support@example.co.uk`.
+This removes one provider subdomain label, rather than guessing a registrable
+domain. A two-label provider hostname uses that hostname itself. Localhost,
+IP addresses and missing hostnames do not produce an inferred reply address.
+The application owner must ensure the resulting support mailbox is monitored.
+
+Set a provider-wide default in `config.production.ini`:
+
+```ini
+[email]
+reply_to=support@authwave.com
+```
+
+An application's existing `Application.emailSettings` JSON can override this
+with `"replyTo":"help@example.com"`. Partial SMTP settings continue to inherit
+the provider-wide reply address. A blank reply address uses the hostname-based
+default. The email settings administration screen remains unfinished; this
+change adds configuration support without enabling its disabled controls.
+
+`Reply-To` changes where replies go. It does not change `From`, the SMTP
+credentials, or the envelope sender. Continue to configure the authenticated
+sender through `Application.emailSendFrom` (for example,
+`security@login.example.com`) after verifying its sending domain. No database
+migration is needed for the reply address.

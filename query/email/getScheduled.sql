@@ -10,7 +10,8 @@ select
 	senderAddress,
 	textContent,
 	htmlContent,
-	Application.emailSettings
+	Application.emailSettings,
+	ApplicationDeployment.providerHost
 
 from
 	Email

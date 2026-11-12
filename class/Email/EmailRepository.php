@@ -138,6 +138,7 @@ readonly class EmailRepository {
 					$emailSettingsObj["port"] ?? $emailSettings->port,
 					$emailSettingsObj["username"] ?? $emailSettings->username,
 					$emailSettingsObj["password"] ?? $emailSettings->password,
+					$emailSettingsObj["replyTo"] ?? $emailSettings->replyTo,
 				);
 			}
 
@@ -149,6 +150,7 @@ readonly class EmailRepository {
 				$row->getString("textContent"),
 				$row->getString("htmlContent"),
 				$emailSettings,
+				$row->getString("providerHost") ?? "",
 			);
 
 			if($sentMessageId === null) {
@@ -177,6 +179,7 @@ readonly class EmailRepository {
 		string $markdown,
 		string $html,
 		EmailSettings $emailSettings,
+		string $providerHost = "",
 	):?string {
 		$transport = Transport::fromDsn(implode("", [
 			"smtp://",
@@ -193,6 +196,9 @@ readonly class EmailRepository {
 		$email = new Email();
 		$email->addFrom(new Address($fromAddress, $fromName));
 		$email->addTo(new Address($toAddress));
+		if($replyTo = $emailSettings->getReplyTo($providerHost)) {
+			$email->replyTo(new Address($replyTo));
+		}
 		$email->subject($subject);
 		$email->text($markdown);
 		$email->html($html);

@@ -84,6 +84,7 @@ readonly class ApplicationRepository {
 				$settingsJson["port"] ?? null,
 				$settingsJson["username"] ?? null,
 				$settingsJson["password"] ?? null,
+				$settingsJson["replyTo"] ?? null,
 			);
 		}
 
