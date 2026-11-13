@@ -1,5 +1,3 @@
-// Autosave forms are registered by Flux with data-flux-obj rather than data-flux.
-const fluxForms = "form:is([data-flux], [data-flux-obj])";
 const pendingSubmissions = new Map();
 
 function submitWhenReady(formId) {
@@ -23,17 +21,16 @@ function submitWhenReady(formId) {
 // Preserve an explicit action clicked while a preview is still completing.
 document.addEventListener("submit", event => {
 	const form = event.target;
-	if(!form.matches(fluxForms)) return;
+	if(!(form instanceof HTMLFormElement)) return;
+	const previewButton = form.querySelector('button[name="do"][value="preview-deployment"]');
 	const busy = form.classList.contains("flux-form-waiting");
-	const changing = form.fluxObj?.autoSave && form.querySelector(".input-changed");
+	const changing = previewButton && form.querySelector(".input-changed");
 	if(!busy && !changing) return;
 	event.preventDefault();
 	event.stopImmediatePropagation();
 	const button = event.submitter;
-	const autoSave = form.fluxObj?.autoSave;
 	const waitingButton = form.querySelector("button.flux-button-waiting");
-	const previewing = autoSave && (!waitingButton
-		|| (waitingButton.name === autoSave.key && waitingButton.value === autoSave.value));
+	const previewing = previewButton && (!waitingButton || waitingButton === previewButton);
 	const formId = form.getAttribute("id");
 	if(formId && previewing && button) {
 		const alreadyQueued = pendingSubmissions.has(formId);
@@ -52,7 +49,7 @@ document.addEventListener("flux:before-request", event => {
 		headers.set("X-Authwave-Background", "1");
 	}
 	event.detail.requestOptions.headers = headers;
-	document.querySelectorAll(`${fluxForms}.flux-form-waiting`).forEach(form => {
+	document.querySelectorAll("form.flux-form-waiting").forEach(form => {
 		if(lockedForms.has(form)) {
 			return;
 		}

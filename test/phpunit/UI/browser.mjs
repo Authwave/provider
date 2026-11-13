@@ -216,6 +216,9 @@ try {
 		const count = postRequests.length;
 		await evaluate(`(() => {
 			const form = document.querySelector('form');
+			// Initialisation markers are not needed to recognise a submitting form.
+			form.removeAttribute('data-flux');
+			form.removeAttribute('data-flux-obj');
 			const button = document.querySelector('button[value="${button}"]');
 			form.requestSubmit(button);
 			form.requestSubmit(button);
