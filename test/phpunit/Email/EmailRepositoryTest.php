@@ -10,6 +10,8 @@ use GT\Database\Result\ResultSet;
 use GT\Database\Result\Row;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use Closure;
+use Symfony\Component\Mime\Email;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\Transport\TransportInterface;
@@ -51,16 +53,47 @@ class EmailRepositoryTest extends TestCase {
 		$sut->scheduleAuthCode($user, $deployment, $user->email, $app->name, "01234", $app->emailSendFrom);
 	}
 
-	private function repository(bool $ignoreErrors, ?RuntimeException $error = null):EmailRepository {
+	#[\PHPUnit\Framework\Attributes\DataProvider("replyToSettings")]
+	public function testSendScheduled_setsReplyToWithoutChangingSender(?string $default, array $settings,
+		string $expected, ?string $deploymentReplyTo = null):void {
+		$sut = $this->repository(false, replyTo: $default, applicationSettings: $settings,
+			deploymentReplyTo: $deploymentReplyTo, inspect: function(Email $email) use ($expected):void {
+				self::assertSame($expected, $email->getReplyTo()[0]->getAddress());
+				self::assertSame("sender@example.com", $email->getFrom()[0]->getAddress());
+				self::assertSame("recipient@example.com", $email->getTo()[0]->getAddress());
+				self::assertSame("123456", $email->getTextBody());
+			});
+		self::assertSame(["test-email"], $sut->sendScheduled());
+	}
+
+	/** @return array<string, array{0: ?string, 1: array<string, mixed>, 2: string, 3?: ?string}> */
+	public static function replyToSettings():array {
+		return [
+			"deployment override" => ["provider@example.com", ["replyTo" => "app@example.com"], "team@example.com", "team@example.com"],
+			"domain default" => [null, [], "support@client.example.com"],
+			"provider setting" => ["help@provider.example", [], "help@provider.example"],
+			"application override" => ["help@provider.example", ["replyTo" => "team@example.com"], "team@example.com"],
+			"custom SMTP inherits reply-to" => ["help@provider.example", ["host" => "smtp.example.com"], "help@provider.example"],
+		];
+	}
+
+	private function repository(bool $ignoreErrors, ?RuntimeException $error = null,
+		?string $replyTo = null, array $applicationSettings = [], ?Closure $inspect = null, ?string $deploymentReplyTo = null):EmailRepository {
 		$transport = $this->createMock(TransportInterface::class);
 		$send = $transport->expects(self::once())->method("send");
 		if($error) {
 			$send->willThrowException($error);
 		}
+		elseif($inspect) {
+			$send->willReturnCallback($inspect);
+		}
 
 		$row = new Row([
 			"id" => "test-email",
-			"emailSettings" => "{}",
+			"emailSettings" => json_encode($applicationSettings, JSON_THROW_ON_ERROR),
+			"providerHost" => "login.example.com",
+			"clientHost" => "https://client.example.com",
+			"emailReplyTo" => $deploymentReplyTo,
 			"senderName" => "Authwave",
 			"senderAddress" => "sender@example.com",
 			"toEmail" => "recipient@example.com",
@@ -83,7 +116,7 @@ class EmailRepositoryTest extends TestCase {
 		}
 
 		return new EmailRepository($db,
-			new EmailSettings("localhost", 1025, "", ""),
+			new EmailSettings("localhost", 1025, "", "", $replyTo),
 			$this->createStub(Audit::class), new Mailer($transport), $ignoreErrors);
 	}
 

@@ -24,4 +24,26 @@ class DeploymentDataTest extends TestCase {
 		yield "HTTPS" => ["Production", "LOGIN.EXAMPLE.TEST", "HTTPS://WWW.EXAMPLE.TEST/", "/",
 			["Production", "login.example.test", "https://www.example.test", "/"]];
 	}
+	#[DataProvider("invalidEmailSettings")]
+	public function testConstruct_rejectsInvalidEmailSettings(string $prefix, string $replyTo):void {
+		$this->expectException(\InvalidArgumentException::class);
+		new DeploymentData("Production", "login.example.com", "https://example.com", "/", $prefix, $replyTo);
+	}
+
+	public static function invalidEmailSettings():iterable {
+		yield ["security@example.com", ""];
+		yield ["hello world", ""];
+		yield [".security", ""];
+		yield [str_repeat("x", 65), ""];
+		yield ["security", "invalid"];
+		yield ["security", "team@example.com\r\nBcc: victim@example.com"];
+	}
+
+	public function testConstruct_normalisesEmailSettingsAndPreservesZeroPrefix():void {
+		$sut = new DeploymentData("Production", "login.example.com", "https://example.com", "/",
+			" 0 ", " team@example.com ");
+		self::assertSame("0", $sut->emailPrefix);
+		self::assertSame("team@example.com", $sut->emailReplyTo);
+	}
+
 }

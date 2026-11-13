@@ -1656,7 +1656,10 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 	#[When('I complete the :summary deployment form:')]
 	public function fillDeployment(string $summary, \Behat\Gherkin\Node\TableNode $table):void {
 		$details = $this->deploymentDetails($summary);
-		foreach($table->getRows() as [$field, $value]) $details->fillField($field, $value);
+		foreach($table->getRows() as [$field, $value]) {
+			$details->fillField($field, $value);
+			$this->getSession()->wait(5000, 'document.querySelector("application-deployments .flux-form-waiting, application-deployments .input-changed") === null');
+		}
 	}
 
 	private int $deploymentPostCount = 0;
@@ -2005,6 +2008,82 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 				&& name.matches('.badge.production-badge')
 				&& getComputedStyle(name).color !== getComputedStyle(name.parentElement).color);
 		})()"), "Production activity must show the deployment's own name using the shared green badge.");
+	}
+
+	#[Then('deployment :summary should show sender domain :domain')]
+	public function deploymentSenderDomain(string $summary, string $domain):void {
+		$field = $this->deploymentDetails($summary)->find("css", "[data-email-domain]");
+		$this->expect($field->getValue() === $domain, "The sender suffix must follow the Authwave host; got " . $field->getValue());
+		$this->expect($field->hasAttribute("disabled") && !$field->hasAttribute("name"),
+			"The fixed suffix must be disabled and excluded from form submission.");
+	}
+
+	#[Then('deployment :summary email settings should be :prefix and :replyTo')]
+	public function deploymentEmailSettings(string $summary, string $prefix, string $replyTo):void {
+		$details = $this->deploymentDetails($summary);
+		$this->expect($details->findField("Sender email prefix")->getValue() === $prefix,
+			"Sender prefix was not saved.");
+		$this->expect($details->findField("Support & reply-to email address")->getValue() === $replyTo,
+			"Reply-To address was not saved.");
+	}
+
+	#[Then('the deployment email group should fit narrow and wide screens')]
+	public function deploymentEmailGroupLayout():void {
+		foreach([390, 1440] as $width) {
+			$this->getSession()->resizeWindow($width, 1000);
+			file_put_contents("/tmp/authwave-email-" . $width . ".png", $this->getSession()->getScreenshot());
+			$this->expect($this->getSession()->evaluateScript('(() => {
+				const group = document.querySelector("application-deployments details[open] .input-group");
+				const bounds = group.getBoundingClientRect();
+				const replyTo = group.closest(".field-row").querySelector("input[name=emailReplyTo]").getBoundingClientRect();
+				const controls = [...group.querySelectorAll("input")].map(input => input.getBoundingClientRect());
+				return bounds.left >= 0 && bounds.right <= innerWidth
+					&& (innerWidth < 1000 || Math.abs(controls[0].top - replyTo.top) <= 2)
+					&& controls.every(control => control.width > 40)
+					&& Math.abs(controls[0].right - controls[1].left) <= 2;
+			})()'), "The email input group must fit and share an edge.");
+		}
+	}
+
+	#[When('I update the email preview for deployment :summary')]
+	public function previewDeploymentEmail(string $summary):void {
+		$this->deploymentDetails($summary)->find("css", "button[value=preview-deployment]")->press();
+		$this->getSession()->wait(5000, 'document.querySelector("application-deployments .flux-form-waiting") === null');
+	}
+
+	#[Then('no deployment changes should have been saved')]
+	public function noDeploymentChangesSaved():void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$count = $database->query("select count(*) from Audit where action in ('DEPLOYMENT_CREATED', 'DEPLOYMENT_UPDATED')")->fetchColumn();
+		$this->expect((int)$count === 0, "Previewing must not create or update a deployment.");
+	}
+
+	#[Then('stored deployment :title should use host :host')]
+	public function storedDeploymentHost(string $title, string $host):void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$query = $database->prepare("select providerHost from ApplicationDeployment where title = ?");
+		$query->execute([$title]);
+		$this->expect($query->fetchColumn() === $host, "The stored host must change only when saved.");
+	}
+
+	#[Then('deployment :summary should have Reply-To placeholder :placeholder')]
+	public function deploymentReplyToPlaceholder(string $summary, string $placeholder):void {
+		$this->expect($this->deploymentDetails($summary)->findField("Support & reply-to email address")->getAttribute("placeholder") === $placeholder,
+			"PHP must render the inherited Reply-To placeholder.");
+	}
+
+	#[When('I change the host to :host and immediately save deployment :summary')]
+	public function saveDuringDeploymentPreview(string $host, string $summary):void {
+		$this->deploymentDetails($summary);
+		$this->getSession()->evaluateScript('(() => {
+			const form = document.querySelector("application-deployments details[open] form");
+			const host = form.elements.namedItem("providerHost");
+			host.value = ' . json_encode($host) . ';
+			host.dispatchEvent(new Event("change", {bubbles: true}));
+			form.querySelector("button[value=save-deployment]").click();
+		})()');
+		$ready = $this->getSession()->wait(5000, 'document.querySelector("application-deployments [role=status]:not([hidden])") !== null');
+		$this->expect($ready, "The explicit Save action must complete after the preview.");
 	}
 
 }

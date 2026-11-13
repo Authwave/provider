@@ -191,4 +191,19 @@ class ApplicationRepositoryTest extends TestCase {
 		yield "empty stored value" => ["", null];
 		yield "configured" => ["sender@example.test", "production"];
 	}
+
+	public function testGetById_preservesReplyToWithCustomSmtpSettings():void {
+		$queries = $this->createMock(QueryCollection::class);
+		$queries->expects(self::once())->method("fetch")->with("getById", "app")->willReturn(new Row([
+			"applicationId" => "app", "name" => "Website", "emailSendFrom" => "security@login.example.com",
+			"emailSettings" => '{"host":"smtp.example.com","replyTo":"help@example.com"}',
+		]));
+		$sut = new ApplicationRepository($this->database($queries), $this->createStub(Audit::class),
+			$this->createStub(\Authwave\Security\DomainVerification::class));
+
+		$application = $sut->getById("app");
+
+		self::assertSame("smtp.example.com", $application->emailSettings->host);
+		self::assertSame("help@example.com", $application->emailSettings->replyTo);
+	}
 }

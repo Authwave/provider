@@ -3,7 +3,7 @@
 	<section id="report" class="report" aria-labelledby="overview-title">
 		<div class="toolbar report-toolbar">
 			<div class="toolbar report-controls">
-				<form method="get" data-flux class="toolbar deployment-filter" aria-label="Report deployment">
+				<form method="get" data-flux="auto submit-queue" class="toolbar deployment-filter" aria-label="Report deployment">
 					<input type="hidden" name="application" data-bind:value="applicationId" />
 					<input type="hidden" name="period" data-bind:value="period" />
 					<input type="hidden" name="comparison" data-bind:value="comparison" />
@@ -16,7 +16,7 @@
 					</select></label>
 					<div class="actions"><button type="submit" data-flux="autosave">Apply deployment</button></div>
 				</form>
-				<form method="get" data-flux class="segmented-control" aria-label="Reporting period">
+				<form method="get" data-flux="auto submit-queue" class="segmented-control" aria-label="Reporting period">
 					<input type="hidden" name="comparison" data-bind:value="comparison" />
 					<input type="hidden" name="application" data-bind:value="applicationId" />
 					<input type="hidden" name="deployment" data-bind:value="deployment" />
@@ -26,7 +26,7 @@
 				</form>
 				<details class="disclosure-menu date-menu">
 					<summary class="control">Custom</summary>
-					<form method="get" data-flux class="disclosure-content form-fields">
+					<form method="get" data-flux="auto submit-queue" class="disclosure-content form-fields">
 						<input type="hidden" name="application" data-bind:value="applicationId" />
 					<input type="hidden" name="deployment" data-bind:value="deployment" />
 						<input type="hidden" name="period" value="custom" />
@@ -42,7 +42,7 @@
 				<span>Compare to</span>
 				<details class="disclosure-menu">
 					<summary class="control" data-icon="calendar"><span data-bind:text="previousLabel"></span></summary>
-					<form method="get" data-flux class="disclosure-content form-fields">
+					<form method="get" data-flux="auto submit-queue" class="disclosure-content form-fields">
 						<input type="hidden" name="application" data-bind:value="applicationId" />
 					<input type="hidden" name="deployment" data-bind:value="deployment" />
 						<input type="hidden" name="period" data-bind:value="period" />
@@ -89,7 +89,7 @@
 	</section>
 	<section id="activity" class="activity-panel" aria-labelledby="activity-title">
 		<header class="panel-heading"><h2 id="activity-title">Activity</h2></header>
-		<form method="get" data-flux class="toolbar panel-body activity-controls" aria-label="Activity filters">
+		<form method="get" data-flux="auto submit-queue" class="toolbar panel-body activity-controls" aria-label="Activity filters">
 			<input type="hidden" name="application" data-bind:value="applicationId" />
 					<input type="hidden" name="deployment" data-bind:value="deployment" />
 			<input type="hidden" name="period" data-bind:value="period" />

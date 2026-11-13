@@ -84,6 +84,7 @@ readonly class ApplicationRepository {
 				$settingsJson["port"] ?? null,
 				$settingsJson["username"] ?? null,
 				$settingsJson["password"] ?? null,
+				$settingsJson["replyTo"] ?? null,
 			);
 		}
 
@@ -125,6 +126,7 @@ readonly class ApplicationRepository {
 			$row->getBool("domainVerified"),
 			$row->getBool("clientConnected"),
 			$row->getBool("userLoggedIn"),
+			$row->getString("emailPrefix"), $row->getString("emailReplyTo"),
 		);
 	}
 
@@ -189,7 +191,7 @@ readonly class ApplicationRepository {
 				$row->getString("title"), $row->getString("secret"), $row->getString("clientHost"),
 				$row->getString("clientLoginPath"), $row->getString("providerHost"),
 				$row->getBool("domainVerified"), $row->getBool("clientConnected"),
-				$row->getBool("userLoggedIn"));
+				$row->getBool("userLoggedIn"), $row->getString("emailPrefix"), $row->getString("emailReplyTo"));
 		}
 
 		return $result;
@@ -236,18 +238,21 @@ readonly class ApplicationRepository {
 			$deployment = new ApplicationDeployment($before->id ?? (string)new Ulid("DEPLOYMENT"),
 				$application, $data->title, $before->secret ?? base64_encode(random_bytes(24)),
 				$data->clientHost, $data->clientLoginPath, $data->providerHost, $verified,
-				$sameConnection && $before->clientConnected, $sameConnection && $before->userLoggedIn);
+				$sameConnection && $before->clientConnected, $sameConnection && $before->userLoggedIn,
+				$data->emailPrefix, $data->emailReplyTo);
 			$query = $this->database->queryCollection("admin_deployment");
 
 			if($before) {
 				$query->update("update", $data->title, $data->providerHost, $data->clientHost,
 					$data->clientLoginPath, (int)$deployment->domainVerified,
 					(int)$deployment->clientConnected, (int)$deployment->userLoggedIn,
+					$data->emailPrefix, $data->emailReplyTo,
 					$identifier, $applicationId);
 			}
 			else {
 				$query->insert("create", $deployment->id, $applicationId, $data->title,
-					$data->providerHost, $data->clientHost, $data->clientLoginPath, $deployment->secret);
+					$data->providerHost, $data->clientHost, $data->clientLoginPath, $deployment->secret,
+					$data->emailPrefix, $data->emailReplyTo);
 			}
 
 			$this->audit->recordChange(
@@ -306,6 +311,8 @@ readonly class ApplicationRepository {
 			"providerHost" => $deployment->providerHost,
 			"clientHost" => $deployment->clientHost,
 			"clientLoginPath" => $deployment->clientLoginPath,
+			"emailPrefix" => $deployment->emailPrefix,
+			"emailReplyTo" => $deployment->emailReplyTo,
 			"domainVerified" => $deployment->domainVerified,
 			"clientConnected" => $deployment->clientConnected,
 			"userLoggedIn" => $deployment->userLoggedIn,

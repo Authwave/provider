@@ -8,7 +8,9 @@ set
 	clientLoginPath = ?,
 	domainVerified = ?,
 	clientConnected = ?,
-	userLoggedIn = ?
+	userLoggedIn = ?,
+	emailPrefix = ?,
+	emailReplyTo = ?
 
 where
 	id = ?

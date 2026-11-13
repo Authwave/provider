@@ -3,7 +3,7 @@
 		"test:ui": "vendor/bin/build --default vendor/phpgt/webengine/build.default.ini && vendor/bin/phpunit --bootstrap vendor/autoload.php test/phpunit/UI test/integration/UI && node test/phpunit/UI/browser.mjs && BEHAT_JAVASCRIPT=1 test/behat/run-behat"
 	},
 	"dependencies": {
-		"@phpgt/flux": "github:PhpGt/Flux",
+		"@phpgt/flux": "github:PhpGt/Flux#master",
 		"echarts": "^6.1.0",
 		"esbuild": "^0.25.9",
 		"flair": "file:../../BrightFlair/flair",

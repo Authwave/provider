@@ -216,6 +216,9 @@ try {
 		const count = postRequests.length;
 		await evaluate(`(() => {
 			const form = document.querySelector('form');
+			// Keep the public command; internal state markers are not needed.
+			form.setAttribute('data-flux', 'submit-queue');
+			form.removeAttribute('data-flux-obj');
 			const button = document.querySelector('button[value="${button}"]');
 			form.requestSubmit(button);
 			form.requestSubmit(button);

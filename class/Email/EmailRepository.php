@@ -99,7 +99,7 @@ readonly class EmailRepository {
 			"authenticationInstructions" => $recipient->hash === null
 				? "Choose the email security code option. We will send a code to your inbox."
 				: "Use the password arranged with your administrator, or choose an email security code.",
-		], $deployment->application->emailSendFrom ?? self::DEFAULT_EMAIL_FROM_ADDRESS,
+		], $deployment->getSenderAddress() ?? self::DEFAULT_EMAIL_FROM_ADDRESS,
 			$deployment->application->name);
 	}
 
@@ -138,6 +138,7 @@ readonly class EmailRepository {
 					$emailSettingsObj["port"] ?? $emailSettings->port,
 					$emailSettingsObj["username"] ?? $emailSettings->username,
 					$emailSettingsObj["password"] ?? $emailSettings->password,
+					$emailSettingsObj["replyTo"] ?? $emailSettings->replyTo,
 				);
 			}
 
@@ -149,6 +150,8 @@ readonly class EmailRepository {
 				$row->getString("textContent"),
 				$row->getString("htmlContent"),
 				$emailSettings,
+				$row->getString("clientHost") ?? "",
+				$row->getString("emailReplyTo"),
 			);
 
 			if($sentMessageId === null) {
@@ -177,6 +180,8 @@ readonly class EmailRepository {
 		string $markdown,
 		string $html,
 		EmailSettings $emailSettings,
+		string $clientUrl = "",
+		?string $replyTo = null,
 	):?string {
 		$transport = Transport::fromDsn(implode("", [
 			"smtp://",
@@ -193,6 +198,9 @@ readonly class EmailRepository {
 		$email = new Email();
 		$email->addFrom(new Address($fromAddress, $fromName));
 		$email->addTo(new Address($toAddress));
+		if($replyTo = $emailSettings->getReplyTo($clientUrl, $replyTo)) {
+			$email->replyTo(new Address($replyTo));
+		}
 		$email->subject($subject);
 		$email->text($markdown);
 		$email->html($html);

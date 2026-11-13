@@ -24,7 +24,7 @@ class ApplicationRepositoryTest extends TestCase {
 		$pdo = new PDO("sqlite::memory:");
 		$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 		$pdo->exec("create table Application (id text primary key, name text, emailSendFrom text, emailSettings text, productionApplicationDeploymentId text)");
-		$pdo->exec("create table ApplicationDeployment (id text, applicationId text, title text, secret text, providerHost text, clientHost text, clientLoginPath text, domainVerified integer not null default 0, clientConnected integer not null default 0, userLoggedIn integer not null default 0)");
+		$pdo->exec("create table ApplicationDeployment (id text, applicationId text, title text, secret text, providerHost text, clientHost text, clientLoginPath text, domainVerified integer not null default 0, clientConnected integer not null default 0, userLoggedIn integer not null default 0, emailPrefix text, emailReplyTo text)");
 		$pdo->exec("insert into Application values ('app', 'Application', 'test@example.test', null, 'deployment')");
 		$pdo->exec(file_get_contents("$root/query/_migration/014-application-theme.sql"));
 		foreach(["light" => $lightColours, "dark" => $darkColours] as $scheme => $colours) {
@@ -731,6 +731,21 @@ class ApplicationRepositoryTest extends TestCase {
 		yield [new DeploymentData("Development", "other.test", "https://www.example.test", "/login/"), false];
 		yield [new DeploymentData("Development", "login.test", "https://changed.test", "/login/"), false];
 		yield [new DeploymentData("Development", "login.test", "https://www.example.test", "/signin/"), false];
+	}
+
+	public function testSaveDeployment_emailSettingsPersistWithoutResettingConnection():void {
+		$created = $this->store->saveDeployment($this->actor, "mine", null, $this->data());
+		$this->database->executeSql("update ApplicationDeployment set domainVerified = 1, clientConnected = 1, userLoggedIn = 1 where id = ?", [$created->id]);
+		$saved = $this->store->saveDeployment($this->actor, "mine", $created->id,
+			new DeploymentData("Development", "login.example.test", "https://www.example.test", "/login/", "account", "team@example.test"));
+		$loaded = $this->store->getDeploymentById($saved->id);
+		self::assertSame("account@login.example.test", $loaded->getSenderAddress());
+		self::assertSame("team@example.test", $loaded->emailReplyTo);
+		self::assertTrue($loaded->domainVerified);
+		self::assertTrue($loaded->clientConnected);
+		self::assertTrue($loaded->userLoggedIn);
+		self::assertSame($created->secret, $loaded->secret);
+		self::assertSame("account", $this->store->deployments($this->actor, "mine")[0]->emailPrefix);
 	}
 
 }

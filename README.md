@@ -494,3 +494,49 @@ transaction. A failed delivery retains the user and records the pending action
 in `User.clientNotificationAction`; Redeliver retries deletion rather than creation.
 Deletion callbacks must be idempotent because an acknowledgement can be lost after
 the client has already removed its user.
+
+Email replies
+-------------
+
+Outgoing provider emails include a `Reply-To` address. By default it is
+`support@` on the parent of the provider hostname: `login.example.com` uses
+`support@example.com`, and `login.example.co.uk` uses `support@example.co.uk`.
+This removes one provider subdomain label, rather than guessing a registrable
+domain. A two-label provider hostname uses that hostname itself. Localhost,
+IP addresses and missing hostnames do not produce an inferred reply address.
+The application owner must ensure the resulting support mailbox is monitored.
+
+Set a provider-wide default in `config.production.ini`:
+
+```ini
+[email]
+reply_to=support@authwave.com
+```
+
+Each deployment's settings form includes **Sender email prefix** and **Reply-To
+email address**. The sender prefix is grouped with a disabled domain suffix
+taken from the Authwave host, excluding its port: `account` with
+`login.example.com` sends from `account@login.example.com`. New forms start with
+`security`. PHP renders the domain suffix and Reply-To placeholder. The **Update
+email preview** button refreshes these values without saving; Flux progressively
+enhances it to preview field changes in the background. An empty prefix preserves the application's existing
+`Application.emailSendFrom` sender. Verify the sending domain with your SMTP
+provider before using it.
+
+The deployment Reply-To address takes priority over the application's existing
+`Application.emailSettings` JSON `replyTo`, then the provider-wide
+`email.reply_to` setting, then the hostname-based default above. Empty deployment
+values inherit these defaults. Partial SMTP settings still inherit the provider
+reply address. Reply-To does not change SMTP credentials or the envelope sender.
+
+Migration `029-deployment-email-settings.sql` adds nullable `emailPrefix` and
+`emailReplyTo` columns to `ApplicationDeployment`. Existing rows keep their
+current sender and inherited Reply-To; saving email settings does not rotate
+the API key or reset domain verification and connection progress. The grouped
+control uses Flair's input-group pattern (BrightFlair/flair#7).
+
+Forms use Flux’s opt-in `submit-queue` command to coordinate previews and saves,
+lock fields during requests and prevent duplicate submissions. Flux is installed
+from master, with the exact revision recorded in package-lock.json. Authwave
+supplies no submission queue or field-locking JavaScript. See the
+[Flux guide](https://github.com/PhpGt/Flux/wiki/Submit-queue).

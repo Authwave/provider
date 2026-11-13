@@ -21,6 +21,8 @@ readonly class ApplicationDeployment {
 		public bool $domainVerified = false,
 		public bool $clientConnected = false,
 		public bool $userLoggedIn = false,
+		public ?string $emailPrefix = null,
+		public ?string $emailReplyTo = null,
 	) {
 		$this->applicationId = $application->id;
 	}
@@ -41,6 +43,16 @@ readonly class ApplicationDeployment {
 			->withHost($host)
 			->withPath($this->clientLoginPath);
 	}
+
+	public function getSenderAddress():?string {
+		$prefix = get_object_vars($this)["emailPrefix"] ?? null;
+		if($prefix === null) {
+			return $this->application->emailSendFrom;
+		}
+		$host = (new Uri("https://" . $this->getProviderHost()))->getHost();
+		return "$prefix@$host";
+	}
+
 	public function getProviderHost():string {
 		// Old serialised sessions may lack this field entirely.
 		return get_object_vars($this)["providerHost"] ?? "";

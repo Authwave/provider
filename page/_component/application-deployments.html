@@ -6,7 +6,7 @@
 		<li data-list="deployment-panels" data-bind:data-new="isNew">
 			<details class="settings-disclosure" name="application-deployments" data-bind:id="panelId" data-bind:open="?isOpen">
 				<summary><span class="deployment-summary"><span class="new-deployment-icon" data-icon="plus" aria-hidden="true"></span><span class="deployment-title" data-bind:text="summary">Create a deployment</span><span class="deployment-badges"><span class="badge" hidden data-bind:hidden="?!isLocal">Local</span><span class="badge production-badge" hidden data-bind:hidden="?!isProduction">Production</span></span></span></summary>
-				<form method="post" class="form-fields stack compact">
+				<form method="post" class="form-fields stack compact" data-bind:id="deploymentFormId" data-flux="submit-queue">
 					<p role="alert" tabindex="-1" hidden data-bind:hidden="?!error" data-bind:autofocus="?error" data-bind:text="error"></p>
 					<label class="existing-deployment-field">
 						<span>ID</span>
@@ -34,7 +34,7 @@
 					<div class="field-row">
 						<label>
 							<span>Authwave host</span>
-							<input name="providerHost" required maxlength="256" placeholder="account.example.com" data-bind:value="@" pattern="^[A-Za-z0-9]+(?:[.\-][A-Za-z0-9]+)*(?::[0-9]{1,5})?$" title="Enter a hostname such as localhost or account.example.com, with an optional numeric port." />
+							<input name="providerHost" required maxlength="256" placeholder="login.example.com" data-bind:value="@" pattern="^[A-Za-z0-9]+(?:[.\-][A-Za-z0-9]+)*(?::[0-9]{1,5})?$" title="Enter a hostname such as localhost or account.example.com, with an optional numeric port." />
 						</label>
 						<div class="field domain-verification" data-bind:id="verificationId" aria-live="polite">
 							<span class="field-label">Domain verification</span>
@@ -45,8 +45,24 @@
 							</div>
 						</div>
 					</div>
+					<div class="field-row">
+						<label data-bind:for="senderInputId">
+							<span>Sender email prefix</span>
+							<div class="input-group">
+								<input name="emailPrefix" data-bind:id="senderInputId" data-bind:value="@" maxlength="64" pattern="^(?:[A-Za-z0-9]+(?:[._+\-][A-Za-z0-9]+)*)?$" placeholder="security" autocomplete="off" spellcheck="false" data-bind:aria-describedby="senderHelpId" required />
+								<input disabled data-email-domain data-span="narrow" aria-label="Sender email domain" data-bind:value="senderDomain" />
+							</div>
+							<small data-bind:id="senderHelpId">This is the email address that login and MFA codes are sent from.</small>
+						</label>
+						<label>
+							<span>Support & reply-to email address</span>
+							<input type="email" name="emailReplyTo" maxlength="254" data-bind:value="@" placeholder="e.g. support@your-domain.com" data-bind:placeholder="replyToPlaceholder" required />
+							<small>If users require support, or if they reply to the login emails.</small>
+						</label>
+					</div>
 					<div class="actions">
 						<button type="submit" name="do" value="save-deployment" data-bind:class=":isNew primary" data-bind:text="submitLabel">Create deployment</button>
+						<button type="submit" name="do" value="preview-deployment" formnovalidate data-flux="autosave">Update email preview</button>
 						<button type="submit" name="do" value="delete-deployment" formnovalidate class="existing-deployment-field action-start icon-button danger" data-icon="trash" data-bind:data-confirm-delete="id" data-bind:data-delete-name="deleteName"><span>Delete deployment</span></button>
 					</div>
 				</form>
@@ -63,7 +79,7 @@
 							</tbody>
 						</table>
 						<a href="/admin/integrations/">Learn more about setting DNS records</a>
-						<form method="get" class="stack" data-bind:id="verificationFormId" data-flux>
+						<form method="get" class="stack" data-bind:id="verificationFormId" data-flux="auto submit-queue">
 							<input type="hidden" name="deployment" data-bind:value="id" />
 							<div class="actions">
 								<button type="submit" name="verify" data-bind:value="id">I've set these records</button>

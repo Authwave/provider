@@ -10,7 +10,9 @@ select
 	senderAddress,
 	textContent,
 	htmlContent,
-	Application.emailSettings
+	Application.emailSettings,
+	ApplicationDeployment.clientHost,
+	ApplicationDeployment.emailReplyTo
 
 from
 	Email

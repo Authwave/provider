@@ -14,7 +14,9 @@ select
 	ApplicationDeployment.clientLoginPath,
 	ApplicationDeployment.domainVerified,
 	ApplicationDeployment.clientConnected,
-	ApplicationDeployment.userLoggedIn
+	ApplicationDeployment.userLoggedIn,
+	ApplicationDeployment.emailPrefix,
+	ApplicationDeployment.emailReplyTo
 
 from
 	Application

@@ -7,7 +7,9 @@ select
 	secret,
 	domainVerified,
 	clientConnected,
-	userLoggedIn
+	userLoggedIn,
+	emailPrefix,
+	emailReplyTo
 
 from
 	ApplicationDeployment

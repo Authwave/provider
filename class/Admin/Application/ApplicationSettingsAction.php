@@ -68,6 +68,7 @@ readonly class ApplicationSettingsAction {
 				$this->text($input, "id"), new DeploymentData(
 					(string)$fields["title"], (string)$fields["providerHost"],
 					(string)$fields["clientHost"], (string)$fields["clientLoginPath"],
+					(string)($fields["emailPrefix"] ?? ""), (string)($fields["emailReplyTo"] ?? ""),
 				));
 		}
 		catch(ValidationException) {
@@ -75,7 +76,8 @@ readonly class ApplicationSettingsAction {
 
 			foreach($validator->getLastErrorList() as $name => $message) {
 				$field = $form->querySelector('[name="' . $name . '"]');
-				$label = $field->closest("label")->querySelector("span")->textContent;
+				$label = $field->closest("label")?->querySelector("span")->textContent
+					?? $field->closest(".field")?->querySelector(".field-label")->textContent ?? $name;
 				$messages []= "$label: $message";
 			}
 
