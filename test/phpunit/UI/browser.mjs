@@ -216,8 +216,8 @@ try {
 		const count = postRequests.length;
 		await evaluate(`(() => {
 			const form = document.querySelector('form');
-			// Initialisation markers are not needed to recognise a submitting form.
-			form.removeAttribute('data-flux');
+			// Keep the public command; internal state markers are not needed.
+			form.setAttribute('data-flux', 'submit-queue');
 			form.removeAttribute('data-flux-obj');
 			const button = document.querySelector('button[value="${button}"]');
 			form.requestSubmit(button);

@@ -534,3 +534,9 @@ Migration `029-deployment-email-settings.sql` adds nullable `emailPrefix` and
 current sender and inherited Reply-To; saving email settings does not rotate
 the API key or reset domain verification and connection progress. The grouped
 control uses Flair's input-group pattern (BrightFlair/flair#7).
+
+Forms use Flux’s opt-in `submit-queue` command to coordinate previews and saves,
+lock fields during requests and prevent duplicate submissions. The dependency is
+pinned to the tested Flux feature commit until it is released. Authwave supplies
+no submission queue or field-locking JavaScript. See the
+[Flux guide](https://github.com/PhpGt/Flux/wiki/Submit-queue).

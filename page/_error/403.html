@@ -10,7 +10,7 @@
 		<p><a href="{{returnUri}}">Continue to <span data-bind:text="applicationName">Amazing App</span></a></p>
 	</header>
 
-	<form method="post" action="/login/access-denied/" data-flux>
+	<form method="post" action="/login/access-denied/" data-flux="auto submit-queue">
 		<div class="actions">
 			<button type="submit" name="do" value="switch-account"><span>Sign in with another account</span></button>
 		</div>
