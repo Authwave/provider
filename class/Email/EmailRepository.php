@@ -150,7 +150,7 @@ readonly class EmailRepository {
 				$row->getString("textContent"),
 				$row->getString("htmlContent"),
 				$emailSettings,
-				$row->getString("providerHost") ?? "",
+				$row->getString("clientHost") ?? "",
 				$row->getString("emailReplyTo"),
 			);
 
@@ -180,7 +180,7 @@ readonly class EmailRepository {
 		string $markdown,
 		string $html,
 		EmailSettings $emailSettings,
-		string $providerHost = "",
+		string $clientUrl = "",
 		?string $replyTo = null,
 	):?string {
 		$transport = Transport::fromDsn(implode("", [
@@ -198,7 +198,7 @@ readonly class EmailRepository {
 		$email = new Email();
 		$email->addFrom(new Address($fromAddress, $fromName));
 		$email->addTo(new Address($toAddress));
-		if($replyTo = $emailSettings->getReplyTo($providerHost, $replyTo)) {
+		if($replyTo = $emailSettings->getReplyTo($clientUrl, $replyTo)) {
 			$email->replyTo(new Address($replyTo));
 		}
 		$email->subject($subject);

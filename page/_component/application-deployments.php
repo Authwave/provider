@@ -5,8 +5,6 @@ use Authwave\Model\{Application, ApplicationDeployment, ApplicationRepository};
 use Authwave\Session\FlashSession;
 use Authwave\Security\{DomainVerification, Audit, Action};
 use GT\DomTemplate\Binder;
-use GT\Config\Config;
-use Authwave\Model\EmailSettings;
 use GT\Input\Input;
 use GT\Dom\Element;
 use GT\DomTemplate\ListElementCollection;
@@ -16,7 +14,7 @@ use GT\Http\ResponseStatusException\ClientError\HttpNotFound;
 
 function go(Binder $binder, Application $application, ApplicationRepository $applications,
 	AdminArea $area, Input $input, Request $request, FlashSession $flash, DomainVerification $domains,
-	Response $response, Audit $audit, Config $config):void {
+	Response $response, Audit $audit):void {
 	$deployments = $applications->deployments($area->administrator(), $application->id);
 	$ids = array_map(fn(ApplicationDeployment $deployment):string => $deployment->id, $deployments);
 	$verify = $input->get("verify", Input::DATA_QUERYSTRING);
@@ -50,10 +48,9 @@ function go(Binder $binder, Application $application, ApplicationRepository $app
 
 	$opened = $input->get("deployment", Input::DATA_QUERYSTRING);
 	$deployments []= new ApplicationDeployment("", $application, "", "", "", "/", emailPrefix: "security");
-	$replyToConfigured = $application->emailSettings?->replyTo ?? $config->getString("email.reply_to");
 
 	$binder->bindListCallback($deployments, function(Element $item, array $fields)use(
-		$binder, $input, $submitted, $submittedId, $error, $opened, $domains, $application, $request, $verify, $replyToConfigured,
+		$binder, $input, $submitted, $submittedId, $error, $opened, $domains, $application, $request, $verify,
 	):array {
 		$id = $fields["id"];
 		$isNew = $id === "";
@@ -111,10 +108,12 @@ function go(Binder $binder, Application $application, ApplicationRepository $app
 
 		$binder->bindKeyValue("senderInputId", "sender-prefix-" . ($isNew ? "new" : $id), $item);
 		$binder->bindKeyValue("senderHelpId", "sender-help-" . ($isNew ? "new" : $id), $item);
-		$binder->bindKeyValue("senderDomain", "@" . ($domains->hostname($fields["providerHost"]) ?: "login.example.com"), $item);
-		$settings = new EmailSettings(null, null, null, null, $replyToConfigured);
-		$binder->bindKeyValue("replyToDefault", $settings->getReplyTo(preg_match('/^[A-Za-z0-9]+(?:[.\-][A-Za-z0-9]+)*$/',
-			$domains->hostname($fields["providerHost"])) ? $domains->hostname($fields["providerHost"]) : "") ?? "", $item);
+		$binder->bindKeyValue("senderDomain", "@" . ($domains->hostname($fields["providerHost"]) ?: "authwave-host"), $item);
+		$clientUrl = $fields["clientHost"];
+		$clientHostname = parse_url(str_contains($clientUrl, "://") ? $clientUrl : "https://$clientUrl", PHP_URL_HOST);
+		$clientHostname = strtolower(rtrim($clientHostname ?: "", "."));
+		$clientHostname = preg_replace('/^www\./', '', $clientHostname);
+		$binder->bindKeyValue("replyToPlaceholder", "e.g. support@" . ($clientHostname ?: "your-domain.com"), $item);
 
 		return $fields;
 	}, templateName: "deployment-panels");

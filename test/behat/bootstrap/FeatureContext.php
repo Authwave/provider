@@ -2013,7 +2013,7 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 	#[Then('deployment :summary should show sender domain :domain')]
 	public function deploymentSenderDomain(string $summary, string $domain):void {
 		$field = $this->deploymentDetails($summary)->find("css", "[data-email-domain]");
-		$this->expect($field->getValue() === $domain, "The sender suffix must follow the provider host.");
+		$this->expect($field->getValue() === $domain, "The sender suffix must follow the Authwave host; got " . $field->getValue());
 		$this->expect($field->hasAttribute("disabled") && !$field->hasAttribute("name"),
 			"The fixed suffix must be disabled and excluded from form submission.");
 	}
@@ -2023,7 +2023,7 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 		$details = $this->deploymentDetails($summary);
 		$this->expect($details->findField("Sender email prefix")->getValue() === $prefix,
 			"Sender prefix was not saved.");
-		$this->expect($details->findField("Reply-To email address")->getValue() === $replyTo,
+		$this->expect($details->findField("Support & reply-to email address")->getValue() === $replyTo,
 			"Reply-To address was not saved.");
 	}
 
@@ -2035,8 +2035,10 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 			$this->expect($this->getSession()->evaluateScript('(() => {
 				const group = document.querySelector("application-deployments details[open] .input-group");
 				const bounds = group.getBoundingClientRect();
+				const replyTo = group.closest(".field-row").querySelector("input[name=emailReplyTo]").getBoundingClientRect();
 				const controls = [...group.querySelectorAll("input")].map(input => input.getBoundingClientRect());
 				return bounds.left >= 0 && bounds.right <= innerWidth
+					&& (innerWidth < 1000 || Math.abs(controls[0].top - replyTo.top) <= 2)
 					&& controls.every(control => control.width > 40)
 					&& Math.abs(controls[0].right - controls[1].left) <= 2;
 			})()'), "The email input group must fit and share an edge.");
@@ -2066,7 +2068,7 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 
 	#[Then('deployment :summary should have Reply-To placeholder :placeholder')]
 	public function deploymentReplyToPlaceholder(string $summary, string $placeholder):void {
-		$this->expect($this->deploymentDetails($summary)->findField("Reply-To email address")->getAttribute("placeholder") === $placeholder,
+		$this->expect($this->deploymentDetails($summary)->findField("Support & reply-to email address")->getAttribute("placeholder") === $placeholder,
 			"PHP must render the inherited Reply-To placeholder.");
 	}
 

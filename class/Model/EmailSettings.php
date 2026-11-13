@@ -12,7 +12,7 @@ readonly class EmailSettings {
 		public ?string $replyTo = null,
 	) {}
 
-	public function getReplyTo(string $providerHost, ?string $deploymentReplyTo = null):?string {
+	public function getReplyTo(string $clientUrl, ?string $deploymentReplyTo = null):?string {
 		$deploymentReplyTo = trim($deploymentReplyTo ?? "");
 		if($deploymentReplyTo !== "") {
 			return $deploymentReplyTo;
@@ -21,20 +21,15 @@ readonly class EmailSettings {
 		if($replyTo !== "") {
 			return $replyTo;
 		}
-		if($providerHost === "") {
+		if($clientUrl === "") {
 			return null;
 		}
 
-		$host = strtolower(rtrim((new Uri("https://$providerHost"))->getHost(), "."));
+		$host = strtolower(rtrim((new Uri(str_contains($clientUrl, "://") ? $clientUrl : "https://$clientUrl"))->getHost(), "."));
 		if(!str_contains($host, ".") || filter_var(trim($host, "[]"), FILTER_VALIDATE_IP)) {
 			return null;
 		}
 
-		$labels = explode(".", $host);
-		if(count($labels) > 2) {
-			array_shift($labels);
-		}
-
-		return "support@" . implode(".", $labels);
+		return "support@" . $host;
 	}
 }

@@ -70,7 +70,7 @@ class EmailRepositoryTest extends TestCase {
 	public static function replyToSettings():array {
 		return [
 			"deployment override" => ["provider@example.com", ["replyTo" => "app@example.com"], "team@example.com", "team@example.com"],
-			"domain default" => [null, [], "support@example.com"],
+			"domain default" => [null, [], "support@client.example.com"],
 			"provider setting" => ["help@provider.example", [], "help@provider.example"],
 			"application override" => ["help@provider.example", ["replyTo" => "team@example.com"], "team@example.com"],
 			"custom SMTP inherits reply-to" => ["help@provider.example", ["host" => "smtp.example.com"], "help@provider.example"],
@@ -92,6 +92,7 @@ class EmailRepositoryTest extends TestCase {
 			"id" => "test-email",
 			"emailSettings" => json_encode($applicationSettings, JSON_THROW_ON_ERROR),
 			"providerHost" => "login.example.com",
+			"clientHost" => "https://client.example.com",
 			"emailReplyTo" => $deploymentReplyTo,
 			"senderName" => "Authwave",
 			"senderAddress" => "sender@example.com",
