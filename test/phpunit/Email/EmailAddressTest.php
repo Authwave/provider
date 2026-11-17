@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 class EmailAddressTest extends TestCase {
 	#[DataProvider("addresses")]
 	public function testNormalize(string $input, string $expected):void {
-		self::assertSame($expected, EmailAddress::normalize($input));
+		self::assertSame($expected, (string)new EmailAddress($input));
 	}
 
 	#[DataProvider("addresses")]
