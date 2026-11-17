@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "635c6981ec788f0436efed7105466cc4",
+    "content-hash": "b901bd32a394e5364dcc7082f3b15ad4",
     "packages": [
         {
             "name": "composer/semver",
@@ -1807,11 +1807,17 @@
         },
         {
             "name": "phpgt/domvalidation",
-            "version": "dev-master",
+            "version": "v1.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/phpgt/DomValidation.git",
+                "reference": "d65b4d86a25d450458bb30acb0e0b4c4dfac93c7"
+            },
             "dist": {
-                "type": "path",
-                "url": "../../PhpGt/DomValidation",
-                "reference": "e1469aa01a2396625be472b72eb57e6b42ba245e"
+                "type": "zip",
+                "url": "https://api.github.com/repos/phpgt/DomValidation/zipball/d65b4d86a25d450458bb30acb0e0b4c4dfac93c7",
+                "reference": "d65b4d86a25d450458bb30acb0e0b4c4dfac93c7",
+                "shasum": ""
             },
             "require": {
                 "ext-mbstring": "*",
@@ -1820,10 +1826,10 @@
                 "phpgt/dom": "^4.2"
             },
             "require-dev": {
-                "phpmd/phpmd": "^2.13",
-                "phpstan/phpstan": "^1.10",
+                "phpmd/phpmd": "^2.13 || ^3.0",
+                "phpstan/phpstan": "^1.10 || ^2.0",
                 "phpunit/phpunit": "^10.0",
-                "squizlabs/php_codesniffer": "^3.7"
+                "squizlabs/php_codesniffer": "^3.7 || ^4.0"
             },
             "type": "library",
             "autoload": {
@@ -1832,45 +1838,23 @@
                     "Gt\\DomValidation\\": "./src/"
                 }
             },
-            "autoload-dev": {
-                "psr-4": {
-                    "GT\\DomValidation\\Test\\": "./test/phpunit"
-                }
-            },
-            "scripts": {
-                "phpunit": [
-                    "vendor/bin/phpunit --configuration phpunit.xml"
-                ],
-                "phpstan": [
-                    "vendor/bin/phpstan analyse --memory-limit=512M --level 6 src"
-                ],
-                "phpcs": [
-                    "vendor/bin/phpcs src --standard=phpcs.xml"
-                ],
-                "phpmd": [
-                    "vendor/bin/phpmd src/ text phpmd.xml"
-                ],
-                "test": [
-                    "@phpunit",
-                    "@phpstan",
-                    "@phpcs",
-                    "@phpmd"
-                ]
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
             "description": "Server side form validation using web standards.",
+            "support": {
+                "issues": "https://github.com/phpgt/DomValidation/issues",
+                "source": "https://github.com/phpgt/DomValidation/tree/v1.1.1"
+            },
             "funding": [
                 {
-                    "type": "github",
-                    "url": "https://github.com/sponsors/PhpGt"
+                    "url": "https://github.com/sponsors/PhpGt",
+                    "type": "github"
                 }
             ],
-            "transport-options": {
-                "symlink": true,
-                "relative": true
-            }
+            "time": "2026-11-11T11:37:30+00:00",
+            "published-time": "2026-11-12T13:11:13+00:00"
         },
         {
             "name": "phpgt/fetch",
@@ -8808,18 +8792,10 @@
             "published-time": "2026-11-04T11:28:41+00:00"
         }
     ],
-    "aliases": [
-        {
-            "package": "phpgt/domvalidation",
-            "version": "9999999-dev",
-            "alias": "1.0.x-dev",
-            "alias_normalized": "1.0.9999999.9999999-dev"
-        }
-    ],
+    "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "authwave/php-client": 20,
-        "phpgt/domvalidation": 20
+        "authwave/php-client": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,

@@ -16,7 +16,7 @@ CHROME_PORT="${BEHAT_CHROME_PORT:-$(pick_port)}"
 CLIENT_PORT="$(pick_port)"
 APP_COMMAND="${BEHAT_APP_COMMAND:-php -d display_errors=0 -S ${APP_HOST}:${APP_PORT} -t ${ROOT_DIR}/www ${ROOT_DIR}/vendor/phpgt/webengine/go.php}"
 
-if [[ -z "$CHROME_BIN" ]]; then
+if [[ -z "${BEHAT_CHROME_API_URL:-}" && -z "$CHROME_BIN" ]]; then
 	for candidate in google-chrome-stable google-chrome chromium-browser chromium; do
 		if command -v "$candidate" >/dev/null 2>&1; then
 			CHROME_BIN="$(command -v "$candidate")"
@@ -25,7 +25,7 @@ if [[ -z "$CHROME_BIN" ]]; then
 	done
 fi
 
-if [[ -z "$CHROME_BIN" ]]; then
+if [[ -z "${BEHAT_CHROME_API_URL:-}" && -z "$CHROME_BIN" ]]; then
 	echo "No Chrome/Chromium binary found." >&2
 	echo "Set CHROME_BIN to a local Chrome or Chromium executable." >&2
 	exit 1
@@ -103,35 +103,46 @@ CLIENT_PID=$!
 wait_for_port "$APP_HOST" "$CLIENT_PORT" "Client notification receiver"
 
 export BEHAT_BASE_URL="http://${APP_HOST}:${APP_PORT}"
-export BEHAT_CHROME_API_URL="http://${CHROME_HOST}:${CHROME_PORT}"
+EXTERNAL_CHROME_API_URL="${BEHAT_CHROME_API_URL:-}"
+export BEHAT_CHROME_API_URL="${EXTERNAL_CHROME_API_URL:-http://${CHROME_HOST}:${CHROME_PORT}}"
 
 $APP_COMMAND >"$TEST_RUN_DIR/app.log" 2>&1 &
 APP_PID=$!
 wait_for_port "$APP_HOST" "$APP_PORT" "PHP application"
 
-CHROME_PROFILE_DIR="$(mktemp -d /tmp/authwave-behat-chrome.XXXXXX)"
 SCRIPT_FLAGS=()
 TAG_FLAGS=()
 if [[ "${BEHAT_JAVASCRIPT:-0}" != "1" ]]; then
 	SCRIPT_FLAGS=(--blink-settings=scriptEnabled=false)
 	TAG_FLAGS=(--tags "~@javascript")
 fi
-"$CHROME_BIN" \
-	--headless=new \
-	--disable-dev-shm-usage \
-	--disable-gpu \
-	--host-resolver-rules="MAP *.test 127.0.0.1" \
-	--no-proxy-server \
-	"${SCRIPT_FLAGS[@]}" \
-	--no-first-run \
-	--no-default-browser-check \
-	--no-sandbox \
-	--remote-debugging-address="$CHROME_HOST" \
-	--remote-debugging-port="$CHROME_PORT" \
-	--user-data-dir="$CHROME_PROFILE_DIR" \
-	about:blank >"$TEST_RUN_DIR/chrome.log" 2>&1 &
-CHROME_PID=$!
-wait_for_port "$CHROME_HOST" "$CHROME_PORT" "Chromium remote debugger"
+if [[ -z "$EXTERNAL_CHROME_API_URL" ]]; then
+	CHROME_PROFILE_DIR="$(mktemp -d /tmp/authwave-behat-chrome.XXXXXX)"
+	"$CHROME_BIN" \
+		--headless=new \
+		--disable-dev-shm-usage \
+		--disable-gpu \
+		--host-resolver-rules="MAP *.test 127.0.0.1" \
+		--no-proxy-server \
+		"${SCRIPT_FLAGS[@]}" \
+		--no-first-run \
+		--no-default-browser-check \
+		--no-sandbox \
+		--remote-debugging-address="$CHROME_HOST" \
+		--remote-debugging-port="$CHROME_PORT" \
+		--user-data-dir="$CHROME_PROFILE_DIR" \
+		about:blank >"$TEST_RUN_DIR/chrome.log" 2>&1 &
+	CHROME_PID=$!
+	wait_for_port "$CHROME_HOST" "$CHROME_PORT" "Chromium remote debugger"
+else
+	for ((i = 0; i < 100; i++)); do
+		if curl --max-time 1 --fail --silent "$BEHAT_CHROME_API_URL/json/version" >/dev/null; then
+			break
+		fi
+		sleep 0.2
+	done
+	curl --max-time 1 --fail --silent "$BEHAT_CHROME_API_URL/json/version" >/dev/null
+fi
 
 if ! "$ROOT_DIR/$BEHAT_BIN" --strict --no-interaction "${TAG_FLAGS[@]}" "$@"; then
 	exit 1
