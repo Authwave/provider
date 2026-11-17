@@ -58,6 +58,8 @@ readonly class EmailRepository {
 		string $fromName = self::DEFAULT_EMAIL_FROM_NAME,
 		?DateTimeInterface $when = null,
 	):string {
+		$toAddress = EmailAddress::normalize($toAddress);
+		$fromAddress = EmailAddress::normalize($fromAddress);
 		$rendered = (new EmailTemplate())->render($templateName, $kvp);
 		$when ??= new DateTime();
 
@@ -196,10 +198,10 @@ readonly class EmailRepository {
 
 		$mailer = $this->mailer ?? new Mailer($transport);
 		$email = new Email();
-		$email->addFrom(new Address($fromAddress, $fromName));
-		$email->addTo(new Address($toAddress));
+		$email->addFrom(new Address(EmailAddress::normalize($fromAddress), $fromName));
+		$email->addTo(new Address(EmailAddress::normalize($toAddress)));
 		if($replyTo = $emailSettings->getReplyTo($clientUrl, $replyTo)) {
-			$email->replyTo(new Address($replyTo));
+			$email->replyTo(new Address(EmailAddress::normalize($replyTo)));
 		}
 		$email->subject($subject);
 		$email->text($markdown);
