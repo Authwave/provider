@@ -33,8 +33,28 @@ jobs:
           php_extensions: curl dom mbstring pcntl pdo_sqlite sodium
           args: --prefer-dist
 
+      - name: Check out Flair styles
+        uses: actions/checkout@v6
+        with:
+          repository: BrightFlair/flair
+          path: .ci/flair
+
+      - name: Install Node dependencies
+        run: |
+          mkdir -p ../../BrightFlair
+          ln -s "$GITHUB_WORKSPACE/.ci/flair" ../../BrightFlair/flair
+          git config --global url."https://github.com/".insteadOf ssh://git@github.com/
+          npm ci
+
+      - name: Build browser assets
+        run: |
+          mkdir -p www
+          node_modules/.bin/esbuild script/script.es6 --bundle --sourcemap --outfile=www/script.js --loader:.es6=js --target=chrome105,firefox105,edge105,safari15
+          node_modules/.bin/sass style/style.scss www/style.css --source-map --embed-sources --embed-source-map
+          cp -R asset www/asset
+
       - name: Archive build
-        run: mkdir -p /tmp/github-actions && tar --exclude=".git" -cf /tmp/github-actions/build.tar ./
+        run: mkdir -p /tmp/github-actions && tar --exclude=".git" --exclude="node_modules" --exclude=".ci" -cf /tmp/github-actions/build.tar ./
 
       - name: Upload build archive for test runners
         uses: actions/upload-artifact@v4
@@ -87,8 +107,9 @@ jobs:
       - name: Start Chrome
         run: |
           docker run -d --name behat-chrome --network host \
+            --entrypoint google-chrome-stable \
             registry.gitlab.com/behat-chrome/docker-chrome-headless:latest \
-            google-chrome-stable --headless --no-sandbox --disable-dev-shm-usage \
+            --headless --no-sandbox --disable-dev-shm-usage \
             --disable-gpu --blink-settings=scriptEnabled=false \
             --host-resolver-rules="MAP *.test 127.0.0.1" --no-proxy-server \
             --remote-debugging-address=127.0.0.1 --remote-debugging-port=9222
