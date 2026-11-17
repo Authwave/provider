@@ -53,12 +53,12 @@ class LoginSession {
 	}
 
 	public function setEmail(string $email):void {
-		$email = EmailAddress::normalize($email);
+		$email = new EmailAddress($email);
 		$this->audit->create(Action::EMAIL_SUBMITTED, [
 			"deploymentId" => $this->getDeployment()->id,
 			"email" => $email,
 		], $this->anonUser);
-		$this->session->set("email", $email);
+		$this->session->set("email", (string)$email);
 	}
 
 	public function setState(LoginState $state):void {

@@ -7,10 +7,10 @@ class EmailAddress implements Stringable {
 	public function __construct(private readonly string $address) {}
 
 	public function __toString():string {
-		return self::normalize($this->address);
+		return $this->normalize($this->address);
 	}
 
-	public static function normalize(string $address):string {
+	public function normalize(string $address):string {
 		$address = trim($address);
 		$separator = strrpos($address, "@");
 		if($separator === false) {
