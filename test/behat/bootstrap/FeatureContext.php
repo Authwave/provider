@@ -905,6 +905,9 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 
 	#[Then('sudo mode should be disabled')]
 	public function sudoDisabled():void {
+		$this->expect($this->getSession()->wait(5000,
+			'document.querySelector("[data-sudo-disable]:not([hidden])") === null'),
+			"Sudo mode must finish disabling.");
 		$this->assertSession()->elementNotExists("css", "[data-sudo-disable]:not([hidden])");
 	}
 

@@ -104,6 +104,10 @@ jobs:
       - name: Extract build archive
         run: tar -xf /tmp/github-actions/build.tar ./
 
+      - name: Configure HTTP browser tests
+        run: |
+          printf '[session]\ncookie_secure=false\n' > config.dev.ini
+
       - name: Start Chrome
         run: |
           docker run -d --name behat-chrome --network host \
