@@ -42,7 +42,7 @@ readonly class UserRepository {
 	}
 
 	public function get(ApplicationDeployment $deployment, string $email):?User {
-		$email = EmailAddress::normalize($email);
+		$email = (string)new EmailAddress($email);
 		$userId = $this->queries->fetchString("getIdByDeploymentAndEmail", $deployment->id, $email);
 
 		return $this->getById($userId);
@@ -75,7 +75,7 @@ readonly class UserRepository {
 		string $email,
 		?string $password = null
 	): User {
-		$email = EmailAddress::normalize($email);
+		$email = (string)new EmailAddress($email);
 		$userId = new Ulid();
 		$this->queries->insert(
 			"create",
@@ -231,7 +231,7 @@ readonly class UserRepository {
 			throw new InvalidArgumentException("Choose a deployment belonging to this application.");
 		}
 
-		$email = strtolower(EmailAddress::normalize($email));
+		$email = strtolower((string)new EmailAddress($email));
 		$connection = $this->database->getDriver()->getConnection();
 		$connection->beginTransaction();
 

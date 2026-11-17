@@ -1656,7 +1656,16 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 	#[When('I complete the :summary deployment form:')]
 	public function fillDeployment(string $summary, \Behat\Gherkin\Node\TableNode $table):void {
 		$details = $this->deploymentDetails($summary);
-		foreach($table->getRows() as [$field, $value]) {
+		$rows = $table->getRows();
+		$provided = array_column($rows, 0);
+		// Older scenarios omit the now-required email identity fields.
+		foreach(["Sender email prefix" => "security",
+			"Support & reply-to email address" => "support@example.test"] as $field => $value) {
+			if(!in_array($field, $provided, true) && $details->findField($field)->getValue() === "") {
+				$rows []= [$field, $value];
+			}
+		}
+		foreach($rows as [$field, $value]) {
 			$details->fillField($field, $value);
 			$this->getSession()->wait(5000, 'document.querySelector("application-deployments .flux-form-waiting, application-deployments .input-changed") === null');
 		}

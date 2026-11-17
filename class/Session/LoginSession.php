@@ -66,7 +66,7 @@ readonly class LoginSession {
 	}
 
 	public function setEmail(string $email):void {
-		$email = EmailAddress::normalize($email);
+		$email = (string)new EmailAddress($email);
 		if($email !== $this->getEmail()) {
 			$this->setState(LoginState::NOT_LOGGED_IN);
 		}

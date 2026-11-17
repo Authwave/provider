@@ -25,7 +25,8 @@ readonly class EmailSettings {
 			return null;
 		}
 
-		$host = strtolower(rtrim((new Uri(str_contains($clientUrl, "://") ? $clientUrl : "https://$clientUrl"))->getHost(), "."));
+		$uri = new Uri(str_contains($clientUrl, "://") ? $clientUrl : "https://$clientUrl");
+		$host = strtolower(rtrim($uri->getHost(), "."));
 		if(!str_contains($host, ".") || filter_var(trim($host, "[]"), FILTER_VALIDATE_IP)) {
 			return null;
 		}
