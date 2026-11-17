@@ -1,6 +1,8 @@
 <?php
 namespace Authwave\Session;
 
+use Authwave\Email\EmailAddress;
+
 use Authwave\Model\ApplicationDeployment;
 use Authwave\Security\Action;
 use Authwave\Security\AnonUser;
@@ -51,6 +53,7 @@ class LoginSession {
 	}
 
 	public function setEmail(string $email):void {
+		$email = EmailAddress::normalize($email);
 		$this->audit->create(Action::EMAIL_SUBMITTED, [
 			"deploymentId" => $this->getDeployment()->id,
 			"email" => $email,
