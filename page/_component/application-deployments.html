@@ -61,8 +61,8 @@
 						</label>
 					</div>
 					<div class="actions">
-						<button type="submit" name="do" value="save-deployment" data-bind:class=":isNew primary" data-bind:text="submitLabel">Create deployment</button>
-						<button type="submit" name="do" value="preview-deployment" formnovalidate data-flux="autosave">Update email preview</button>
+						<button type="submit" name="do" value="save-deployment" data-bind:class=":isNew primary"><span data-bind:text="submitLabel">Create deployment</span></button>
+						<button type="submit" name="do" value="preview-deployment" formnovalidate data-flux="autosave"><span>Update email preview</span></button>
 						<button type="submit" name="do" value="delete-deployment" formnovalidate class="existing-deployment-field action-start icon-button danger" data-icon="trash" data-bind:data-confirm-delete="id" data-bind:data-delete-name="deleteName"><span>Delete deployment</span></button>
 					</div>
 				</form>

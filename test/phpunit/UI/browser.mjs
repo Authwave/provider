@@ -256,13 +256,17 @@ try {
 			animation.play();
 			return stationary && changing;
 		})()`), true, 'The loader must animate its shading while keeping the SVG mask stationary');
-		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').transitionDuration"), "1s");
+		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').transitionDuration"), "0.1s");
 		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').transitionDelay"), "0s");
-		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting > span')).transitionDuration"), "1s");
+		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting > span')).transitionDuration"), "0.1s");
 		if(page === "authenticate") {
 			assert.equal(await evaluate(`getComputedStyle(document.querySelector('.flux-button-waiting'), '::before').maskImage.includes('${button === "password" ? "login" : "mail"}.svg')`), true);
 		}
 		await waitFor("getComputedStyle(document.querySelector('.flux-button-waiting > span')).opacity === '0' && getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').opacity === '1'");
+		if(page === "authenticate") {
+			assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::before').opacity"), "0");
+			assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::before').transitionDuration"), "0.1s");
+		}
 		await send("Emulation.setEmulatedMedia", {features: [{name: "prefers-reduced-motion", value: "reduce"}]});
 		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').animationName"), "none");
 		assert.equal(await evaluate("getComputedStyle(document.querySelector('.flux-button-waiting'), '::after').transitionDuration"), "0s");

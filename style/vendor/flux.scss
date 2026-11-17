@@ -22,8 +22,8 @@ form {
 	button[type="submit"], button:not([type]) {
 		position: relative;
 
-		> span, &::before {
-			transition: opacity 1s ease;
+		> *, &::before {
+			transition: opacity 0.1s ease;
 		}
 
 		&::after {
@@ -34,17 +34,19 @@ form {
 			margin: auto;
 			z-index: 1;
 			opacity: 0;
-			transition: opacity 0.2s ease;
+			transition: opacity 0.1s ease;
 		}
 
 		&.flux-button-waiting {
-			> span, &::before {
+			--theme-icon-opacity: 0;
+
+			> *, &::before {
 				opacity: 0;
 			}
 
 			&::after {
 				opacity: 1;
-				transition: opacity 1s ease;
+				transition: opacity 0.1s ease;
 				@extend %flux-loader-spinner;
 			}
 		}
@@ -52,7 +54,7 @@ form {
 
 	@media (prefers-reduced-motion: reduce) {
 		button[type="submit"], button:not([type]) {
-			> span, &::before, &::after {
+			> *, &::before, &::after {
 				transition: none;
 			}
 
