@@ -30,7 +30,7 @@ jobs:
         with:
           version: "2"
           php_version: ${{ matrix.php }}
-          php_extensions: curl dom mbstring pdo_sqlite sodium
+          php_extensions: curl dom mbstring pcntl pdo_sqlite sodium
           args: --prefer-dist
 
       - name: Archive build
@@ -64,7 +64,7 @@ jobs:
         uses: php-actions/phpunit@v4
         with:
           php_version: ${{ matrix.php }}
-          php_extensions: curl dom mbstring pdo_sqlite sodium
+          php_extensions: curl dom mbstring pcntl pdo_sqlite sodium
           configuration: phpunit.xml
 
   behat:
@@ -99,7 +99,7 @@ jobs:
           BEHAT_CHROME_API_URL: http://127.0.0.1:9222
         with:
           php_version: ${{ matrix.php }}
-          php_extensions: curl dom mbstring pdo_sqlite sodium
+          php_extensions: curl dom mbstring pcntl pdo_sqlite sodium
           # Keep the fixture database, app and callback server in the test container.
           vendored_behat_path: test/behat/run-behat
 
@@ -128,7 +128,7 @@ jobs:
         uses: php-actions/phpstan@v3
         with:
           php_version: ${{ matrix.php }}
-          php_extensions: curl dom mbstring pdo_sqlite sodium
+          php_extensions: curl dom mbstring pcntl pdo_sqlite sodium
           path: class/
           level: 6
 
@@ -153,7 +153,7 @@ jobs:
         uses: php-actions/composer@v6
         with:
           php_version: ${{ matrix.php }}
-          php_extensions: curl dom mbstring pdo_sqlite sodium
+          php_extensions: curl dom mbstring pcntl pdo_sqlite sodium
           command: exec
           args: -- phpmd class/ text phpmd.xml
 
