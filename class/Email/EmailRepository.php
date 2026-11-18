@@ -42,6 +42,8 @@ class EmailRepository {
 		string $fromName = self::DEFAULT_EMAIL_FROM_NAME,
 		DateTimeInterface $when = null,
 	):string {
+		$toAddress = new EmailAddress($toAddress);
+		$fromAddress = new EmailAddress($fromAddress);
 		$filePath = "data/email/$templateName.md";
 		if(!is_file($filePath)) {
 			throw new EmailTemplateNotFoundException($templateName);
@@ -87,9 +89,9 @@ class EmailRepository {
 			"deploymentId" => $deployment->id,
 			"scheduledToSendAt" => $when,
 			"subject" => $subject,
-			"toEmail" => $toAddress,
+			"toEmail" => (string)$toAddress,
 			"senderName" => $fromName,
-			"senderAddress" => $fromAddress,
+			"senderAddress" => (string)$fromAddress,
 			"textContent" => $markdown,
 			"htmlContent" => (string)$html,
 		]);
@@ -181,8 +183,8 @@ class EmailRepository {
 
 		$mailer = $this->mailer ?? new Mailer($transport);
 		$email = new Email();
-		$email->addFrom(new Address($fromAddress, $fromName));
-		$email->addTo(new Address($toAddress));
+		$email->addFrom(new Address(new EmailAddress($fromAddress), $fromName));
+		$email->addTo(new Address(new EmailAddress($toAddress)));
 		$email->subject($subject);
 		$email->text($markdown);
 		$email->html($html);

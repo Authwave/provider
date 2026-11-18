@@ -1,6 +1,8 @@
 <?php
 namespace Authwave\User;
 
+use Authwave\Email\EmailAddress;
+
 use Authwave\Email\EmailRepository;
 use Authwave\Model\ApplicationDeployment;
 use Authwave\Model\ApplicationRepository;
@@ -23,11 +25,12 @@ class UserRepository {
 		ApplicationDeployment $deployment,
 		string $email,
 	):?User {
+		$email = new EmailAddress($email);
 		return $this->rowToUser(
 			$this->db->fetch(
 				"getByDeploymentAndEmail",
 				$deployment->id,
-				$email,
+				(string)$email,
 			),
 			$deployment,
 		);
@@ -57,11 +60,12 @@ class UserRepository {
 		string $email,
 		?string $password = null,
 	):User {
+		$email = new EmailAddress($email);
 		$userId = new Ulid();
 		$this->db->insert("create", [
 			"id" => $userId,
 			"applicationDeploymentId" => $deployment->id,
-			"email" => $email,
+			"email" => (string)$email,
 		]);
 		$user = new User((string)$userId, $deployment, $email);
 		$this->audit->create(Action::USER_CREATED, [
