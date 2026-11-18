@@ -1,6 +1,7 @@
 <?php
 namespace Authwave\Session;
 
+use Authwave\Email\EmailAddress;
 use Authwave\Model\ApplicationDeployment;
 use Authwave\Security\Action;
 use Authwave\Security\AnonUser;
@@ -65,6 +66,7 @@ readonly class LoginSession {
 	}
 
 	public function setEmail(string $email):void {
+		$email = (string)new EmailAddress($email);
 		if($email !== $this->getEmail()) {
 			$this->setState(LoginState::NOT_LOGGED_IN);
 		}

@@ -3,6 +3,7 @@
 namespace Authwave\User;
 
 use Authwave\Email\EmailRepository;
+use Authwave\Email\EmailAddress;
 use Authwave\Model\User;
 use Authwave\Model\UserSession;
 use Authwave\Model\ApplicationDeployment;
@@ -41,6 +42,7 @@ readonly class UserRepository {
 	}
 
 	public function get(ApplicationDeployment $deployment, string $email):?User {
+		$email = (string)new EmailAddress($email);
 		$userId = $this->queries->fetchString("getIdByDeploymentAndEmail", $deployment->id, $email);
 
 		return $this->getById($userId);
@@ -73,6 +75,7 @@ readonly class UserRepository {
 		string $email,
 		?string $password = null
 	): User {
+		$email = (string)new EmailAddress($email);
 		$userId = new Ulid();
 		$this->queries->insert(
 			"create",
@@ -228,7 +231,7 @@ readonly class UserRepository {
 			throw new InvalidArgumentException("Choose a deployment belonging to this application.");
 		}
 
-		$email = strtolower(trim($email));
+		$email = strtolower((string)new EmailAddress($email));
 		$connection = $this->database->getDriver()->getConnection();
 		$connection->beginTransaction();
 
