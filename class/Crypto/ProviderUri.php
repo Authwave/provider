@@ -23,7 +23,8 @@ readonly class ProviderUri {
 			return null;
 		}
 
-		return $this->uri->getQueryValue(self::QUERY_STRING_DEPLOYMENT_ID);
+		$deploymentId = $this->uri->getQueryValue(self::QUERY_STRING_DEPLOYMENT_ID);
+		return preg_replace('/^[^_]+_/', "DEPLOYMENT_", $deploymentId);
 	}
 
 	public function getReturnUri(UriInterface $default):?UriInterface {

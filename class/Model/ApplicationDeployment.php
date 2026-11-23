@@ -44,6 +44,13 @@ readonly class ApplicationDeployment {
 			->withPath($this->clientLoginPath);
 	}
 
+	public function getApiKey():string {
+		$prefix = str_replace("_", "-", mb_strtoupper($this->title));
+		$separator = strpos($this->id, "_");
+		$suffix = $separator === false ? "_" . $this->id : substr($this->id, $separator);
+		return $prefix . $suffix . "_" . $this->secret;
+	}
+
 	public function getSenderAddress():?string {
 		$prefix = get_object_vars($this)["emailPrefix"] ?? null;
 		if($prefix === null) {
