@@ -13,6 +13,7 @@ use LogicException;
 
 readonly class Sudo {
 	private Closure $clock;
+	private int $requestTime;
 
 	public function __construct(
 		private SessionStoreInterface $session,
@@ -26,6 +27,7 @@ readonly class Sudo {
 		}
 
 		$this->clock = $clock ?? fn():int => time();
+		$this->requestTime = ($this->clock)();
 	}
 
 	public function expiresAt(User $actor):int {
@@ -45,11 +47,13 @@ readonly class Sudo {
 	}
 
 	public function renew(User $actor):int {
-		if($this->expiresAt($actor) === 0) {
+		$until = $this->expiresAt($actor);
+		if($until === 0) {
 			return 0;
 		}
 
-		$until = ($this->clock)() + $this->duration;
+		// Components and page logic must use the same deadline for this request.
+		$until = max($until, $this->requestTime + $this->duration);
 		$this->session->set("until", $until);
 		return $until;
 	}
