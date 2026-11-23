@@ -2,6 +2,8 @@
 
 namespace Authwave\Test\Session;
 
+use Authwave\Model\Application;
+use Authwave\Model\ApplicationDeployment;
 use Authwave\Security\Action;
 use Authwave\Security\Audit;
 use Authwave\Security\AnonUser;
@@ -12,6 +14,28 @@ use GT\Session\Session;
 use PHPUnit\Framework\TestCase;
 
 class LoginSessionTest extends TestCase {
+	public function testSetEmail_normalizesBeforeStoringLoginIdentity():void {
+		$store = new SessionStore("login", $this->createStub(Session::class));
+		$app = new Application("app", "Example", "sender@example.com");
+		$store->set(
+			"deployment",
+			new ApplicationDeployment(
+				"deployment",
+				$app,
+				"Example",
+				"secret",
+				"client.example.com",
+				"/",
+				"login.example.com"
+			)
+		);
+
+		$sut = new LoginSession($store, $this->createStub(Audit::class), new AnonUser("anonymous"));
+		$sut->setEmail(" ..test.user...@example.com ");
+
+		self::assertSame("test.user@example.com", $sut->getEmail());
+	}
+
 	public function testSetState_authenticationStateChangeIsAuditedBeforeChangingSessionAndOnlyOnce():void {
 		$store = new SessionStore("login", $this->createStub(Session::class));
 		$audit = $this->createMock(Audit::class);

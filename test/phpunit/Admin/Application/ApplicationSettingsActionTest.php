@@ -10,33 +10,17 @@ use Authwave\Model\User;
 use Authwave\Session\FlashSession;
 use Authwave\Security\Audit;
 use Authwave\Security\Action;
+use GT\Dom\Element;
 use GT\Input\Input;
 use GT\Http\Request;
 use GT\Http\Response;
 use GT\Http\Uri;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class ApplicationSettingsActionTest extends TestCase {
-	private function form():\GT\Dom\Element {
-		$document = new \GT\Dom\HTMLDocument(file_get_contents("page/_component/application-deployments.html"));
-		return $document->querySelector("form");
-	}
-
-	private function request(string $method = "POST", string $path = "/admin/applications/app/"):Request {
-		$request = $this->createStub(Request::class);
-		$request->method("getMethod")->willReturn($method);
-		$request->method("getUri")->willReturn(new Uri($path));
-		return $request;
-	}
-
-	private function application(ApplicationRepository $store):Application {
-		$application = new Application("app", "Application", null);
-		$store->method("deployments")->willReturn([new ApplicationDeployment("existing", $application,
-			"Development", "secret", "https://app.test", "/", "host.test")]);
-		return $application;
-	}
-
-	#[\PHPUnit\Framework\Attributes\DataProvider("deletionTargets")]
+	#[DataProvider("deletionTargets")]
 	public function testDeletionPrompt_onlySavedDeploymentsCanBeConfirmed(?string $id, bool $expected):void {
 		$store = $this->createStub(ApplicationRepository::class);
 		$application = $this->application($store);
@@ -81,10 +65,10 @@ class ApplicationSettingsActionTest extends TestCase {
 		$response = $this->createMock(Response::class);
 		$response->expects(self::once())->method("redirect")->with("/admin/applications/app/?deployment=existing#deployment-existing");
 		$sut = new ApplicationSettingsAction($store, $application, $actor, $this->createStub(FlashSession::class), $this->createStub(Audit::class));
-		$sut->saveDeployment(new Input([], ["id" => "existing", "confirmDelete" => "existing", "title" => "Development", "providerHost" => "host.test", "clientHost" => "https://app.test", "clientLoginPath" => "/", "apiKey" => "attacker"]), $this->request(), $response, $this->form());
+		$sut->saveDeployment(new Input([], ["id" => "existing", "confirmDelete" => "existing", "title" => "Development", "providerHost" => "host.test", "clientHost" => "https://app.test", "clientLoginPath" => "/", "apiKey" => "attacker", "emailPrefix" => "security", "emailReplyTo" => "support@example.test"]), $this->request(), $response, $this->form());
 	}
 
-	#[\PHPUnit\Framework\Attributes\DataProvider("invalidApplications")]
+	#[DataProvider("invalidApplications")]
 	public function testSaveApplication_badAndMissingFieldsAreRejectedAndAuditedWithoutWriting(array $body):void {
 		$store = $this->createMock(ApplicationRepository::class);
 		$application = $this->application($store);
@@ -133,7 +117,7 @@ class ApplicationSettingsActionTest extends TestCase {
 		$sut->deleteDeployment(new Input([], ["id" => "existing", "confirmDelete" => "existing", "applicationId" => "foreign", "providerHost" => "invalid"]), $this->request(), $response);
 	}
 
-	#[\PHPUnit\Framework\Attributes\DataProvider("invalidDeletionIdentifiers")]
+	#[DataProvider("invalidDeletionIdentifiers")]
 	public function testDeleteDeployment_deletionRejectsMissingBlankAndArrayIdentifiersAndAuditsTheAttempt(array $body):void {
 		$store = $this->createMock(ApplicationRepository::class);
 		$application = $this->application($store);
@@ -156,7 +140,7 @@ class ApplicationSettingsActionTest extends TestCase {
 		$sut->deleteDeployment(new Input([], ["id" => "existing", "confirmDelete" => "existing"]), $this->request("POST", "/admin/applications/foreign/"), $this->createStub(Response::class));
 	}
 
-	#[\PHPUnit\Framework\Attributes\DataProvider("deletionFailures")]
+	#[DataProvider("deletionFailures")]
 	public function testDeleteDeployment_deletionRejectionsAreAuditedAndDatabaseErrorsCannotClaimSuccess(\Throwable $error):void {
 		$store = $this->createMock(ApplicationRepository::class);
 		$application = $this->application($store);
@@ -183,7 +167,7 @@ class ApplicationSettingsActionTest extends TestCase {
 		}
 	}
 
-	#[\PHPUnit\Framework\Attributes\DataProvider("unconfirmedDeletions")]
+	#[DataProvider("unconfirmedDeletions")]
 	public function testDeleteDeployment_unconfirmedOrMismatchedDeletionOnlyRequestsConfirmation(mixed $confirmation):void {
 		$store = $this->createMock(ApplicationRepository::class);
 		$application = $this->application($store);
@@ -225,7 +209,7 @@ class ApplicationSettingsActionTest extends TestCase {
 		}
 	}
 
-	#[\PHPUnit\Framework\Attributes\DataProvider("invalidDeployments")]
+	#[DataProvider("invalidDeployments")]
 	public function testSaveDeployment_htmlConstraintsRejectInvalidFields(array $body):void {
 		$store = $this->createMock(ApplicationRepository::class);
 		$application = $this->application($store);
@@ -244,8 +228,14 @@ class ApplicationSettingsActionTest extends TestCase {
 	}
 
 	public static function invalidDeployments():iterable {
-		$valid = ["title" => "Development", "providerHost" => "login.example.test",
-			"clientHost" => "https://www.example.test", "clientLoginPath" => "/login/"];
+		$valid = [
+			"title" => "Development",
+			"providerHost" => "login.example.test",
+			"clientHost" => "https://www.example.test",
+			"clientLoginPath" => "/login/",
+			"emailPrefix" => "security",
+			"emailReplyTo" => "support@example.test",
+		];
 		foreach([
 			"title" => [null, "", " ", [], str_repeat("a", 33), "bad\nname", "\xFF"],
 			"providerHost" => [null, "", "https://login.test", "login.test/path", "user@host.test", "bad host", "host:port", "host:100000", "[::1]", "host.test?query", str_repeat("a", 257)],
@@ -260,7 +250,7 @@ class ApplicationSettingsActionTest extends TestCase {
 		}
 	}
 
-	#[\PHPUnit\Framework\Attributes\DataProvider("validDeployments")]
+	#[DataProvider("validDeployments")]
 	public function testSaveDeployment_htmlConstraintsAcceptZeroAndUnicodeNames(string $name, string $host, string $url):void {
 		$store = $this->createMock(ApplicationRepository::class);
 		$application = $this->application($store);
@@ -270,7 +260,8 @@ class ApplicationSettingsActionTest extends TestCase {
 		$sut = new ApplicationSettingsAction($store, $application, $actor, $this->createStub(FlashSession::class), $this->createStub(Audit::class));
 
 		$sut->saveDeployment(new Input([], ["title" => $name, "providerHost" => $host,
-			"clientHost" => $url, "clientLoginPath" => "/"]), $this->request(), $this->createStub(Response::class), $this->form());
+			"clientHost" => $url, "clientLoginPath" => "/",
+			"emailPrefix" => "security", "emailReplyTo" => "support@example.test"]), $this->request(), $this->createStub(Response::class), $this->form());
 	}
 
 	public static function validDeployments():iterable {
@@ -278,5 +269,24 @@ class ApplicationSettingsActionTest extends TestCase {
 		yield [str_repeat("馬", 32), "localhost:9105", "https://localhost:8080"];
 		yield [str_repeat("😀", 16), "login.example.test", "HTTPS://CLIENT.TEST"];
 		yield ["Development", "127.0.0.1:8080", "https://client.test"];
+	}
+
+	private function form():Element {
+		$document = new \GT\Dom\HTMLDocument(file_get_contents("page/_component/application-deployments.html"));
+		return $document->querySelector("form");
+	}
+
+	private function request(string $method = "POST", string $path = "/admin/applications/app/"):Request {
+		$request = $this->createStub(Request::class);
+		$request->method("getMethod")->willReturn($method);
+		$request->method("getUri")->willReturn(new Uri($path));
+		return $request;
+	}
+
+	private function application(MockObject|ApplicationRepository $store):Application {
+		$application = new Application("app", "Application", null);
+		$store->method("deployments")->willReturn([new ApplicationDeployment("existing", $application,
+			"Development", "secret", "https://app.test", "/", "host.test")]);
+		return $application;
 	}
 }
