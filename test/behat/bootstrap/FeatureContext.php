@@ -865,13 +865,20 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 		}
 	}
 
-	private function deploymentKey(string $id):string {
+	private function deploymentKey(string $id, bool $display = true):string {
 		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
-		$query = $database->prepare("select secret from ApplicationDeployment where id = ?");
+		$query = $database->prepare("select title, secret from ApplicationDeployment where id = ?");
 		$query->execute([$id]);
-		$secret = $query->fetchColumn();
+		$deployment = $query->fetch(PDO::FETCH_ASSOC);
+		$secret = $deployment["secret"] ?? null;
 		$this->expect(is_string($secret) && $secret !== "", "The deployment must have a persisted key.");
-		return $id . "_" . $secret;
+		if(!$display) {
+			return $id . "_" . $secret;
+		}
+		$prefix = str_replace("_", "-", mb_strtoupper($deployment["title"]));
+		$separator = strpos($id, "_");
+		$suffix = $separator === false ? "_" . $id : substr($id, $separator);
+		return $prefix . $suffix . "_" . $secret;
 	}
 
 	#[Then('deployment :summary should have an obscured API key without leaking its value')]
@@ -1748,15 +1755,15 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 		$fields = $details->findAll('css', 'input[readonly]');
 		$this->expect(count($fields) === 2, "Missing read-only deployment fields.");
 		foreach($fields as $field) $this->expect($field->isVisible() && $field->getValue() !== "", "Deployment fields should be visible and populated.");
-		$this->savedDeploymentKey = $this->deploymentKey($fields[0]->getValue());
+		$this->savedDeploymentKey = $this->deploymentKey($fields[0]->getValue(), false);
 		$this->obscuredDeploymentKey($summary);
 	}
 
-	#[Then('deployment :summary should keep the same API key')]
+	#[Then('deployment :summary should keep the same API key secret')]
 	public function stableDeploymentKey(string $summary):void {
 		$details = $this->deploymentDetails($summary);
 		$fields = $details->findAll('css', 'input[readonly]');
-		$this->expect($this->savedDeploymentKey !== null && $this->deploymentKey($fields[0]->getValue()) === $this->savedDeploymentKey, "Editing must not rotate the API key.");
+		$this->expect($this->savedDeploymentKey !== null && $this->deploymentKey($fields[0]->getValue(), false) === $this->savedDeploymentKey, "Editing must not rotate the API key.");
 		$this->obscuredDeploymentKey($summary);
 	}
 

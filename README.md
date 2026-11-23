@@ -105,7 +105,11 @@ The migration history uses these table names from the start. Existing databases
 with lowercase table names need an in-place table rename and migration baseline
 update; replaying `gt migrate` alone does not rename already-migrated tables.
 
-Deployment IDs and API keys are generated once and remain read-only when editing.
+Deployment IDs and API-key secrets are generated once and remain read-only when editing.
+Displayed API keys replace the `DEPLOYMENT` ID prefix with the upper-case deployment
+name (underscores in names become hyphens). Renaming a deployment updates this
+display prefix; login requests restore `DEPLOYMENT_` before looking up the ID,
+so previously copied keys continue to work.
 All changes commit with their audit records; API keys are excluded from audit JSON.
 The deployment list uses one repeating HTML template for saved deployments and
 the creation form, with CSS hiding the creation form's ID and API-key fields.

@@ -17,6 +17,7 @@ function go(Binder $binder, Application $application, ApplicationRepository $app
 	Response $response, Audit $audit):void {
 	$deployments = $applications->deployments($area->administrator(), $application->id);
 	$ids = array_map(fn(ApplicationDeployment $deployment):string => $deployment->id, $deployments);
+	$apiKeys = array_combine($ids, array_map(fn(ApplicationDeployment $deployment):string => $deployment->getApiKey(), $deployments));
 	$verify = $input->get("verify", Input::DATA_QUERYSTRING);
 
 	if($verify !== null && $request->getMethod() === "GET") {
@@ -50,7 +51,7 @@ function go(Binder $binder, Application $application, ApplicationRepository $app
 	$deployments []= new ApplicationDeployment("", $application, "", "", "", "/", emailPrefix: "security");
 
 	$binder->bindListCallback($deployments, function(Element $item, array $fields)use(
-		$binder, $input, $submitted, $submittedId, $error, $opened, $domains, $application, $request, $verify,
+		$binder, $input, $submitted, $submittedId, $error, $opened, $domains, $application, $request, $verify, $apiKeys,
 	):array {
 		$id = $fields["id"];
 		$isNew = $id === "";
@@ -94,7 +95,7 @@ function go(Binder $binder, Application $application, ApplicationRepository $app
 		$binder->bindKeyValue("deploymentFormId", "deployment-form-" . ($isNew ? "new" : $id), $item);
 		$binder->bindKeyValue("summary", $isNew ? "Create a deployment" : $fields["title"], $item);
 		$binder->bindKeyValue("submitLabel", $isNew ? "Create deployment" : "Save deployment", $item);
-		$binder->bindKeyValue("apiKey", $isNew ? "" : $id . "_" . $fields["secret"], $item);
+		$binder->bindKeyValue("apiKey", $isNew ? "" : $apiKeys[$id], $item);
 		$binder->bindKeyValue("deleteName", $fields["title"], $item);
 		$binder->bindKeyValue("error", $isSubmitted ? $error : "", $item);
 

@@ -30,19 +30,44 @@ class SudoTest extends TestCase {
 		$now = 100;
 		$users = $this->createMock(UserRepository::class);
 		$users->expects(self::once())->method("checkLogin")->willReturn(true);
-		$sut = new Sudo($this->store(), $users, $this->createStub(Audit::class), 60,
-			function()use(&$now):int { return $now; });
+		$store = $this->store();
+		$audit = $this->createStub(Audit::class);
+		$clock = function()use(&$now):int { return $now; };
+		$sut = new Sudo($store, $users, $audit, 60, $clock);
 		$actor = $this->actor();
 		$sut->request($actor, "key", "/admin/", "copy");
 		$sut->authenticate($actor, "password");
 
 		for($now = 130; $now <= 3700; $now += 30) {
+			$sut = new Sudo($store, $users, $audit, 60, $clock);
 			self::assertSame($now + 60, $sut->renew($actor));
 		}
 
 		$now = 3760;
+		$sut = new Sudo($store, $users, $audit, 60, $clock);
 		self::assertSame(0, $sut->renew($actor));
 		self::assertSame(0, $sut->expiresAt($actor));
+	}
+
+	public function testRenew_componentAndPageKeepTheSameDeadlineAcrossASecondBoundary():void {
+		$now = 100;
+		$clock = function()use(&$now):int { return $now; };
+		$store = $this->store();
+		$store->set("actor", "admin");
+		$store->set("until", 103);
+		$users = $this->createStub(UserRepository::class);
+		$audit = $this->createStub(Audit::class);
+		$sut = new Sudo($store, $users, $audit, 5, $clock);
+		$actor = $this->actor();
+
+		self::assertSame(105, $sut->renew($actor));
+		$now = 101;
+		self::assertSame(105, $sut->renew($actor));
+		self::assertSame(105, $sut->expiresAt($actor));
+
+		$now = 105;
+		$nextRequest = new Sudo($store, $users, $audit, 5, $clock);
+		self::assertSame(0, $nextRequest->renew($actor));
 	}
 
 	#[DataProvider("inactiveRenewals")]
