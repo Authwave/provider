@@ -7,6 +7,7 @@ default:
         - test/behat
       contexts:
         - FeatureContext
+        - ProgressContext
   extensions:
     DMore\ChromeExtension\Behat\ServiceContainer\ChromeExtension: ~
     Behat\MinkExtension:

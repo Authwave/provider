@@ -35,7 +35,8 @@
 	"scripts": {
 		"behat": [
 			"Composer\\Config::disableProcessTimeout",
-			"test/behat/run-behat"
+			"Authwave\\Test\\Behat\\ComposerProgress::configure",
+			"@php test/behat/run-parallel.php"
 		],
 		"phpunit": "vendor/bin/phpunit --configuration phpunit.xml",
 		"phpcs": "vendor/bin/phpcs class/ --standard=phpcs.xml",

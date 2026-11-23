@@ -332,6 +332,46 @@ The Composer scripts run Behat, PHPUnit, PHPCS, PHPMD, and PHPStan at level 6.
 Each check can also run separately: `composer behat`, `composer phpunit`,
 `composer phpcs`, `composer phpmd`, and `composer phpstan`.
 
+Full local Behat runs use eight workers, each with its own database, sessions,
+servers and Chrome profile. Feature files are divided between workers. A live
+phpgt/cli display shows each worker's feature/scenario position and scenario
+title, with the overall scenario completion percentage and latest completed step below
+the worker list. Full worker
+transcripts are buffered until all workers finish; terminal colours are retained.
+Redirected output uses ordinary progress lines rather than cursor controls.
+Set `NO_COLOR=1` to disable colours or `FORCE_COLOR=1` to retain them in a pipe.
+The runner checks that terminal cursor movement changes the reported position before enabling the
+multi-line display. Consoles that cannot confirm movement, including PhpStorm's
+Run/Composer panel, automatically use one updating percentage/step line.
+Output without confirmed cursor support uses the compact single-line mode. `BEHAT_PROGRESS_MODE=multi-line` or `single-line`
+can override detection; `BEHAT_INTERACTIVE=0` disables terminal cursor controls.
+Use `BEHAT_WORKERS=4 composer test`
+to change the worker count, or `BEHAT_WORKERS=1 composer behat` for a sequential
+run. Feature/scenario selections run in one worker, for example
+`composer behat -- test/behat/05-application-settings.feature:51`.
+An external Chrome endpoint or fixed server port/command also selects one worker.
+CI continues to use the existing single-runner entrypoint.
+
+To use PhpStorm's play button beside a scenario:
+
+1. Under **Settings > PHP > Test Frameworks**, select Behat, use
+   `vendor/behat/behat/bin/behat` as the executable, and set the configuration
+   file to the project's root `behat.yml`.
+2. Under **Run > Edit Configurations > Edit configuration templates > Behat**,
+   add `-d auto_prepend_file=/absolute/path/to/provider/test/behat/phpstorm.php`
+   to **Interpreter options**, using your actual project path. Quote the path
+   if it contains spaces. Apply this to any existing Behat run configurations
+   too; templates apply to newly created configurations.
+3. Run a scenario from its gutter icon. The startup adapter runs PhpStorm's
+   own Behat launcher inside the isolated server/browser harness, retaining
+   the IDE's test tree and scenario selection. No manually started services
+   or database environment variables are needed.
+
+For JavaScript scenarios, add `BEHAT_JAVASCRIPT=1` to the Behat configuration's
+environment variables and build browser assets first, as for command-line runs.
+The adapter supports local runs; debugging the application server requires its
+own Xdebug configuration.
+
 * `test/phpunit` contains class-based unit tests, running on PHPUnit 13. Each
   `XTest` tests class `X`, using `testMethod_context` names and a single `$sut`.
   Run these with `vendor/bin/phpunit --testsuite unit`.

@@ -6,15 +6,21 @@ APP_HOST="${BEHAT_APP_HOST:-127.0.0.1}"
 CHROME_HOST="${BEHAT_CHROME_HOST:-127.0.0.1}"
 CHROME_BIN="${CHROME_BIN:-}"
 BEHAT_BIN="${BEHAT_BIN:-vendor/bin/behat}"
+BEHAT_PHP_BINARY="${BEHAT_PHP_BINARY:-php}"
+if [[ "$BEHAT_BIN" = /* ]]; then
+	BEHAT_ENTRYPOINT="$BEHAT_BIN"
+else
+	BEHAT_ENTRYPOINT="$ROOT_DIR/$BEHAT_BIN"
+fi
 
 pick_port() {
-	php -r '$socket = stream_socket_server("tcp://127.0.0.1:0", $errno, $errstr); if(!$socket) {fwrite(STDERR, $errstr . PHP_EOL); exit(1);} $name = stream_socket_get_name($socket, false); fclose($socket); echo substr(strrchr($name, ":"), 1);'
+	"$BEHAT_PHP_BINARY" -r '$socket = stream_socket_server("tcp://127.0.0.1:0", $errno, $errstr); if(!$socket) {fwrite(STDERR, $errstr . PHP_EOL); exit(1);} $name = stream_socket_get_name($socket, false); fclose($socket); echo substr(strrchr($name, ":"), 1);'
 }
 
 APP_PORT="${BEHAT_APP_PORT:-$(pick_port)}"
 CHROME_PORT="${BEHAT_CHROME_PORT:-$(pick_port)}"
 CLIENT_PORT="$(pick_port)"
-APP_COMMAND="${BEHAT_APP_COMMAND:-php -d display_errors=0 -S ${APP_HOST}:${APP_PORT} -t ${ROOT_DIR}/www ${ROOT_DIR}/vendor/phpgt/webengine/go.php}"
+APP_COMMAND="${BEHAT_APP_COMMAND:-}"
 
 if [[ -z "${BEHAT_CHROME_API_URL:-}" && -z "$CHROME_BIN" ]]; then
 	for candidate in google-chrome-stable google-chrome chromium-browser chromium; do
@@ -31,8 +37,8 @@ if [[ -z "${BEHAT_CHROME_API_URL:-}" && -z "$CHROME_BIN" ]]; then
 	exit 1
 fi
 
-if [[ ! -x "$ROOT_DIR/$BEHAT_BIN" ]]; then
-	echo "Behat executable not found at $ROOT_DIR/$BEHAT_BIN" >&2
+if [[ ! -f "$BEHAT_ENTRYPOINT" ]]; then
+	echo "Behat executable not found at $BEHAT_ENTRYPOINT" >&2
 	echo "Run composer install first or set BEHAT_BIN." >&2
 	exit 1
 fi
@@ -59,6 +65,10 @@ cleanup() {
 	local status=$?
 	if ((status != 0)) && [[ -n "${TEST_RUN_DIR:-}" ]]; then
 		cat "$TEST_RUN_DIR"/*.log >&2 || true
+	fi
+	if [[ -n "${BEHAT_PID:-}" ]]; then
+		kill "$BEHAT_PID" >/dev/null 2>&1 || true
+		wait "$BEHAT_PID" 2>/dev/null || true
 	fi
 	if [[ -n "${CLIENT_PID:-}" ]]; then
 		kill "$CLIENT_PID" >/dev/null 2>&1 || true
@@ -95,10 +105,10 @@ export database_schema="$BEHAT_DATABASE"
 export authwave_admin_email=admin@example.test
 export authwave_sudo_duration=5
 export session_path="$TEST_RUN_DIR/sessions"
-php -r 'require "vendor/autoload.php"; require "test/behat/database/DatabaseState.php"; new Authwave\Test\Behat\DatabaseState(getenv("BEHAT_DATABASE"), "test/behat/database");'
+"$BEHAT_PHP_BINARY" -r 'require "vendor/autoload.php"; require "test/behat/database/DatabaseState.php"; new Authwave\Test\Behat\DatabaseState(getenv("BEHAT_DATABASE"), "test/behat/database");'
 
 export BEHAT_CLIENT_URL="http://${APP_HOST}:${CLIENT_PORT}/"
-php -S "${APP_HOST}:${CLIENT_PORT}" "$ROOT_DIR/test/behat/client/receive.php" >"$TEST_RUN_DIR/client.log" 2>&1 &
+"$BEHAT_PHP_BINARY" -S "${APP_HOST}:${CLIENT_PORT}" "$ROOT_DIR/test/behat/client/receive.php" >"$TEST_RUN_DIR/client.log" 2>&1 &
 CLIENT_PID=$!
 wait_for_port "$APP_HOST" "$CLIENT_PORT" "Client notification receiver"
 
@@ -106,7 +116,11 @@ export BEHAT_BASE_URL="http://${APP_HOST}:${APP_PORT}"
 EXTERNAL_CHROME_API_URL="${BEHAT_CHROME_API_URL:-}"
 export BEHAT_CHROME_API_URL="${EXTERNAL_CHROME_API_URL:-http://${CHROME_HOST}:${CHROME_PORT}}"
 
-$APP_COMMAND >"$TEST_RUN_DIR/app.log" 2>&1 &
+if [[ -n "$APP_COMMAND" ]]; then
+	$APP_COMMAND >"$TEST_RUN_DIR/app.log" 2>&1 &
+else
+	"$BEHAT_PHP_BINARY" -d display_errors=0 -S "${APP_HOST}:${APP_PORT}" -t "$ROOT_DIR/www" "$ROOT_DIR/vendor/phpgt/webengine/go.php" >"$TEST_RUN_DIR/app.log" 2>&1 &
+fi
 APP_PID=$!
 wait_for_port "$APP_HOST" "$APP_PORT" "PHP application"
 
@@ -144,6 +158,8 @@ else
 	curl --max-time 1 --fail --silent "$BEHAT_CHROME_API_URL/json/version" >/dev/null
 fi
 
-if ! "$ROOT_DIR/$BEHAT_BIN" --strict --no-interaction "${TAG_FLAGS[@]}" "$@"; then
+"$BEHAT_PHP_BINARY" "$BEHAT_ENTRYPOINT" --strict --no-interaction "${TAG_FLAGS[@]}" "$@" &
+BEHAT_PID=$!
+if ! wait "$BEHAT_PID"; then
 	exit 1
 fi
