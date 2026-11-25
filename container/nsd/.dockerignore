@@ -1,0 +1,5 @@
+*
+!Dockerfile
+!nsd.conf
+!shared.zone
+!entrypoint.sh

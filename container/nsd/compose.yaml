@@ -1,0 +1,25 @@
+name: authwave-dns
+
+services:
+  nsd:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${DNS_BIND_IP:-0.0.0.0}:${DNS_PORT:-53}:53/udp"
+      - "${DNS_BIND_IP:-0.0.0.0}:${DNS_PORT:-53}:53/tcp"
+    volumes:
+      - nsd-state:/var/lib/nsd
+    healthcheck:
+      test: ["CMD", "nsd-control", "-c", "/etc/nsd/nsd.conf", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  nsd-state:

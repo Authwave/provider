@@ -1,0 +1,8 @@
+; No $ORIGIN: NSD uses the registered customer domain as this file's origin.
+$TTL 300
+@ IN SOA ns1.authwave.com. hostmaster.authwave.com. (
+    2026112501 3600 600 1209600 300 )
+@ IN NS ns1.authwave.com.
+@ IN NS ns2.authwave.com.
+@ IN A 67.207.70.225
+authwave-confirmation IN TXT "dev-2611"
