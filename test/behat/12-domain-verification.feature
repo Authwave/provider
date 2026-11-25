@@ -74,3 +74,34 @@ Feature: Deployment domain verification
 
   Scenario: Hosted-provider instructions use the current request domain
     Then requesting domain instructions on the hosted provider should identify the hosted provider
+
+  Scenario: Only a verified domain marked as production improves the security grade
+    When I open the domain verification instructions for deployment "Development"
+    And I start checking the deployment domain
+    Then deployment "Development" should show domain status "Domain verified"
+    When I go to "/admin/security/?application=managed"
+    Then the security grade should be "C"
+    When I go to "/admin/applications/managed/"
+    And I select "Development" from "Production deployment"
+    And I press "Save application settings"
+    Then deployment "Development" should have a "Production" badge
+    When I go to "/admin/security/?application=managed"
+    Then the security grade should be "B"
+    And I should see "The production deployment's domain is verified."
+    When I go to "/admin/applications/managed/"
+    And I select "None" from "Production deployment"
+    And I press "Save application settings"
+    When I go to "/admin/security/?application=managed"
+    Then the security grade should be "C"
+
+  Scenario: Verifying the marked production domain raises the security grade
+    When I select "Development" from "Production deployment"
+    And I press "Save application settings"
+    When I go to "/admin/security/?application=managed"
+    Then the security grade should be "C"
+    When I go to "/admin/applications/managed/"
+    And I open the domain verification instructions for deployment "Development"
+    And I start checking the deployment domain
+    Then deployment "Development" should show domain status "Domain verified"
+    When I go to "/admin/security/?application=managed"
+    Then the security grade should be "B"

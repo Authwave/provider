@@ -452,9 +452,9 @@ Security grade
 The Security score starts at C and uses the A–F scale. Each finding moves the
 letter one step, bounded by A and F. A saved session policy with timeouts at or
 below the app defaults (30 minutes maximum, 15 minutes idle) raises it one step;
-longer saved limits lower it one step. Verified production-domain ownership plus
-a configured HTTPS client URL raises it one step; a non-HTTPS production client
-URL lowers it one step. Any active older-client sessions lower it one step,
+longer saved limits lower it one step. Verifying the domain of the deployment marked as
+production raises it one step. Verified non-production domains earn no credit.
+A non-HTTPS production client URL independently lowers it one step. Any active older-client sessions lower it one step,
 regardless of how many there are. Missing configuration or session activity is
 neutral. Development HTTP URLs do not affect the grade. All application sessions
 are assessed, independently of the session-list filter. The panel explains every

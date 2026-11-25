@@ -1,6 +1,7 @@
 <?php
 namespace Authwave\Model;
 
+use Authwave\Dns\{Hostname, Nsd};
 use Authwave\Security\Action;
 use Authwave\Security\AnonUser;
 use Authwave\Security\Audit;
@@ -24,6 +25,7 @@ readonly class ApplicationRepository {
 		private Database $database,
 		private Audit $audit,
 		private DomainVerification $domains,
+		private ?Nsd $nsd = null,
 	) {
 	}
 
@@ -279,9 +281,9 @@ readonly class ApplicationRepository {
 
 	public function saveDeployment(User $actor, string $applicationId, ?string $identifier,
 		DeploymentData $data):ApplicationDeployment {
-		return $this->transaction(function()use(
+		[$deployment, $before] = $this->transaction(function()use(
 			$actor, $applicationId, $identifier, $data,
-		):ApplicationDeployment {
+		):array {
 			$application = $this->get($actor, $applicationId);
 			$identifier = $identifier === "" ? null : $identifier;
 			$before = $identifier !== null
@@ -321,12 +323,18 @@ readonly class ApplicationRepository {
 					? ["applicationId" => $applicationId, "deploymentId" => $identifier]
 					: ["applicationId" => $applicationId],
 			);
-			return $deployment;
+			return [$deployment, $before];
 		});
+		$this->nsd?->add($deployment->providerHost);
+		if($before && $this->domains->hostname($before->providerHost)
+		!== $this->domains->hostname($deployment->providerHost)) {
+			$this->removeDnsZone($before->providerHost);
+		}
+		return $deployment;
 	}
 
 	public function deleteDeployment(User $actor, string $applicationId, string $identifier):void {
-		$this->transaction(function()use($actor, $applicationId, $identifier):void {
+		$hostname = $this->transaction(function()use($actor, $applicationId, $identifier):string {
 			$application = $this->get($actor, $applicationId);
 			$before = $this->deployment($actor, $applicationId, $identifier);
 			$query = $this->database->queryCollection("admin_deployment");
@@ -358,7 +366,22 @@ readonly class ApplicationRepository {
 				actor: $actor,
 				context: ["applicationId" => $applicationId],
 			);
+			return $before->providerHost;
 		});
+		$this->removeDnsZone($hostname);
+	}
+
+	private function removeDnsZone(string $host):void {
+		if($this->nsd === null) {
+			return;
+		}
+		$hostname = (new Hostname())->publicName($host);
+		foreach($this->database->queryCollection("admin_deployment")->fetchAll("dnsHosts") as $row) {
+			if((new Hostname())->publicName($row->getString("providerHost")) === $hostname) {
+				return;
+			}
+		}
+		$this->nsd->remove($host);
 	}
 
 	private function deploymentDetails(ApplicationDeployment $deployment):object {

@@ -255,6 +255,30 @@ class ApplicationRepositoryTest extends TestCase {
 			new Application("provider", "Provider", "sender@example.test"), "Provider", "secret", "app.test", "/"), "owner@example.test");
 	}
 
+	public function testDnsCommandsRunInlineAndPreserveSharedHostnames():void {
+		$commands = [];
+		$nsd = new \Authwave\Dns\Nsd("/nsd", function(array $command)use(&$commands):array {
+			$commands []= $command;
+			return in_array("status", $command) ? [0, "container-id"] : [0, "ok"];
+		});
+		$store = new ApplicationRepository($this->database,
+			new Audit($this->database->queryCollection("audit")),
+			new \Authwave\Security\DomainVerification(), $nsd);
+		$first = $store->saveDeployment($this->actor, "mine", null,
+			new DeploymentData("First", "LOGIN.example.com:443", "https://client.test", "/"));
+		self::assertSame(["addzone", "login.example.com"], array_slice(end($commands), -2));
+		$second = $store->saveDeployment($this->actor, "mine", null,
+			new DeploymentData("Second", "login.example.com", "https://client.test", "/"));
+		$count = count($commands);
+		$store->deleteDeployment($this->actor, "mine", $first->id);
+		self::assertCount($count, $commands);
+		$store->saveDeployment($this->actor, "mine", $second->id,
+			new DeploymentData("Second", "other.example.com", "https://client.test", "/"));
+		self::assertSame(["delzone", "login.example.com"], array_slice(end($commands), -2));
+		$store->deleteDeployment($this->actor, "mine", $second->id);
+		self::assertSame(["delzone", "other.example.com"], array_slice(end($commands), -2));
+	}
+
 	public function testSaveSessionPolicy_shortensExistingSessionsWithoutExtendingThemAndAuditsChanges():void {
 		$this->database->executeSql("insert into ApplicationDeployment(id,applicationId,title,secret,providerHost,clientHost,clientLoginPath) values ('session-deployment','mine','Production','private-secret','login.test','https://client.test','/')");
 		$this->database->executeSql("insert into User(id,applicationDeploymentId,email) values ('session-user','session-deployment','user@example.test')");

@@ -1,0 +1,70 @@
+#!/bin/bash
+# Add with `visudo -f /etc/sudoers.d/authwave-dns`:
+# www-data ALL=(root) NOPASSWD: /var/www/Authwave/provider/bin/authwave-dns
+# The script elevates itself with sudo; PHP needs no Docker group membership.
+set -eu
+
+case "${1-}" in
+status)
+	[ "$#" -eq 1 ] || exit 2
+	;;
+addzone | delzone | zonestatus)
+	[ "$#" -eq 2 ] || exit 2
+	hostname=$2
+	[[ ${#hostname} -le 253 && "$hostname" == *.* ]] || exit 2
+	[[ ! "$hostname" =~ ^[0-9.]+$ ]] || exit 2
+	case "$hostname" in
+	authwave.com | ns1.authwave.com | ns2.authwave.com | *.test | *.localhost | *.local | *.invalid | *.example)
+		exit 2
+		;;
+	esac
+	IFS='.' read -r -a labels <<<"$hostname"
+	for label in "${labels[@]}"
+	do
+		[[ "$label" =~ ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$ ]] || exit 2
+	done
+	[[ "$hostname" != *. ]] || exit 2
+	;;
+*)
+	exit 2
+	;;
+esac
+
+# Local development without Docker needs neither sudo nor a running daemon.
+if [ ! -x /usr/bin/docker ]
+then
+	echo "Docker is not installed; DNS provisioning skipped."
+	exit 3
+fi
+if [ "$EUID" -ne 0 ]
+then
+	exec /usr/bin/sudo -n -- "$(/usr/bin/readlink -f -- "$0")" "$@"
+fi
+
+# Fix the environment, daemon and container; never load Compose from the checkout.
+docker() {
+	/usr/bin/env -i PATH=/usr/bin:/bin HOME=/root \
+		/usr/bin/docker --host unix:///var/run/docker.sock "$@"
+}
+if ! docker info >/dev/null 2>&1
+then
+	echo "Docker is not running or is unavailable; DNS provisioning skipped."
+	exit 3
+fi
+container=authwave-dns-nsd-1
+running=$(docker inspect --format '{{.State.Running}}' "$container" 2>/dev/null) || running=false
+if [ "$running" != true ]
+then
+	echo "NSD container is not running; DNS provisioning skipped."
+	exit 3
+fi
+
+if [ "$1" = status ]
+then
+	echo running
+elif [ "$1" = addzone ]
+then
+	docker exec "$container" /usr/sbin/nsd-control addzone "$2" authwave
+else
+	docker exec "$container" /usr/sbin/nsd-control "$1" "$2"
+fi

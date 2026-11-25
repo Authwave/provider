@@ -1,0 +1,1 @@
+select providerHost from ApplicationDeployment

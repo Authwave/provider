@@ -108,71 +108,36 @@ Do not edit `zone.list` while NSD is running. The shared template is suitable fo
 identical records; per-customer TXT records or DNS-01 certificate challenges need
 a different design with separate writable zone files and serial management.
 
-## Provisioning from PHP
+## Deployment domain provisioning
 
-This setup supplies NSD administration, not application wiring. The current
-provider saves domains and verifies NS/TXT records but does not yet enqueue or
-execute NSD provisioning. Add that integration as follows:
+Saving a deployment now runs `nsd-control addzone <hostname> authwave` inline,
+using its Authwave host. Removing a deployment runs `delzone <hostname>` if no
+remaining deployment uses that hostname. Editing a host adds its replacement
+and removes the previous zone when it is no longer referenced. These commands
+run after the database transaction commits.
 
-1. Validate and normalise the submitted hostname. Work with the hostname alone,
-   excluding the optional port accepted by the deployment form. Use lowercase
-   ASCII DNS labels (convert IDNs to punycode explicitly if supporting them),
-   reject URLs, wildcards, IPs, localhost, invalid labels and reserved service
-   domains. Provision only public customer hostnames, not development `.test`
-   names. Enforce exclusive customer ownership and define a policy for overlapping
-   parent/child zones before provisioning them.
-2. Save the domain assignment and a provisioning job in the same database
-   transaction. Queue it after commit via a transactional outbox, so a failed
-   transaction cannot leave an orphaned DNS zone. Initially mark it pending.
-3. A trusted provisioning worker consumes the job and calls `addzone` with the
-   validated hostname and fixed `authwave` pattern. Keep the web PHP user away
-   from the Docker socket: Docker access effectively grants host administration.
-   Run the worker under a separate trusted account, or use a narrow authenticated
-   provisioning service that exposes only add/remove/status operations. Do not
-   accept arbitrary NSD commands from web requests.
-4. Wait for authoritative A/SOA/TXT answers, then mark DNS provisioned. NSD
-   accepting a command does not mean the zone is already answering. Record
-   failures and retry jobs; make retries idempotent and reconcile the database's
-   desired domains with NSD after worker outages or state loss.
-5. Verify the customer's parent-zone delegation and the existing confirmation
-   marker before marking the deployment verified. Query the parent authorities
-   when checking delegation: NS records returned by Authwave itself cannot prove
-   the parent delegates to Authwave. The shared TXT marker identifies this
-   deployment, not a particular customer; keep customer ownership checks separate.
-6. Provision routing and HTTPS separately before marking the hostname ready for
-   login. On hostname changes, provision the replacement and revoke the old
-   assignment when appropriate. Delete an NSD zone only when no deployment still
-   references it; recheck current database state before executing delayed jobs.
+Before each operation, the provider checks whether the Compose `nsd` service is
+running. If Docker is unavailable or the service is stopped, provisioning is
+skipped with a warning in the PHP application log, allowing local development
+without Docker. The helper prints the reason and exits with status 3. There is
+no queue, worker or additional migration. Skipped operations are not retried
+automatically; save a deployment again to provision its current hostname.
 
-For a PHP CLI worker on the same server, the core process call can use an argv
-array, with no shell interpolation:
+Hostnames are lowercased, with optional ports and trailing dots removed. IPs,
+local/test names and the reserved Authwave nameserver zones are skipped. DNS
+command failures from a running service are reported; the database change has
+already committed. Adding an existing zone accepts only the `authwave` pattern;
+removing an absent zone is harmless.
 
-```php
-// $hostname has already passed the validation and ownership checks above.
-$command = [
-    '/usr/bin/docker', 'compose',
-    '--project-directory', '/path/to/provider/container/nsd',
-    '-f', '/path/to/provider/container/nsd/compose.yaml',
-    'exec', '-T', 'nsd', 'nsd-control',
-    'addzone', $hostname, 'authwave',
-];
-$process = proc_open($command, [
-    0 => ['file', '/dev/null', 'r'],
-    1 => ['file', '/path/to/worker-stdout.log', 'a'],
-    2 => ['file', '/path/to/worker-stderr.log', 'a'],
-], $pipes);
-if (!is_resource($process)) {
-    throw new RuntimeException('Could not start DNS provisioning');
-}
-if (proc_close($process) !== 0) {
-    throw new RuntimeException('DNS provisioning failed; inspect worker logs');
-}
-```
+PHP calls `bin/authwave-dns`, which elevates itself with `sudo -n`. Add the
+sudoers rule documented at the top of that script using `visudo`. Keep the helper
+executable and the checkout unwritable by `www-data`; no Docker group membership
+is needed. The helper targets the fixed container `authwave-dns-nsd-1`. Missing
+sudo permission is reported as an error rather than silently skipping provisioning. A host change skipped while
+NSD is stopped requires manual removal of the old zone, as does a skipped deletion.
 
-This illustrates command execution only. The worker still needs bounded job
-execution time, retry/idempotency handling, restricted log permissions, and DNS
-readiness checks. The worker account must be trusted to administer Docker; do
-not run this code in the web request handler or grant Docker access to PHP-FPM.
+Verify domain still checks the delegation and confirmation records. Provisioning
+DNS does not configure web routing or HTTPS.
 
 ## Local development
 

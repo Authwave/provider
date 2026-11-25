@@ -33,6 +33,8 @@ class SecurityScoreTest extends TestCase {
 		$http = new ApplicationDeployment("prod", $application, "Production", "secret", "http://client.test", "/", domainVerified: true);
 		$unverified = new ApplicationDeployment("prod", $application, "Production", "secret", "https://client.test", "/");
 		$implicitHttps = new ApplicationDeployment("prod", $application, "Production", "secret", "client.test", "/", domainVerified: true);
+		$unverifiedHttp = new ApplicationDeployment("prod", $application, "Production", "secret", "http://client.test", "/");
+		$development = new ApplicationDeployment("dev", $application, "Development", "secret", "https://dev.test", "/", domainVerified: true);
 		$policy = new ApplicationSessionPolicy("app");
 		$longMaximum = new ApplicationSessionPolicy("app", 60, 15);
 		$longIdle = new ApplicationSessionPolicy("app", 30, 30);
@@ -49,13 +51,15 @@ class SecurityScoreTest extends TestCase {
 		yield "implicit HTTPS follows the application's URL behaviour" => [null, $implicitHttps, [], "B"];
 		yield "both improvements reach A" => [$policy, $https, [$managed], "A"];
 		yield "unverified production stays neutral" => [null, $unverified, [], "C"];
-		yield "production HTTP lowers one grade" => [null, $http, [], "D"];
+		yield "production HTTP lowers one grade" => [null, $unverifiedHttp, [], "D"];
+		yield "verified HTTP production earns domain credit separately" => [null, $http, [], "C"];
+		yield "verified development earns no domain credit" => [null, $development, [], "C"];
 		yield "older clients lower one grade" => [null, null, [$legacy], "D"];
 		yield "multiple older clients count as one finding" => [null, null, [$legacy, $legacy], "D"];
 		yield "long maximum lowers one grade" => [$longMaximum, null, [], "D"];
 		yield "long idle lowers one grade" => [$longIdle, null, [], "D"];
-		yield "two weaknesses reach E" => [null, $http, [$legacy], "E"];
-		yield "three weaknesses reach F" => [$longMaximum, $http, [$legacy], "F"];
+		yield "two weaknesses reach E" => [null, $unverifiedHttp, [$legacy], "E"];
+		yield "three weaknesses reach F" => [$longMaximum, $unverifiedHttp, [$legacy], "F"];
 		yield "findings offset improvements" => [$policy, $https, [$legacy], "B"];
 	}
 }

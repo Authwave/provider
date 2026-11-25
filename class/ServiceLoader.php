@@ -2,6 +2,7 @@
 namespace Authwave;
 
 use Authwave\Model\{Application, ApplicationRepository};
+use Authwave\Dns\Nsd;
 use Authwave\Admin\Dashboard\DashboardRepository;
 use Authwave\Admin\Audit\AuditRepository;
 use Authwave\Notification\UserNotifications;
@@ -151,7 +152,8 @@ class ServiceLoader extends DefaultServiceLoader {
 
 	public function loadSiteRepo():ApplicationRepository {
 		return new ApplicationRepository($this->container->get(Database::class),
-			$this->container->get(Audit::class), $this->container->get(DomainVerification::class));
+			$this->container->get(Audit::class), $this->container->get(DomainVerification::class),
+			new Nsd(dirname(__DIR__) . "/container/nsd"));
 	}
 
 	public function loadCookieHandler():CookieHandler {

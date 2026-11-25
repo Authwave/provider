@@ -30,25 +30,24 @@ readonly class SecurityScore {
 				$longerTimeouts ? -1 : 1, "#sessions");
 		}
 
+		if($production !== null
+		&& $production->id !== $production->application->productionApplicationDeploymentId) {
+			$production = null;
+		}
+
 		if($production === null) {
 			$checks []= new SecurityCheck(
-				"Choose a production deployment to assess its connection.", 0, $settingsUrl);
+				"Mark a deployment as production to assess its domain.", 0, $settingsUrl);
 		}
 		else {
-			$scheme = strtolower($production->getClientReturnUri()->getScheme());
-
-			if($scheme !== "https") {
-				$checks []= new SecurityCheck(
-					"The production client URL does not use HTTPS.", -1, $settingsUrl);
-			}
-			elseif($production->domainVerified) {
-				$checks []= new SecurityCheck(
-					"The production domain is verified and its client URL uses HTTPS.", 1, $settingsUrl);
-			}
-			else {
-				$checks []= new SecurityCheck(
-					"Verify the production domain to raise the grade.", 0, $settingsUrl);
-			}
+			$checks []= new SecurityCheck($production->domainVerified
+				? "The production deployment's domain is verified."
+				: "Verify the production deployment's domain to raise the grade.",
+				$production->domainVerified ? 1 : 0, $settingsUrl);
+			$https = strtolower($production->getClientReturnUri()->getScheme()) === "https";
+			$checks []= new SecurityCheck($https
+				? "The production client URL uses HTTPS."
+				: "The production client URL does not use HTTPS.", $https ? 0 : -1, $settingsUrl);
 		}
 
 		$legacyCount = count(array_filter($sessions,
