@@ -7,6 +7,8 @@ use Authwave\Security\Audit;
 use Authwave\Security\DomainVerification;
 use GT\Database\Database;
 use Throwable;
+use DateTimeImmutable;
+use DateTimeZone;
 use Authwave\Model\User;
 use Authwave\Admin\Application\{ApplicationName, DeploymentData, ManagedApplication};
 use Closure;
@@ -128,6 +130,61 @@ readonly class ApplicationRepository {
 			$row->getBool("userLoggedIn"),
 			$row->getString("emailPrefix"), $row->getString("emailReplyTo"),
 		);
+	}
+
+	public function getSessionPolicyByApplicationId(string $applicationId):?ApplicationSessionPolicy {
+		$row = $this->database->queryCollection("application_session_policy")
+			->fetch("getById", $applicationId);
+
+		return $row === null ? null : new ApplicationSessionPolicy($applicationId,
+			$row->getInt("maximumLifetimeMinutes"), $row->getInt("idleTimeoutMinutes"));
+	}
+
+	public function sessionPolicy(User $actor, string $applicationId):ApplicationSessionPolicy {
+		$this->get($actor, $applicationId);
+
+		return $this->getSessionPolicyByApplicationId($applicationId)
+			?? new ApplicationSessionPolicy($applicationId);
+	}
+
+	public function saveSessionPolicy(User $actor, ApplicationSessionPolicy $policy):void {
+		$this->get($actor, $policy->applicationId);
+		$this->transaction(function()use($actor, $policy):void {
+			$previous = $this->getSessionPolicyByApplicationId($policy->applicationId);
+			$fields = ["applicationId" => $policy->applicationId,
+				"maximumLifetimeMinutes" => $policy->maximumLifetimeMinutes,
+				"idleTimeoutMinutes" => $policy->idleTimeoutMinutes];
+
+			if($previous === null) {
+				$this->database->queryCollection("application_session_policy")->insert("create", $fields);
+			}
+			else {
+				$this->database->queryCollection("application_session_policy")->update("update", $fields);
+			}
+			$now = new DateTimeImmutable("now", new DateTimeZone("UTC"));
+			$rows = $this->database->queryCollection("user_session")->fetchAll("getByApplication", [
+				"applicationId" => $policy->applicationId,
+				"deploymentFilter" => "", "deploymentId" => "", "now" => $now,
+			]);
+
+			foreach($rows as $row) {
+				if(!$row->getBool("managed")) {
+					continue;
+				}
+
+				$createdAt = new DateTimeImmutable($row->getString("createdAt"), new DateTimeZone("UTC"));
+				$expiresAt = new DateTimeImmutable($row->getString("expiresAt"), new DateTimeZone("UTC"));
+				$this->database->queryCollection("user_session")->update("shorten", [
+					"id" => $row->getString("id"),
+					"expiresAt" => min($expiresAt,
+						$createdAt->modify("+{$policy->maximumLifetimeMinutes} minutes")),
+					"idleTimeoutMinutes" => min($row->getInt("idleTimeoutMinutes"), $policy->idleTimeoutMinutes),
+				]);
+			}
+
+			$this->audit->recordChange(Action::SESSION_POLICY_UPDATED, $previous, $policy, $actor,
+				["applicationId" => $policy->applicationId]);
+		});
 	}
 
 	public function create(User $administrator, ApplicationName $name):ManagedApplication {

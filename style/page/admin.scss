@@ -119,7 +119,7 @@ body.dir--admin {
 	}
 
 	.table-scroll {
-		overflow-x: auto;
+		@extend %p-table-scroll;
 		container-type: inline-size;
 	}
 
@@ -414,6 +414,10 @@ body.dir--admin {
 			background: var(--theme-indicator-danger, var(--theme-color-danger));
 		}
 
+		&[data-status="info"]::before {
+			background: var(--theme-color-muted);
+		}
+
 		&[data-status="abandoned"]::before {
 			background: var(--theme-indicator-warning, var(--theme-color-warning));
 		}
@@ -555,7 +559,4 @@ body:has(#report) {
 		display: block;
 	}
 
-	.status[data-status="info"]::before {
-		background: var(--theme-color-muted);
-	}
 }

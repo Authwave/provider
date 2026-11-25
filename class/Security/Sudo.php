@@ -62,7 +62,7 @@ readonly class Sudo {
 		$return = (string)$this->returnUri($return)->withoutQueryValue("sudo-view");
 
 		if(!preg_match('/^[a-zA-Z0-9_-]{1,200}$/', $field)
-		|| !in_array($action, ["view", "copy", "delete"], true)) {
+		|| !in_array($action, ["view", "copy", "delete", "update"], true)) {
 			throw new InvalidArgumentException("Invalid sudo field or action.");
 		}
 
@@ -117,7 +117,7 @@ readonly class Sudo {
 			$uri = $uri->withQueryValue("sudo-view", $this->session->getString("field"));
 		}
 
-		if($this->session->get("action") === "delete") {
+		if(in_array($this->session->get("action"), ["delete", "update"], true)) {
 			foreach(["field", "return", "action", "reveal"] as $key) {
 				$this->session->remove($key);
 			}

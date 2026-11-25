@@ -3,7 +3,10 @@ select
 	userId,
 	createdAt,
 	expiresAt,
-	endedAt
+	endedAt,
+	lastActivityAt,
+	idleTimeoutMinutes,
+	managed
 
 from
 	UserSession

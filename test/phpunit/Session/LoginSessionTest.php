@@ -14,6 +14,20 @@ use GT\Session\Session;
 use PHPUnit\Framework\TestCase;
 
 class LoginSessionTest extends TestCase {
+	public function testResetAuthentication_discardsTheCompletedClientHandoff():void {
+		$store = new SessionStore("login", $this->createStub(Session::class));
+		$sut = new LoginSession($store, $this->createStub(Audit::class), new AnonUser("anonymous"));
+		$sut->setState(LoginState::LOGGED_IN);
+		$client = new \Authwave\Model\UserSession("managed", "user", new \DateTimeImmutable(),
+			new \DateTimeImmutable("+30 minutes"));
+		$sut->setClientSession($client);
+		self::assertSame($client, $sut->getClientSession());
+
+		$sut->resetAuthentication();
+
+		self::assertNull($sut->getClientSession());
+	}
+
 	public function testSetEmail_normalizesBeforeStoringLoginIdentity():void {
 		$store = new SessionStore("login", $this->createStub(Session::class));
 		$app = new Application("app", "Example", "sender@example.com");

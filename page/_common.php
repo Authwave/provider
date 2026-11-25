@@ -12,7 +12,7 @@ use GT\Cipher\InitVector;
 use GT\Config\Config;
 use GT\Http\ResponseStatusException\ClientError\HttpNotFound;
 use GT\Http\Response;
-use GT\Http\ResponseStatusException\HttpBadRequest;
+use GT\Http\ResponseStatusException\ClientError\HttpBadRequest;
 use GT\Http\Uri;
 use GT\Http\Request;
 use GT\Session\Session;
@@ -93,6 +93,11 @@ function go(
 		parse_str($decrypted, $data);
 
 		if($data["action"] === "login") {
+			if($applicationRepository->getSessionPolicyByApplicationId($deployment->applicationId) !== null
+			&& ($data["sessionManagement"] ?? null) !== "1") {
+				throw new HttpBadRequest("Update the Authwave client to support session management.");
+			}
+
 			$loginSession->setDeploymentForLogin($deployment);
 			unset($data["returnUri"], $data["action"]);
 

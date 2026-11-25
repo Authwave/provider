@@ -11,6 +11,105 @@ use Behat\Mink\Exception\ExpectationException;
 require_once dirname(__DIR__) . "/database/DatabaseState.php";
 
 class FeatureContext extends MinkContext {
+	#[Then('the security panels should follow the section order and stack on mobile')]
+	public function securityPanelLayout():void {
+		foreach([1440, 390, 375, 280] as $width) {
+			$this->getSession()->resizeWindow($width, 1200);
+			$this->expect($this->getSession()->evaluateScript('(() => {
+				if([...document.querySelectorAll("main h2")].some(heading => heading.textContent.trim() === "Recommended actions")) return false;
+				for(const name of ["password", "email"]) {
+					const method = document.querySelector(`#authentication input[name="${name}"]`);
+					method.click();
+					if(!method.checked || method.disabled || method.getAttribute("aria-readonly") !== "true") return false;
+				}
+				for(const region of document.querySelectorAll(".security-log-scroll:not([hidden])")) {
+					const maximum = parseFloat(getComputedStyle(region).maxBlockSize);
+					if(!Number.isFinite(maximum) || region.clientHeight > maximum + 1) return false;
+					if(region.scrollHeight > maximum) {
+						region.scrollTop = 100;
+						if(region.scrollTop === 0) return false;
+						region.scrollTop = 0;
+					}
+				}
+				for(const panel of document.querySelectorAll("#security-events, #audit")) {
+					const heading = panel.querySelector("h2").getBoundingClientRect();
+					const reset = panel.querySelector("header a").getBoundingClientRect();
+					if(reset.left <= heading.right || reset.top >= heading.bottom) return false;
+				}
+				const box = id => document.getElementById(id).getBoundingClientRect();
+				const score = box("security-score"), auth = box("authentication"), events = box("security-events");
+				const sessions = box("sessions"), devices = box("trusted-devices"), audit = box("audit");
+				if(document.documentElement.scrollWidth > document.documentElement.clientWidth) return false;
+				const filters = [...document.querySelectorAll(".security-event-filters > label")];
+				const controls = filters.map(label => label.querySelector("input, select").getBoundingClientRect());
+				if(innerWidth === 1440) {
+					const gaps = filters.map((field, index) => controls[index].top - field.querySelector("span").getBoundingClientRect().bottom);
+					if(gaps.some(gap => gap <= 0 || Math.abs(gap - gaps[0]) > 1)) return false;
+					return events.top >= score.bottom && Math.abs(events.width - score.width) < 2
+						&& Math.abs(events.top - audit.top) < 2 && Math.abs(events.bottom - audit.bottom) < 2
+						&& events.right < audit.left && score.right < audit.left
+						&& sessions.top >= events.bottom
+						&& Math.abs(sessions.left - score.left) < 2 && Math.abs(sessions.right - audit.right) < 2
+						&& auth.top >= sessions.bottom && Math.abs(auth.top - devices.top) < 2
+						&& auth.right < devices.left;
+				}
+				if(controls.some((control, index) => {
+					const label = filters[index].querySelector("span").getBoundingClientRect();
+					return Math.abs(control.left - controls[0].left) > 1
+						|| Math.abs(control.width - controls[0].width) > 1
+						|| label.right > control.left || label.top >= control.bottom || label.bottom <= control.top;
+				})) return false;
+				return events.top >= score.bottom && audit.top >= events.bottom
+					&& sessions.top >= audit.bottom && auth.top >= sessions.bottom && devices.top >= auth.bottom;
+			})()'), "Security panel layout failed at $width pixels.");
+			$this->getSession()->executeScript('window.scrollTo(0, 0)');
+		}
+	}
+
+	#[Then('session management should fit narrow and wide screens')]
+	public function sessionManagementLayout():void {
+		foreach([1440, 390, 280] as $width) {
+			$this->getSession()->resizeWindow($width, 1100);
+			$this->getSession()->executeScript('document.querySelector("#sessions").scrollIntoView({block: "start"})');
+			$this->expect($this->getSession()->evaluateScript('(() => {
+				const panel = document.querySelector("#sessions");
+				const policy = panel.querySelector("form[aria-label=\"Session policy\"]").getBoundingClientRect();
+				const activity = panel.querySelector(".session-activity").getBoundingClientRect();
+				const filter = panel.querySelector(".session-deployment-filter");
+				const select = filter.querySelector("select").getBoundingClientRect();
+				const button = filter.querySelector("button").getBoundingClientRect();
+				if(panel.scrollWidth > panel.clientWidth + 1
+					|| document.documentElement.scrollWidth > document.documentElement.clientWidth) return false;
+				if(innerWidth === 1440) {
+					if(policy.right >= activity.left || Math.abs(policy.top - activity.top) > 2
+						|| button.left <= select.right || Math.abs(button.bottom - select.bottom) > 2) return false;
+					const unlock = panel.querySelector(".session-unlock:not([hidden])");
+					if(unlock) {
+						const text = panel.querySelector(".session-heading > .grow").getBoundingClientRect();
+						const action = unlock.getBoundingClientRect();
+						if(action.left <= text.right || Math.abs((action.top + action.bottom - text.top - text.bottom) / 2) > 2) return false;
+					}
+					return true;
+				}
+				return activity.top >= policy.bottom && button.top >= select.bottom;
+			})()'), "Session management alignment failed at $width pixels.");
+		}
+	}
+
+	#[When('I submit the unavailable security form :control')]
+	public function submitSecurityForm(string $control):void {
+		$selector = match($control) {
+			"authentication" => "#authentication form",
+			"timeouts" => '#sessions form[aria-label="Session policy"]',
+			"revocation" => "#revoke-all-sessions",
+		};
+		$this->getSession()->executeScript('window.securitySubmissionPending = true; HTMLFormElement.prototype.submit.call(document.querySelector('
+			. json_encode($selector) . '))');
+		$this->expect($this->getSession()->wait(5000,
+			'document.readyState === "complete" && window.securitySubmissionPending !== true'),
+			"The security form submission must finish navigating.");
+	}
+
 	#[Given('the selected application has recent security events')]
 	public function securityEventFixtures():void {
 		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
@@ -21,6 +120,81 @@ class FeatureContext extends MinkContext {
 			$insert->execute(["security-$index", 'LOGIN_COMPLETED', gmdate('Y-m-d') . ' 00:00:00']);
 		}
 		$insert->execute(['security-failure', 'PASSWORD_LOGIN_FAILED', gmdate('Y-m-d') . ' 00:00:00']);
+	}
+
+	#[Then('the security grade should be :grade')]
+	public function securityGrade(string $grade):void {
+		$letter = $this->assertSession()->elementExists("css", "#security-score .security-grade");
+		$this->expect($letter->getText() === $grade, "Expected security grade $grade.");
+	}
+
+	#[Given('the application has verified production HTTPS and an older development session')]
+	public function gradedSecurityFixtures():void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$database->exec("insert into ApplicationDeployment (id,applicationId,title,secret,providerHost,clientHost,clientLoginPath,domainVerified) values ('score-prod','customer','Production','secret','prod.test','https://client.test','/',1), ('score-dev','customer','Development','secret','dev.test','http://localhost','/',0)");
+		$database->exec("update Application set productionApplicationDeploymentId = 'score-prod' where id = 'customer'");
+		$database->exec("insert into ApplicationSessionPolicy values ('customer',30,15)");
+		$database->exec("insert into User (id,applicationDeploymentId,email) values ('score-user','score-dev','score@example.test')");
+		$database->prepare("insert into UserSession (id,userId,createdAt,expiresAt,managed) values ('score-session','score-user',?,?,0)")
+			->execute([gmdate("Y-m-d H:i:s"), gmdate("Y-m-d H:i:s", time() + 3600)]);
+	}
+
+	#[When('the older development session expires')]
+	public function expireGradedSession():void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$database->exec("update UserSession set expiresAt = '2020-01-01 00:00:00' where id = 'score-session'");
+	}
+
+	#[Given('the selected application has audit activity')]
+	public function auditFixtures():void {
+		$this->securityEventFixtures();
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$database->exec("insert into Application (id,name) values ('audit-private','Private application')");
+		$insert = $database->prepare("insert into Audit (id,userId,action,detail,createdAt) values (?, 'administrator', 'SESSION_POLICY_UPDATED', ?, ?)");
+
+		for($index = 0; $index < 27; $index++) {
+			$insert->execute([sprintf("audit-policy-%02d", $index),
+				json_encode(["applicationId" => "customer", "to" => ["maximumLifetimeMinutes" => 30]]),
+				gmdate("Y-m-d") . " 00:01:00"]);
+		}
+
+		$insert->execute(["audit-private", json_encode(["applicationId" => "audit-private"]), gmdate("Y-m-d") . " 00:02:00"]);
+		$insert->execute(["audit-old", json_encode(["applicationId" => "customer"]), "2020-01-01 00:00:00"]);
+		$database->prepare("insert into Audit (id,userId,action,detail,createdAt) values ('audit-revoked', 'administrator', 'SESSION_REVOKED', ?, ?)")
+			->execute([json_encode(["applicationId" => "customer", "deploymentId" => "security-dev"]), gmdate("Y-m-d") . " 00:03:00"]);
+	}
+
+	#[When('I set the :field filter in :panel to :value')]
+	public function securityLogFilter(string $field, string $panel, string $value):void {
+		$this->expect(in_array($panel, ["audit", "security-events"], true), "Choose a security log panel.");
+
+		if(getenv("BEHAT_JAVASCRIPT") === "1") {
+			$this->getSession()->executeScript('window.securityFiltersUpdated = false; document.addEventListener("flux:after-render", () => window.securityFiltersUpdated = true, {once: true})');
+		}
+
+		$form = $this->assertSession()->elementExists("css", "#$panel form.security-event-filters");
+		$control = $form->findField($field);
+
+		if($control->getTagName() === "select") {
+			$control->selectOption($value);
+		}
+		else {
+			$control->setValue($value);
+			$this->getSession()->getPage()->find("css", "#$panel h2")->click();
+		}
+
+		if(getenv("BEHAT_JAVASCRIPT") === "1") {
+			$this->expect($this->getSession()->wait(5000, "window.securityFiltersUpdated === true"),
+				"Changing a security log filter must refresh results through Flux.");
+		}
+		else {
+			$form->pressButton($panel === "audit" ? "Apply audit filters" : "Apply filters");
+		}
+	}
+
+	#[Then('the audit log should contain :count events')]
+	public function auditEventCount(int $count):void {
+		$this->assertSession()->elementsCount("css", "#audit tbody tr", $count);
 	}
 
 	#[Then('the security event list should contain :count events')]
@@ -623,12 +797,53 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 		$query->execute([password_hash("Test-customer-password-2026", PASSWORD_DEFAULT)]);
 	}
 
+	#[When('I start a managed client login on the production provider')]
+	public function managedClientLogin():void {
+		$this->productionClientLogin(true);
+	}
+
+	private ?string $managedSessionId = null;
+
+	private function sessionUsers():\Authwave\User\UserRepository {
+		$database = new \GT\Database\Database(new \GT\Database\Connection\Settings("query", "sqlite", getenv("BEHAT_DATABASE")));
+		$audit = new \Authwave\Security\Audit($database->queryCollection("audit"));
+		$applications = new \Authwave\Model\ApplicationRepository($database, $audit, new \Authwave\Security\DomainVerification());
+		$email = new \Authwave\Email\EmailRepository($database->queryCollection("email"),
+			new \Authwave\Model\EmailSettings("localhost", 1025, "", ""), $audit);
+
+		return new \Authwave\User\UserRepository($database, $applications, $email, $audit);
+	}
+
+	#[Then('the managed client session should be :status')]
+	public function managedClientStatus(string $status):void {
+		$users = $this->sessionUsers();
+		$actor = $users->getById("administrator");
+		$customer = $users->getById("customer");
+
+		if($this->managedSessionId === null) {
+			foreach($users->activeSessions($actor, "managed") as $entry) {
+				if($entry->session->managed) {
+					$this->managedSessionId = $entry->session->id;
+					break;
+				}
+			}
+		}
+
+		$this->expect($this->managedSessionId !== null, "A managed client session must have been created.");
+		$port = parse_url($this->getMinkParameter("base_url"), PHP_URL_PORT);
+		$validator = new \Authwave\SessionValidator(new \Authwave\ClientKey("managed-development_" . $customer->deployment->secret),
+			"http://localhost:$port");
+		$this->expect($validator->validate($this->managedSessionId, false) === ($status === "valid"),
+			"The real signed client validation must report the expected session state.");
+	}
+
 	#[When('I start a client login on the production provider')]
-	public function productionClientLogin():void {
+	public function productionClientLogin(bool $managed = false):void {
 		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
 		$deployment = $database->query("select id, secret, providerHost from ApplicationDeployment where id = 'managed-development'")->fetch(PDO::FETCH_OBJ);
 		$iv = new \GT\Cipher\InitVector();
-		$payload = http_build_query(["action" => "login", "secretIv" => (string)new \GT\Cipher\InitVector()]);
+		$payload = http_build_query(["action" => "login", "secretIv" => (string)new \GT\Cipher\InitVector(),
+			"sessionManagement" => $managed ? "1" : "0"]);
 		$message = new \GT\Cipher\Message\PlainTextMessage($payload, $iv);
 		$query = http_build_query([
 			"c" => (string)$message->encrypt(new \GT\Cipher\Key($deployment->secret)),
@@ -1152,6 +1367,7 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 
 	#[AfterScenario]
 	public function restoreDatabase():void {
+		$this->managedSessionId = null;
 		$this->getSession()->stop();
 		$this->database?->restore();
 	}

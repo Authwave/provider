@@ -118,6 +118,28 @@ class SudoTest extends TestCase {
 		self::assertSame(160, $sut->expiresAt($actor));
 	}
 
+	public function testRequest_securityUpdateAuditsOnlyTheActionAndReturnsWithoutReplayingIt():void {
+		$users = $this->createStub(UserRepository::class);
+		$users->method("checkLogin")->willReturn(true);
+		$audit = $this->createMock(Audit::class);
+		$audit->expects(self::exactly(2))->method("create")->willReturnCallback(
+			function(Action $action, ?array $detail):void {
+				self::assertSame(match($action) {
+					Action::SUDO_REQUESTED => ["field" => "security-settings", "action" => "update"],
+					Action::SUDO_AUTHORISED => ["until" => 160],
+				}, $detail);
+			});
+		$sut = new Sudo($this->store(), $users, $audit, clock: fn():int => 100);
+		$actor = $this->actor();
+		$return = "/admin/security/?application=app";
+
+		self::assertSame("/login/sudo/", (string)$sut->request($actor, "security-settings", $return, "update"));
+		self::assertTrue($sut->authenticate($actor, "private-password"));
+		self::assertSame($return, (string)$sut->destination($actor));
+		self::assertFalse($sut->pending($actor));
+		self::assertSame(160, $sut->expiresAt($actor));
+	}
+
 	public function testApply_masksBeforeRenderingAndAddsNativeViewOutsideLabel():void {
 		$document = $this->fieldDocument();
 		$sut = new Sudo($this->store(), $this->createStub(UserRepository::class), $this->createStub(Audit::class));

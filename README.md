@@ -410,8 +410,8 @@ or audit trail. Delivery failures leave the email queued.
 Client sessions are recorded in `UserSession` after successful client logins.
 They stop counting on logout or expiry. The default lifetime is 30 minutes:
 `UserRepository::DEFAULT_SESSION_DURATION` is expressed in seconds. Override it
-with `[authwave] client_session_duration=1800` in configuration. This is a reporting
-estimate; the client still controls its own authentication session.
+with `[authwave] client_session_duration=1800` in configuration. This remains a reporting
+estimate for older clients; managed sessions use the policy described below.
 
 An HttpOnly, host-only cookie holds an opaque session identifier for each deployment,
 so client logout can identify the user even after the provider's login session has
@@ -429,7 +429,72 @@ a deployment filter and an authentication-event filter. Results are newest first
 with 25 events per page; pagination preserves the filters and applying filters
 starts again at page one. Empty results provide a reset to the last 30 days.
 This feed covers authentication events associated with existing users; it is not
-the full administrative audit log. Remaining security controls are unavailable.
+the full administrative audit log.
+
+The neighbouring **Audit log** includes recorded application changes and user
+activity, scoped to the viewer’s application permissions and the event’s recorded
+application or deployment. It has independent date, deployment and event filters
+and 25 entries per page. Both feeds preserve each other’s filters and page when
+filtering or paging. Filter changes submit through Flux; without JavaScript the
+Apply buttons remain available. Reset links sit in each panel header. Actor
+emails use the existing sudo protection; raw audit
+details are not sent to the page. Events without an identifiable application or
+deployment are excluded. Authentication-method controls and trusted devices remain
+unavailable.
+
+Every Security settings POST requires active sudo mode before action handlers run.
+Absent or expired sudo redirects to the existing password-confirmation flow;
+success returns to the selected application without replaying the POST.
+
+Security grade
+--------------
+
+The Security score starts at C and uses the A–F scale. Each finding moves the
+letter one step, bounded by A and F. A saved session policy with timeouts at or
+below the app defaults (30 minutes maximum, 15 minutes idle) raises it one step;
+longer saved limits lower it one step. Verified production-domain ownership plus
+a configured HTTPS client URL raises it one step; a non-HTTPS production client
+URL lowers it one step. Any active older-client sessions lower it one step,
+regardless of how many there are. Missing configuration or session activity is
+neutral. Development HTTP URLs do not affect the grade. All application sessions
+are assessed, independently of the session-list filter. The panel explains every
+adjustment; it grades configured controls rather than testing TLS certificates.
+
+Session management
+------------------
+
+The Security page stores an application-wide maximum lifetime and idle timeout
+in `ApplicationSessionPolicy` (migration 030). Defaults for managed sessions are
+30 and 15 minutes. Saving shorter limits also shortens existing managed sessions;
+increases only affect new sessions. Every validation rechecks the current policy.
+Provider administration logins and development previews do not create managed
+client sessions and are not affected by revocation.
+
+The active-session table can be filtered by deployment and shows sign-in, last
+activity and maximum expiry times in UTC. Older-client rows remain labelled as
+estimates and cannot be revoked remotely. Individual and bulk revocation require
+sudo plus a separate confirmation. Mutations and secret-free audit records commit
+together. Raw managed session identifiers and client secrets are not added to
+revocation or expiry audit records.
+
+The updated PHP client advertises `sessionManagement=1` inside its encrypted login
+request. Managed login responses include the session identifier and fixed expiry.
+On each protected request the client must construct `Authenticator`; it validates
+managed sessions through the signed JSON API at `/session/<deploymentId>/`.
+Both request and response are authenticated, responses are bound to a random
+request nonce, requests expire after 30 seconds, and responses cannot be cached.
+Revocation and shorter timeouts take effect on the next validation. Network or
+signature failures block authentication. Use HTTPS outside local development.
+
+Background handlers must construct `Authenticator` with `sessionActivity: \Authwave\SessionActivity::BACKGROUND`;
+they still validate revocation/expiry but do not renew idle time. Normal activity
+renews idle time without extending absolute expiry. Once a policy has been saved,
+subsequent non-preview logins from clients without session-management support are
+rejected, including logins that began before the policy was saved. Existing
+older-client sessions cannot be retroactively controlled: update those clients
+and require their users to sign in again. Other-language clients need to implement
+the same validation protocol before they can be used with an enabled policy.
+
 
 Login counts and latest failures come from audit records. The failures panel shows
 up to ten users whose latest failed password or security code was within 24 hours.

@@ -255,6 +255,49 @@ class ApplicationRepositoryTest extends TestCase {
 			new Application("provider", "Provider", "sender@example.test"), "Provider", "secret", "app.test", "/"), "owner@example.test");
 	}
 
+	public function testSaveSessionPolicy_shortensExistingSessionsWithoutExtendingThemAndAuditsChanges():void {
+		$this->database->executeSql("insert into ApplicationDeployment(id,applicationId,title,secret,providerHost,clientHost,clientLoginPath) values ('session-deployment','mine','Production','private-secret','login.test','https://client.test','/')");
+		$this->database->executeSql("insert into User(id,applicationDeploymentId,email) values ('session-user','session-deployment','user@example.test')");
+		$start = gmdate("Y-m-d H:i:s", time() - 60);
+		$expiry = gmdate("Y-m-d H:i:s", time() + 3600);
+		$this->database->executeSql("insert into UserSession(id,userId,createdAt,expiresAt,lastActivityAt,idleTimeoutMinutes,managed) values ('session','session-user',?,?,?,30,1)", [$start, $expiry, $start]);
+		$sut = $this->store;
+		$sut->saveSessionPolicy($this->actor, new \Authwave\Model\ApplicationSessionPolicy("mine", 10, 5));
+		$shortened = $this->database->executeSql("select expiresAt,idleTimeoutMinutes from UserSession where id='session'")->fetch();
+
+		self::assertSame(gmdate("Y-m-d H:i:s", strtotime($start) + 600), $shortened->getString("expiresAt"));
+		self::assertSame(5, $shortened->getInt("idleTimeoutMinutes"));
+		$sut->saveSessionPolicy($this->actor, new \Authwave\Model\ApplicationSessionPolicy("mine", 120, 60));
+		$unchanged = $this->database->executeSql("select expiresAt,idleTimeoutMinutes from UserSession where id='session'")->fetch();
+		self::assertSame($shortened->getString("expiresAt"), $unchanged->getString("expiresAt"));
+		self::assertSame(5, $unchanged->getInt("idleTimeoutMinutes"));
+		self::assertSame(120, $sut->sessionPolicy($this->actor, "mine")->maximumLifetimeMinutes);
+		$rows = $this->database->executeSql("select detail from Audit where action='SESSION_POLICY_UPDATED'");
+		self::assertCount(2, iterator_to_array($rows));
+	}
+
+	public function testSaveSessionPolicy_auditFailureRollsBackThePolicy():void {
+		$audit = $this->createMock(Audit::class);
+		$audit->expects(self::once())->method("recordChange")->willThrowException(new \RuntimeException("audit failed"));
+		$sut = new ApplicationRepository($this->database, $audit, new \Authwave\Security\DomainVerification());
+
+		try {
+			$sut->saveSessionPolicy($this->actor, new \Authwave\Model\ApplicationSessionPolicy("mine", 10, 5));
+			self::fail("Expected audit failure.");
+		}
+		catch(\RuntimeException $error) {
+			self::assertSame("audit failed", $error->getMessage());
+		}
+
+		self::assertNull($sut->getSessionPolicyByApplicationId("mine"));
+	}
+
+	public function testSaveSessionPolicy_rejectsAnApplicationOwnedByAnotherAdministrator():void {
+		$sut = $this->store;
+		$this->expectException(HttpNotFound::class);
+		$sut->saveSessionPolicy($this->actor, new \Authwave\Model\ApplicationSessionPolicy("foreign", 10, 5));
+	}
+
 	private function data(string $name = "Development", string $host = "login.example.test"):DeploymentData {
 		return new DeploymentData($name, $host, "https://www.example.test", "/login/");
 	}

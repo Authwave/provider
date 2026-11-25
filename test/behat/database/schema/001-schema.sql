@@ -34,5 +34,12 @@ create table UserAuthCode (
 create table UserSession (
     id text primary key, userId text not null, createdAt text not null,
     expiresAt text not null, endedAt text,
+    lastActivityAt text, idleTimeoutMinutes integer, managed integer not null default 0,
     foreign key (userId) references User(id) on delete cascade
+);
+
+create table ApplicationSessionPolicy (
+    applicationId text primary key, maximumLifetimeMinutes integer not null,
+    idleTimeoutMinutes integer not null,
+    foreign key (applicationId) references Application(id) on delete cascade
 );

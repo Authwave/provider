@@ -3,7 +3,10 @@ select
 	session.userId,
 	session.createdAt,
 	session.expiresAt,
-	session.endedAt
+	session.endedAt,
+	session.lastActivityAt,
+	session.idleTimeoutMinutes,
+	session.managed
 
 from
 	UserSession session

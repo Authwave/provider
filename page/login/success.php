@@ -14,6 +14,7 @@ use GT\Http\Response;
 use GT\Http\Request;
 use GT\Http\Uri;
 use GT\Input\Input;
+use GT\Http\ResponseStatusException\ClientError\HttpBadRequest;
 use GT\Session\Session;
 use GT\Cookie\CookieHandler;
 
@@ -65,13 +66,47 @@ function go(
 	$secretIvBytes = base64_decode($secretIvB64);
 	$secretIv = (new InitVector())->withBytes($secretIvBytes);
 
-	$userDataMessage = new PlainTextMessage(
-		json_encode([
-			"id" => $user->id,
-			"email" => $loginSession->getEmail(),
-		]),
-		$secretIv,
-	);
+	$developmentLogin = $loginSession->getDataKey("developmentLogin");
+	$clientSession = null;
+
+	if(!$developmentLogin) {
+		if($applications->getSessionPolicyByApplicationId($deployment->applicationId) !== null
+		&& $loginSession->getDataKey("sessionManagement") !== "1") {
+			throw new HttpBadRequest("Update the Authwave client to support session management.");
+		}
+
+		$cookieName = UserRepository::SESSION_COOKIE_PREFIX . $deployment->id;
+		$previousSession = $cookies->get($cookieName)?->getValue();
+		if($loginSession->getDataKey("sessionManagement") === "1") {
+			$clientSession = $loginSession->getClientSession();
+
+			if($clientSession !== null && !$userRepo->validateSession($deployment, $clientSession->id, false)) {
+				$loginSession->resetAuthentication();
+				$response->redirect("/login/");
+				return;
+			}
+
+			if($clientSession === null) {
+				$clientSession = $userRepo->startManagedSession($user, $previousSession);
+				$loginSession->setClientSession($clientSession);
+			}
+		}
+		else {
+			$clientSession = $userRepo->startSession($user, $previousSession);
+		}
+		$cookies->set($cookieName, $clientSession->id, new \DateTimeImmutable("@0"),
+			"", $request->getUri()->getScheme() === "https", true);
+		$applications->recordClientLogin($user);
+	}
+
+	$userData = ["id" => $user->id, "email" => $loginSession->getEmail()];
+
+	if($clientSession?->managed) {
+		$userData["sessionId"] = $clientSession->id;
+		$userData["expiresAt"] = $clientSession->expiresAt->getTimestamp();
+	}
+
+	$userDataMessage = new PlainTextMessage(json_encode($userData, JSON_THROW_ON_ERROR), $secretIv);
 	$requestedReturnUri = $loginSession->getDataKey("returnUri");
 	$returnUri = $requestedReturnUri
 		? new Uri($requestedReturnUri)
@@ -94,20 +129,9 @@ function go(
 	$returnUri = $returnUri->withQuery($queryString);
 
 	$binder->bindKeyValue("returnUri", (string)$returnUri);
-	$developmentLogin = $loginSession->getDataKey("developmentLogin");
-
 	if($developmentLogin) {
 		$audit->create(Action::LOGIN_COMPLETED, ["deploymentId" => $deployment->id], $user);
 	}
-	else {
-		$cookieName = UserRepository::SESSION_COOKIE_PREFIX . $deployment->id;
-		$clientSession = $userRepo->startSession($user, $cookies->get($cookieName)?->getValue());
-		// Retain only an opaque reporting identifier after the provider login session is cleared.
-		$cookies->set($cookieName, $clientSession->id, new \DateTimeImmutable("@0"),
-			"", $request->getUri()->getScheme() === "https", true);
-		$applications->recordClientLogin($user);
-	}
-
 	if(!$isAdmin) {
 		$session->kill();
 	}

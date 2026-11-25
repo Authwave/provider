@@ -2,6 +2,10 @@
 namespace Authwave\Security;
 
 enum Action {
+	case SESSION_POLICY_UPDATED;
+	case SESSION_REVOKED;
+	case SESSIONS_REVOKED;
+	case SESSION_EXPIRED;
 	case USER_DELETED;
 	case USER_DELETION_REJECTED;
 	case USER_NOTIFICATION_DELIVERED;

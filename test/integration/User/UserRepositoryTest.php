@@ -15,6 +15,91 @@ use GT\Database\Connection\Settings;
 use PHPUnit\Framework\TestCase;
 
 class UserRepositoryTest extends TestCase {
+	public function testStartManagedSession_reauthenticationStartsFreshAndEndsThePreviousSession():void {
+		$database = $this->adminDatabase();
+		$actor = $this->administrator($database);
+		$sut = $this->adminRepository($database);
+		$first = $sut->startManagedSession($actor);
+		$next = $sut->startManagedSession($actor, $first->id);
+
+		self::assertTrue($next->managed);
+		self::assertNotSame($first->id, $next->id);
+		self::assertSame(1800, $next->expiresAt->getTimestamp() - $next->createdAt->getTimestamp());
+		self::assertSame(15, $next->idleTimeoutMinutes);
+		self::assertFalse($sut->validateSession($actor->deployment, $first->id, true));
+		self::assertTrue($sut->validateSession($actor->deployment, $next->id, true));
+	}
+
+	public function testValidateSession_backgroundChecksDoNotExtendIdleAndExpiredSessionsCannotRevive():void {
+		$database = $this->adminDatabase();
+		$actor = $this->administrator($database);
+		$sut = $this->adminRepository($database);
+		$session = $sut->startManagedSession($actor);
+		$old = gmdate("Y-m-d H:i:s", time() - 120);
+		$database->executeSql("update UserSession set lastActivityAt = ? where id = ?", [$old, $session->id]);
+
+		self::assertTrue($sut->validateSession($actor->deployment, $session->id, false));
+		self::assertSame($old, $database->executeSql("select lastActivityAt from UserSession where id = ?", [$session->id])->fetch()->getString("lastActivityAt"));
+		self::assertTrue($sut->validateSession($actor->deployment, $session->id, true));
+		self::assertNotSame($old, $database->executeSql("select lastActivityAt from UserSession where id = ?", [$session->id])->fetch()->getString("lastActivityAt"));
+		$database->executeSql("update UserSession set lastActivityAt = ? where id = ?", [gmdate("Y-m-d H:i:s", time() - 901), $session->id]);
+		self::assertFalse($sut->validateSession($actor->deployment, $session->id, true));
+		self::assertFalse($sut->validateSession($actor->deployment, $session->id, true));
+		self::assertCount(0, $sut->activeSessions($actor, "app"));
+		self::assertSame(1, $database->executeSql("select count(*) as n from Audit where action='SESSION_EXPIRED'")->fetch()->getInt("n"));
+	}
+
+	public function testRevokeAllSessions_isScopedAndPreservesLegacyEstimatesAndAdministratorSessions():void {
+		$database = $this->adminDatabase();
+		$actor = $this->administrator($database);
+		$sut = $this->adminRepository($database);
+		$managed = $sut->startManagedSession($actor);
+		$legacy = $sut->startSession($actor);
+		$database->executeSql("insert into User(id,applicationDeploymentId,email) values ('private','foreign','private@example.test')");
+		$foreign = $sut->getById("private");
+		$foreignSession = $sut->startManagedSession($foreign);
+
+		self::assertFalse($sut->validateSession($foreign->deployment, $managed->id, true));
+		self::assertSame(1, $sut->revokeAllSessions($actor, "app", "deployment"));
+		self::assertFalse($sut->validateSession($actor->deployment, $managed->id, true));
+		self::assertTrue($sut->validateSession($foreign->deployment, $foreignSession->id, true));
+		self::assertNull($database->executeSql("select endedAt from UserSession where id = ?", [$legacy->id])->fetch()->getString("endedAt"));
+		$detail = $database->executeSql("select detail from Audit where action = 'SESSIONS_REVOKED'")->fetch()->getString("detail");
+		self::assertStringNotContainsString($managed->id, $detail);
+		self::assertStringNotContainsString("secret", $detail);
+	}
+
+	public function testRevokeSession_auditFailureRollsBackRevocation():void {
+		$database = $this->adminDatabase();
+		$actor = $this->administrator($database);
+		$database->executeSql("insert into UserSession(id,userId,createdAt,expiresAt,lastActivityAt,idleTimeoutMinutes,managed) values ('managed','admin',?,?,?,15,1)",
+			[gmdate("Y-m-d H:i:s"), gmdate("Y-m-d H:i:s", time() + 1800), gmdate("Y-m-d H:i:s")]);
+		$audit = $this->createMock(Audit::class);
+		$audit->expects(self::once())->method("create")->willThrowException(new RuntimeException("audit failed"));
+		$sut = $this->adminRepository($database, $audit);
+
+		try {
+			$sut->revokeSession($actor, "app", "managed");
+			self::fail("Expected audit failure.");
+		}
+		catch(RuntimeException $error) {
+			self::assertSame("audit failed", $error->getMessage());
+		}
+
+		self::assertTrue($sut->validateSession($actor->deployment, "managed", false));
+	}
+
+	public function testRevokeSession_rejectsAnotherApplicationsSession():void {
+		$database = $this->adminDatabase();
+		$actor = $this->administrator($database);
+		$sut = $this->adminRepository($database);
+		$database->executeSql("insert into User(id,applicationDeploymentId,email) values ('private','foreign','private@example.test')");
+		$session = $sut->startManagedSession($sut->getById("private"));
+
+		$this->expectException(InvalidArgumentException::class);
+		$sut->revokeSession($actor, "app", $session->id);
+	}
+
 	public function testGet_emailLookupIsScopedToDeploymentAndMissingUsersReturnNull():void {
 		$database = new Database(new Settings("query", "sqlite", ":memory:"));
 		$database->executeSql("create table User (id text, applicationDeploymentId text, email text, hash text, createdAt text, clientNotificationStatus integer, clientNotificationAcknowledged integer, clientNotificationAction text)");
@@ -399,7 +484,7 @@ class UserRepositoryTest extends TestCase {
 		$database->executeSql("insert into User (id,applicationDeploymentId,email) values ('private','foreign','private@example.test')");
 		$past = (new \DateTimeImmutable("-1 minute"))->format("Y-m-d H:i:s");
 		$future = (new \DateTimeImmutable("+1 minute"))->format("Y-m-d H:i:s");
-		$database->executeSql("insert into UserSession values ('expired','admin',?,?,null), ('ended','admin',?,?,?), ('private-session','private',?,?,null)",
+		$database->executeSql("insert into UserSession (id,userId,createdAt,expiresAt,endedAt) values ('expired','admin',?,?,null), ('ended','admin',?,?,?), ('private-session','private',?,?,null)",
 			[$past, $past, $past, $future, $past, $past, $future]);
 		$sut = $this->adminRepository($database);
 
@@ -439,7 +524,7 @@ class UserRepositoryTest extends TestCase {
 		$database = $this->adminDatabase();
 		$user = $this->administrator($database);
 		$future = (new \DateTimeImmutable("+1 minute"))->format("Y-m-d H:i:s");
-		$database->executeSql("insert into UserSession values ('active','admin',?,?,null)", [$future, $future]);
+		$database->executeSql("insert into UserSession (id,userId,createdAt,expiresAt,endedAt) values ('active','admin',?,?,null)", [$future, $future]);
 		$audit = $this->createStub(Audit::class);
 		$audit->method("create")->willThrowException(new RuntimeException("audit failed"));
 		$sut = $this->adminRepository($database, $audit);

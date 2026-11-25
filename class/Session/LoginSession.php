@@ -7,6 +7,7 @@ use Authwave\Security\Action;
 use Authwave\Security\AnonUser;
 use Authwave\Security\Audit;
 use Authwave\Model\User;
+use Authwave\Model\UserSession;
 use Authwave\User\LoginState;
 use GT\Session\SessionStoreInterface;
 
@@ -43,6 +44,14 @@ readonly class LoginSession {
 	public function getDataKey(string $key):?string {
 		$kvp = $this->session->get("data");
 		return $kvp[$key] ?? null;
+	}
+
+	public function getClientSession():?UserSession {
+		return $this->session->get("clientSession");
+	}
+
+	public function setClientSession(UserSession $clientSession):void {
+		$this->session->set("clientSession", $clientSession);
 	}
 
 	public function clearDataForLogout(ApplicationDeployment $deployment, ?User $actor = null):void {
@@ -91,6 +100,7 @@ readonly class LoginSession {
 		}
 
 		if($state !== LoginState::LOGGED_IN) {
+			$this->session->remove("clientSession");
 			$this->session->remove("sudo");
 		}
 

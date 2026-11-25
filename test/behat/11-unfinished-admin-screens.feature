@@ -30,8 +30,8 @@ Feature: Administration without prototype behaviour
   Scenario: Security events are live while future security controls remain unavailable
     When I go to "/admin/security/"
     Then I should see "Recent security events"
-    And I should see "The remaining security controls are coming soon."
-    And I should see "Apply filters"
+    And I should see "Coming soon"
+    And I should see "Reset"
     When I go to "/admin/security/?from=2020-01-01&to=2020-01-02"
     Then I should see "No security events to show"
     And I should see "Show the last 30 days"
@@ -40,14 +40,51 @@ Feature: Administration without prototype behaviour
     Given the selected application has recent security events
     When I go to "/admin/security/"
     Then the security event list should contain 25 events
+    And the security panels should follow the section order and stack on mobile
     And I should see "Security development"
     When I follow "Next"
     Then the security event list should contain 3 events
     And I should see "Page 2"
     When I follow "Previous"
     Then the security event list should contain 25 events
-    When I select "Password rejected" from "Event"
-    And I press "Apply filters"
+    When I set the "event" filter in "security-events" to "Password rejected"
     Then the security event list should contain 1 events
     And I should see "Rejected"
     And I should see "Page 1"
+
+  Scenario Outline: Security settings require sudo even when disabled controls are bypassed
+    When I go to "/admin/security/"
+    And I submit the unavailable security form "<control>"
+    Then I should be on "/login/sudo/"
+    And action "SUDO_REQUESTED" should be audited for the fixture administrator
+    When I fill in "Password" with "Incorrect-password"
+    And I press "Enable sudo mode"
+    Then I should see "Your password was not accepted. Please try again."
+    When I fill in "Password" with "Test-admin-password-2026"
+    And I press "Enable sudo mode"
+    Then I should be on "/admin/security/?application=customer"
+    And sudo mode should be enabled
+    And action "SUDO_AUTHORISED" should be audited for the fixture administrator
+    When I submit the unavailable security form "<control>"
+    Then I should be on "/admin/security/?application=customer"
+    When the sudo period expires
+    And I submit the unavailable security form "<control>"
+    Then I should be on "/login/sudo/"
+
+    Examples:
+      | control        |
+      | authentication |
+      | timeouts       |
+      | revocation     |
+
+  Scenario: Cancelling security sudo leaves the controls unavailable
+    When I go to "/admin/security/"
+    And I submit the unavailable security form "revocation"
+    And I press "Cancel"
+    Then I should be on "/admin/security/?application=customer"
+    And sudo mode should be disabled
+    And I should see "Coming soon"
+
+  Scenario: Security panels follow the section order
+    When I go to "/admin/security/"
+    Then the security panels should follow the section order and stack on mobile

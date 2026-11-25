@@ -2,126 +2,184 @@
 	<admin-header />
 	<header class="stack compact">
 		<h1>Security</h1>
-		<p data-bind:text="scopeLabel">No applications</p>
 	</header>
-	<p class="notice" role="note">Recent security events are live. The remaining security controls are coming soon.</p>
-	<div class="card-grid">
-		<section class="settings-panel stack">
-			<h2>Security score</h2>
-			<p class="metric">—</p>
-			<p>Improve your score by completing the recommended actions.</p>
+	<div class="security-score-row">
+		<section class="settings-panel stack" id="security-score" data-flux="update" aria-labelledby="security-score-title">
+			<h2 id="security-score-title">Security score</h2>
+			<p class="security-grade" data-bind:text="securityGrade" data-bind:aria-label="securityGradeLabel"></p>
+			<p class="muted">Based on configured controls and current sessions across the application. HTTPS checks use the configured URL.</p>
 			<ul class="plain-list">
-				<li><a href="#authentication">Enable security keys</a></li>
-				<li><a href="#authentication">Require multi-factor authentication</a></li>
-				<li><a href="#sessions">Reduce the maximum session lifetime</a></li>
+				<li data-list="security-checks"><span class="status" data-bind:data-status="checkStatus" data-bind:text="checkImpact"></span> <a data-bind:href="checkUrl" data-bind:text="checkDescription"></a></li>
 			</ul>
 		</section>
-		<section class="settings-panel stack">
-			<h2>Recommended actions</h2>
-			<p>Review authentication methods and trusted devices for the selected application.</p>
-			<a class="control" href="#audit">Review audit log</a>
+	</div>
+	<div class="card-grid security-panels">
+		<section class="settings-panel stack" id="security-events" data-flux="update" aria-labelledby="security-events-title">
+			<header class="stack compact">
+				<div class="toolbar">
+					<h2 class="grow" id="security-events-title">Recent security events</h2>
+					<a class="toolbar-end" aria-label="Reset security event filters" title="Reset security event filters" data-bind:href="resetEvents">Reset</a>
+				</div>
+				<p class="muted">Authentication activity for the selected application. Dates and times are shown in UTC.</p>
+			</header>
+			<form method="get" action="/admin/security/#security-events" data-flux="auto submit-queue" class="security-event-filters" aria-label="Security event filters">
+				<input type="hidden" name="application" data-bind:value="applicationId" />
+				<input type="hidden" name="auditFrom" data-bind:value="auditFrom" />
+				<input type="hidden" name="auditTo" data-bind:value="auditTo" />
+				<input type="hidden" name="auditDeployment" data-bind:value="auditDeployment" />
+				<input type="hidden" name="auditEvent" data-bind:value="auditEvent" />
+				<input type="hidden" name="auditPage" data-bind:value="auditPage" />
+				<label><span>From</span><input type="date" name="from" required data-bind:value="@" data-bind:max="today" /></label>
+				<label><span>To</span><input type="date" name="to" required data-bind:value="@" data-bind:max="today" /></label>
+				<label><span>Deployment</span><select name="deployment"><option value="" data-bind:selected="?allDeployments">All deployments</option><option data-list="security-deployments" data-bind:value="id" data-bind:text="title" data-bind:selected="?selected"></option></select></label>
+				<label><span>Event</span><select name="event" data-bind:value="@">
+					<option value="">All events</option>
+					<option value="LOGIN_COMPLETED">Successful login</option>
+					<option value="PASSWORD_LOGIN_FAILED">Password rejected</option>
+					<option value="SECURITY_CODE_REJECTED">Security code rejected</option>
+					<option value="SECURITY_CODE_REQUESTED">Security code requested</option>
+					<option value="PASSWORD_CHANGED">Password changed</option>
+					<option value="LOGOUT_REQUESTED">Logout requested</option>
+				</select></label>
+				<div class="actions"><button type="submit" class="primary" data-flux="autosave">Apply filters</button></div>
+			</form>
+			<p class="muted">Choose a date range of up to 366 days.</p>
+			<div class="table-scroll security-log-scroll" tabindex="0" role="region" aria-label="Recent security events list" hidden data-bind:hidden="?!hasEvents">
+				<table class="record-table">
+					<caption class="visually-hidden">Recent authentication events, newest first</caption>
+					<thead><tr><th scope="col">When (UTC)</th><th scope="col">Deployment</th><th scope="col">Event</th><th scope="col">Result</th></tr></thead>
+					<tbody><tr data-list="security-events"><td data-label="When (UTC)" data-bind:text="createdAt"></td><td data-label="Deployment" data-bind:text="title"></td><td data-label="Event" data-bind:text="eventLabel"></td><td data-label="Result"><span class="status" data-bind:data-status="statusKind" data-bind:text="result"></span></td></tr></tbody>
+				</table>
+			</div>
+			<div class="security-events-empty" hidden data-bind:hidden="?!emptyEvents" role="status">
+				<span class="security-events-empty-icon" aria-hidden="true">◇</span>
+				<h3>No security events to show</h3>
+				<p>No authentication events match these dates and filters. New activity will appear here as users sign in, request codes or change passwords.</p>
+				<a class="control" data-bind:href="resetEvents">Show the last 30 days</a>
+			</div>
+			<footer class="toolbar" hidden data-bind:hidden="?!hasEventPagination" data-event-pagination>
+				<span>Page <span data-bind:text="eventPage"></span></span>
+				<nav class="actions" aria-label="Security event pages"><a class="control" hidden data-bind:hidden="?!hasPreviousEvents" data-bind:href="previousEvents">Previous</a><a class="control" hidden data-bind:hidden="?!hasNextEvents" data-bind:href="nextEvents">Next</a></nav>
+			</footer>
+		</section>
+		<section class="settings-panel stack" id="audit" data-flux="update" aria-labelledby="audit-title">
+			<header class="stack compact">
+				<div class="toolbar">
+					<h2 class="grow" id="audit-title">Audit log</h2>
+					<a class="toolbar-end" aria-label="Reset audit filters" title="Reset audit filters" data-bind:href="resetAudit">Reset</a>
+				</div>
+				<p class="muted">Recorded activity and changes for the selected application. Dates and times are shown in UTC.</p>
+			</header>
+			<form method="get" action="/admin/security/#audit" data-flux="auto submit-queue" class="security-event-filters" aria-label="Audit log filters">
+				<input type="hidden" name="application" data-bind:value="applicationId" />
+				<input type="hidden" name="from" data-bind:value="from" />
+				<input type="hidden" name="to" data-bind:value="to" />
+				<input type="hidden" name="deployment" data-bind:value="selectedEventDeployment" />
+				<input type="hidden" name="event" data-bind:value="event" />
+				<input type="hidden" name="eventPage" data-bind:value="eventPage" />
+				<label><span>From</span><input type="date" name="auditFrom" required data-bind:value="auditFrom" data-bind:max="today" /></label>
+				<label><span>To</span><input type="date" name="auditTo" required data-bind:value="auditTo" data-bind:max="today" /></label>
+				<label><span>Deployment</span><select name="auditDeployment"><option value="" data-bind:selected="?allAuditDeployments">All deployments</option><option data-list="audit-deployments" data-bind:value="id" data-bind:text="title" data-bind:selected="?selected"></option></select></label>
+				<label><span>Event</span><select name="auditEvent"><option value="">All events</option><option data-list="audit-event-options" data-bind:value="auditAction" data-bind:text="auditActionLabel" data-bind:selected="?auditActionSelected"></option></select></label>
+				<div class="actions"><button type="submit" class="primary" data-flux="autosave">Apply audit filters</button></div>
+			</form>
+			<p class="muted">Choose a date range of up to 366 days.</p>
+			<div class="table-scroll security-log-scroll" tabindex="0" role="region" aria-label="Audit log list" hidden data-bind:hidden="?!hasAudit">
+				<table class="record-table">
+					<caption class="visually-hidden">Application audit log, newest first</caption>
+					<thead><tr><th scope="col">When (UTC)</th><th scope="col">Actor</th><th scope="col">Deployment</th><th scope="col">Event</th></tr></thead>
+					<tbody><tr data-list="audit-entries"><td data-label="When (UTC)" data-bind:text="auditCreatedAt"></td><td data-label="Actor"><span data-sudo="email" data-bind:id="auditActorId" data-bind:text="auditActor"></span></td><td data-label="Deployment" data-bind:text="auditDeploymentTitle"></td><td data-label="Event" data-bind:text="auditEventLabel"></td></tr></tbody>
+				</table>
+			</div>
+			<div class="security-events-empty" hidden data-bind:hidden="?!emptyAudit" role="status">
+				<span class="security-events-empty-icon" aria-hidden="true">◇</span>
+				<h3>No audit events to show</h3>
+				<p>No recorded activity matches these dates and filters. New activity and application changes will appear here.</p>
+				<a class="control" data-bind:href="resetAudit">Show the last 30 days</a>
+			</div>
+			<footer class="toolbar" hidden data-bind:hidden="?!hasAuditPagination">
+				<span>Page <span data-bind:text="auditPage"></span></span>
+				<nav class="actions" aria-label="Audit log pages"><a class="control" hidden data-bind:hidden="?!hasPreviousAudit" data-bind:href="previousAudit">Previous page</a><a class="control" hidden data-bind:hidden="?!hasNextAudit" data-bind:href="nextAudit">Next page</a></nav>
+			</footer>
 		</section>
 	</div>
-	<section class="settings-panel stack" id="security-events" aria-labelledby="security-events-title">
-		<header><h2 id="security-events-title">Recent security events</h2><p class="muted">Authentication activity for the selected application. Dates and times are shown in UTC.</p></header>
-		<form method="get" action="/admin/security/#security-events" class="toolbar security-event-filters" aria-label="Security event filters">
-			<input type="hidden" name="application" data-bind:value="applicationId" />
-			<label><span>From</span><input type="date" name="from" required data-bind:value="@" data-bind:max="today" /></label>
-			<label><span>To</span><input type="date" name="to" required data-bind:value="@" data-bind:max="today" /></label>
-			<label><span>Deployment</span><select name="deployment"><option value="" data-bind:selected="?allDeployments">All deployments</option><option data-list="security-deployments" data-bind:value="id" data-bind:text="title" data-bind:selected="?selected"></option></select></label>
-			<label><span>Event</span><select name="event" data-bind:value="@">
-				<option value="">All authentication events</option>
-				<option value="LOGIN_COMPLETED">Successful login</option>
-				<option value="PASSWORD_LOGIN_FAILED">Password rejected</option>
-				<option value="SECURITY_CODE_REJECTED">Security code rejected</option>
-				<option value="SECURITY_CODE_REQUESTED">Security code requested</option>
-				<option value="PASSWORD_CHANGED">Password changed</option>
-				<option value="LOGOUT_REQUESTED">Logout requested</option>
-			</select></label>
-			<div class="actions"><button type="submit" class="primary">Apply filters</button><a class="control" data-bind:href="resetEvents">Reset</a></div>
-		</form>
-		<p class="muted">Choose a date range of up to 366 days.</p>
-		<div class="table-scroll" hidden data-bind:hidden="?!hasEvents">
-			<table class="record-table">
-				<caption class="visually-hidden">Recent authentication events, newest first</caption>
-				<thead><tr><th scope="col">When (UTC)</th><th scope="col">Deployment</th><th scope="col">Event</th><th scope="col">Result</th></tr></thead>
-				<tbody><tr data-list="security-events"><td data-bind:text="createdAt"></td><td data-bind:text="title"></td><td data-bind:text="eventLabel"></td><td><span class="status" data-bind:data-status="statusKind" data-bind:text="result"></span></td></tr></tbody>
-			</table>
-		</div>
-		<div class="security-events-empty" hidden data-bind:hidden="?!emptyEvents" role="status">
-			<span class="security-events-empty-icon" aria-hidden="true">◇</span>
-			<h3>No security events to show</h3>
-			<p>No authentication events match these dates and filters. New activity will appear here as users sign in, request codes or change passwords.</p>
-			<a class="control" data-bind:href="resetEvents">Show the last 30 days</a>
-		</div>
-		<footer class="toolbar" hidden data-bind:hidden="?!hasEventPagination" data-event-pagination>
-			<span>Page <span data-bind:text="eventPage"></span></span>
-			<nav class="actions" aria-label="Security event pages"><a class="control" hidden data-bind:hidden="?!hasPreviousEvents" data-bind:href="previousEvents">Previous</a><a class="control" hidden data-bind:hidden="?!hasNextEvents" data-bind:href="nextEvents">Next</a></nav>
-		</footer>
-	</section>
-	<section class="settings-panel stack" id="authentication">
-		<h2>Authentication methods</h2>
-		<form method="post" class="form-fields stack compact">
-
-			<fieldset>
-				<legend>Enabled methods</legend>
-				<label class="checkbox-field"><input type="checkbox" name="password" value="yes" disabled /><span>Password</span></label>
-				<label class="checkbox-field"><input type="checkbox" name="email" value="yes" disabled /><span>Email token</span></label>
-				<label class="checkbox-field"><input type="checkbox" name="totp" value="yes" disabled /><span>TOTP authenticator</span></label>
-				<label class="checkbox-field"><input type="checkbox" name="securityKey" value="yes" disabled /><span>Security key</span></label>
-				<label class="checkbox-field"><input type="checkbox" name="google" value="yes" disabled /><span>Google</span></label>
-				<label class="checkbox-field"><input type="checkbox" name="facebook" value="yes" disabled /><span>Facebook</span></label>
-				<label class="checkbox-field"><input type="checkbox" name="twitter" value="yes" disabled /><span>Twitter / X</span></label>
-			</fieldset>
-			<div class="actions">
-				<button type="submit" class="primary" disabled>Save settings</button>
+	<section class="settings-panel stack session-management" id="sessions" aria-labelledby="sessions-title">
+		<header class="toolbar session-heading">
+			<div class="stack compact grow">
+				<h2 id="sessions-title">Session management</h2>
+				<p>Timeouts apply to application users across every deployment of <strong data-bind:text="sessionApplicationName"></strong>. Authwave administrator sessions are separate.</p>
 			</div>
-		</form>
-	</section>
-	<section class="settings-panel stack" id="sessions">
-		<h2>Session management</h2>
-		<form method="post" class="form-fields stack compact">
-
-			<label><span>Session timeout (minutes)</span><input type="number" name="sessionTimeout" min="1" max="65535" required disabled /></label>
-			<label><span>Idle timeout (minutes)</span><input type="number" name="idleTimeout" min="1" max="65535" required disabled /></label>
-			<div class="actions">
-				<button type="submit" class="primary" disabled>Save settings</button>
-			</div>
-		</form>
-		<p>—</p>
-		<form method="post" class="form-fields stack compact">
-
-			<div class="actions">
-				<button type="submit" class="primary" disabled>Revoke all sessions</button>
-			</div>
-		</form>
-	</section>
-	<section class="settings-panel stack">
-		<h2>Trusted devices</h2>
-		<ul class="record-list">
-
-		</ul>
-	</section>
-	<section class="settings-panel stack" id="audit">
-		<h2>Audit log</h2>
-		<form method="get" class="toolbar">
-			<label class="grow"><span class="visually-hidden">Search audit log</span><input name="auditSearch" type="search" placeholder="Search users or actions" disabled /></label>
-			<button type="submit" disabled>Search</button>
-		</form>
-		<div class="table-scroll">
-			<table class="record-table">
-				<thead>
-					<tr>
-						<th scope="col">When</th>
-						<th scope="col">Actor</th>
-						<th scope="col">Action</th>
-						<th scope="col">Application</th>
-					</tr>
-				</thead>
-				<tbody>
-
-				</tbody>
-			</table>
+			<form method="post" class="session-unlock" aria-label="Session management authorisation" data-bind:action="sessionUrl" hidden data-bind:hidden="?sessionSudoActive">
+				<div class="actions"><button type="submit" name="do" value="enable_sudo">Enable sudo mode</button></div>
+			</form>
+		</header>
+		<p role="status" hidden data-bind:hidden="?!sessionMessage" data-bind:text="sessionMessage"></p>
+		<p role="alert" hidden data-bind:hidden="?!sessionError" data-bind:text="sessionError"></p>
+		<div class="session-layout">
+			<form method="post" class="form-fields stack compact" data-bind:action="sessionUrl" aria-label="Session policy">
+				<h3>Session limits</h3>
+				<label><span>Maximum session lifetime (minutes)</span><input type="number" name="maximumLifetimeMinutes" min="1" max="65535" required data-bind:value="maximumLifetimeMinutes" disabled data-bind:disabled="?!sessionSudoActive" /></label>
+				<p class="muted">Users must sign in again when this time passes, even while active.</p>
+				<label><span>Idle timeout (minutes)</span><input type="number" name="idleTimeoutMinutes" min="1" max="65535" required data-bind:value="idleTimeoutMinutes" disabled data-bind:disabled="?!sessionSudoActive" /></label>
+				<p class="muted">Time without activity in the application. Shorter limits affect existing managed sessions; longer limits apply to new sessions.</p>
+				<div class="actions"><button type="submit" name="do" value="save_sessions" class="primary" disabled data-bind:disabled="?!sessionSudoActive">Save session settings</button></div>
+			</form>
+			<section class="stack session-activity" aria-labelledby="active-sessions-title">
+				<h3 id="active-sessions-title">Active sessions</h3>
+				<form method="get" action="/admin/security/#sessions" class="form-fields session-deployment-filter" aria-label="Session deployment filter">
+					<input type="hidden" name="application" data-bind:value="applicationId" />
+					<div class="field-row">
+						<div class="field">
+							<label for="session-deployment">Session deployment</label>
+							<select id="session-deployment" name="sessionDeployment"><option value="" data-bind:selected="?allSessionDeployments">All deployments</option><option data-list="session-deployments" data-bind:value="id" data-bind:text="title" data-bind:selected="?selected"></option></select>
+						</div>
+						<div class="actions"><button type="submit">Filter sessions</button></div>
+					</div>
+				</form>
+				<p><strong data-bind:text="managedSessionLabel"></strong> · <span data-bind:text="sessionScopeTitle"></span>. Times are UTC.</p>
+				<p class="muted">Sessions from older clients are estimates and cannot be revoked remotely. Update those clients and ask their users to sign in again. Saving a policy blocks subsequent sign-ins from older clients.</p>
+				<div class="table-scroll" tabindex="0" role="region" aria-label="Active sessions table" hidden data-bind:hidden="?!hasSessions"><table class="session-table">
+					<caption class="visually-hidden">Application user sessions</caption>
+					<thead><tr><th scope="col">User</th><th scope="col">Deployment</th><th scope="col">Signed in</th><th scope="col">Last activity</th><th scope="col">Maximum expiry</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead>
+					<tbody><tr data-list="managed-sessions">
+						<td><span data-sudo="email" data-bind:id="sessionEmailId" data-bind:text="sessionEmail"></span></td><td data-bind:text="sessionTitle"></td><td data-bind:text="sessionStarted"></td><td data-bind:text="sessionLastActivity"></td><td data-bind:text="sessionExpires"></td><td data-bind:text="sessionType"></td>
+						<td><form method="post" data-bind:action="sessionUrl" hidden data-bind:hidden="?!sessionCanRevoke"><input type="hidden" name="sessionId" data-bind:value="sessionId" /><button type="submit" name="do" value="confirm_revoke">Revoke session</button></form></td>
+					</tr></tbody>
+				</table></div>
+				<div class="security-events-empty" hidden data-bind:hidden="?!emptySessions"><h3>No active sessions</h3><p>Sessions will appear here when users sign in to this application.</p></div>
+				<form id="revoke-all-sessions" method="post" data-bind:action="sessionUrl"><input type="hidden" name="sessionId" value="all" /><div class="actions"><button type="submit" name="do" value="confirm_revoke" disabled data-bind:disabled="?!canRevokeSessions">Revoke all managed sessions</button></div></form>
+				<section id="session-confirmation" class="notice stack" hidden data-bind:hidden="?!showSessionConfirmation" aria-labelledby="session-confirmation-title">
+					<h3 id="session-confirmation-title" data-bind:text="sessionConfirmationTitle"></h3>
+					<p>Users will need to sign in again. This takes effect when their application next validates the session.</p>
+					<form method="post"><input type="hidden" name="confirmRevoke" data-bind:value="confirmSession" /><div class="actions"><button type="submit" name="do" value="revoke_sessions" class="primary">Confirm revocation</button><a class="control" data-bind:href="sessionUrl">Cancel</a></div></form>
+				</section>
+			</section>
 		</div>
 	</section>
+	<div class="card-grid security-panels">
+		<section class="settings-panel stack" id="authentication">
+			<h2>Authentication methods</h2>
+			<!-- TODO: Implement login policy changes and audit changes without recording secrets. Settings POSTs already require sudo in security.php. -->
+			<form method="post" class="form-fields stack compact">
+
+				<fieldset>
+					<legend>Enabled methods</legend>
+					<label class="checkbox-field"><input type="checkbox" name="password" value="yes" checked aria-readonly="true" /><span>Password</span></label>
+					<label class="checkbox-field"><input type="checkbox" name="email" value="yes" checked aria-readonly="true" /><span>Email token</span></label>
+					<label class="checkbox-field"><input type="checkbox" name="totp" value="yes" disabled /><span>TOTP authenticator</span></label>
+					<label class="checkbox-field"><input type="checkbox" name="securityKey" value="yes" disabled /><span>Security key</span></label>
+					<label class="checkbox-field"><input type="checkbox" name="google" value="yes" disabled /><span>Google</span></label>
+					<label class="checkbox-field"><input type="checkbox" name="facebook" value="yes" disabled /><span>Facebook</span></label>
+					<label class="checkbox-field"><input type="checkbox" name="twitter" value="yes" disabled /><span>Twitter / X</span></label>
+				</fieldset>
+				<div class="actions">
+					<button type="submit" class="primary" disabled>Save settings</button>
+				</div>
+			</form>
+		</section>
+		<section class="settings-panel stack" id="trusted-devices">
+			<h2>Trusted devices</h2>
+			<p><span class="badge">Coming soon</span></p>
+		</section>
+	</div>
 </main>

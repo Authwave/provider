@@ -19,3 +19,10 @@ document.addEventListener("change", event => {
 });
 document.addEventListener("flux:after-render", initialiseConditionalFields);
 initialiseConditionalFields();
+
+// Checkboxes have no native readonly behaviour; cancelling activation preserves their state.
+document.addEventListener("click", event => {
+	if(event.target.matches('input[type="checkbox"][aria-readonly="true"]')) {
+		event.preventDefault();
+	}
+});

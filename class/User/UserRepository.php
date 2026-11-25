@@ -5,6 +5,7 @@ namespace Authwave\User;
 use Authwave\Email\EmailRepository;
 use Authwave\Email\EmailAddress;
 use Authwave\Model\User;
+use Authwave\Model\ApplicationSessionPolicy;
 use Authwave\Model\UserSession;
 use Authwave\Model\ApplicationDeployment;
 use Authwave\Model\ApplicationRepository;
@@ -13,6 +14,8 @@ use Authwave\Security\Action;
 use GT\Database\Query\QueryCollection;
 use GT\Database\Database;
 use Authwave\Admin\User\UserActivity;
+use Authwave\Admin\User\ActiveSession;
+use DateTimeZone;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Throwable;
@@ -314,6 +317,188 @@ readonly class UserRepository {
 		}
 	}
 
+	public function startManagedSession(User $user, ?string $previousId = null):UserSession {
+		$policy = $this->applicationRepo
+			->getSessionPolicyByApplicationId($user->deployment->applicationId)
+			?? new ApplicationSessionPolicy($user->deployment->applicationId);
+		$now = new DateTimeImmutable("now", new DateTimeZone("UTC"));
+		$session = new UserSession((string)new Ulid(), $user->id, $now,
+			$now->modify("+{$policy->maximumLifetimeMinutes} minutes"),
+			null, $now, $policy->idleTimeoutMinutes, true);
+		$connection = $this->database->getDriver()->getConnection();
+		$connection->beginTransaction();
+
+		try {
+			$previous = $previousId === null ? null : $this->getSessionById($previousId);
+
+			if($previous && $previous->userId === $user->id && $previous->endedAt === null) {
+				$this->database->queryCollection("user_session")->update("end", [
+					"id" => $previous->id, "endedAt" => $now,
+				]);
+			}
+
+			$this->database->queryCollection("user_session")->insert("managedCreate", [
+				"id" => $session->id, "userId" => $user->id, "createdAt" => $now,
+				"expiresAt" => $session->expiresAt, "lastActivityAt" => $now,
+				"idleTimeoutMinutes" => $policy->idleTimeoutMinutes,
+			]);
+			$this->audit->create(Action::LOGIN_COMPLETED,
+				["deploymentId" => $user->deployment->id, "managed" => true], $user);
+			$connection->commit();
+		}
+		catch(Throwable $error) {
+			$connection->rollBack();
+			throw $error;
+		}
+
+		return $session;
+	}
+
+	public function validateSession(ApplicationDeployment $deployment, string $identifier,
+		bool $active):bool {
+		$session = $this->getSessionById($identifier);
+		$user = $session === null ? null : $this->getById($session->userId);
+
+		if(!$session || !$session->managed || $user?->deployment->id !== $deployment->id
+		|| $session->endedAt !== null) {
+			return false;
+		}
+
+		$policy = $this->applicationRepo->getSessionPolicyByApplicationId($deployment->applicationId);
+
+		if($policy !== null) {
+			$expiresAt = min($session->expiresAt,
+				$session->createdAt->modify("+{$policy->maximumLifetimeMinutes} minutes"));
+			$idle = min($session->idleTimeoutMinutes, $policy->idleTimeoutMinutes);
+
+			if($expiresAt < $session->expiresAt || $idle < $session->idleTimeoutMinutes) {
+				$this->database->queryCollection("user_session")->update("shorten", [
+					"id" => $identifier, "expiresAt" => $expiresAt, "idleTimeoutMinutes" => $idle,
+				]);
+				$session = new UserSession($session->id, $session->userId, $session->createdAt,
+					$expiresAt, $session->endedAt, $session->lastActivityAt, $idle, true);
+			}
+		}
+
+		$now = new DateTimeImmutable("now", new DateTimeZone("UTC"));
+
+		if(!$session->isActive($now)) {
+			$connection = $this->database->getDriver()->getConnection();
+			$connection->beginTransaction();
+
+			try {
+				$this->database->queryCollection("user_session")->update("end", [
+					"id" => $identifier, "endedAt" => $now,
+				]);
+				$this->audit->create(Action::SESSION_EXPIRED, ["deploymentId" => $deployment->id], $user);
+				$connection->commit();
+			}
+			catch(Throwable $error) {
+				$connection->rollBack();
+				throw $error;
+			}
+
+			return false;
+		}
+
+		if($active) {
+			$this->database->queryCollection("user_session")->update("touch", [
+				"lastActivityAt" => $now, "id" => $identifier,
+			]);
+		}
+
+		return true;
+	}
+
+	/** @return list<ActiveSession> */
+	public function activeSessions(User $actor, string $applicationId,
+		string $deploymentId = ""):array {
+		$this->applicationRepo->get($actor, $applicationId);
+
+		if($deploymentId !== ""
+		&& $this->applicationRepo->getDeploymentById($deploymentId)?->applicationId !== $applicationId) {
+			throw new InvalidArgumentException("Choose a deployment belonging to this application.");
+		}
+
+		$now = new DateTimeImmutable("now", new DateTimeZone("UTC"));
+		$rows = $this->database->queryCollection("user_session")->fetchAll("getByApplication", [
+			"applicationId" => $applicationId, "deploymentFilter" => $deploymentId,
+			"deploymentId" => $deploymentId, "now" => $now,
+		]);
+		$result = [];
+
+		foreach($rows as $row) {
+			$session = $this->rowToSession($row);
+
+			if($session->isActive($now)) {
+				$result []= new ActiveSession($session, $row->getString("email"),
+					$row->getString("deploymentId"), $row->getString("deploymentTitle"));
+			}
+		}
+
+		return $result;
+	}
+
+	public function revokeSession(User $actor, string $applicationId, string $identifier):void {
+		$this->applicationRepo->get($actor, $applicationId);
+		$session = $this->getSessionById($identifier);
+		$user = $session === null ? null : $this->getById($session->userId);
+
+		if(!$session || $user?->deployment->applicationId !== $applicationId || !$session->managed) {
+			throw new InvalidArgumentException("Choose a managed session belonging to this application.");
+		}
+
+		$connection = $this->database->getDriver()->getConnection();
+		$connection->beginTransaction();
+
+		try {
+			if($session->endedAt === null) {
+				$this->database->queryCollection("user_session")->update("end", ["id" => $identifier,
+					"endedAt" => new DateTimeImmutable("now", new DateTimeZone("UTC"))]);
+				$this->audit->create(Action::SESSION_REVOKED, ["applicationId" => $applicationId,
+					"deploymentId" => $user->deployment->id, "userId" => $user->id], $actor);
+			}
+
+			$connection->commit();
+		}
+		catch(Throwable $error) {
+			$connection->rollBack();
+			throw $error;
+		}
+	}
+
+	public function revokeAllSessions(User $actor, string $applicationId,
+		string $deploymentId = ""):int {
+		$sessions = $this->activeSessions($actor, $applicationId, $deploymentId);
+		$connection = $this->database->getDriver()->getConnection();
+		$connection->beginTransaction();
+		$count = 0;
+
+		try {
+			foreach($sessions as $entry) {
+				if(!$entry->session->managed) {
+					continue;
+				}
+
+				$count += $this->database->queryCollection("user_session")->update("end", [
+					"id" => $entry->session->id,
+					"endedAt" => new DateTimeImmutable("now", new DateTimeZone("UTC")),
+				]);
+			}
+
+			$this->audit->create(Action::SESSIONS_REVOKED,
+				["applicationId" => $applicationId,
+					"deploymentId" => $deploymentId, "count" => $count], $actor);
+			$connection->commit();
+		}
+		catch(Throwable $error) {
+			$connection->rollBack();
+			throw $error;
+		}
+
+		return $count;
+	}
+
 	public function startSession(User $user, ?string $previousId = null):UserSession {
 		$previous = $previousId === null ? null : $this->getSessionById($previousId);
 		$now = new DateTimeImmutable();
@@ -383,8 +568,10 @@ readonly class UserRepository {
 		$this->database->queryCollection("user_session")->update("end", [
 			"id" => $session->id, "endedAt" => new DateTimeImmutable(),
 		]);
+		$referenceField = $session->managed ? "sessionReference" : "sessionId";
+		$reference = $session->managed ? hash("sha256", $session->id) : $session->id;
 		$this->audit->create(Action::LOGOUT_REQUESTED,
-			["deploymentId" => $user->deployment->id, "sessionId" => $session->id], $user);
+			["deploymentId" => $user->deployment->id, $referenceField => $reference], $user);
 	}
 
 	/** @return list<UserSession> */
@@ -397,7 +584,11 @@ readonly class UserRepository {
 		$rows = $this->queries->fetchAll("currentlyLoggedIn", $actor->id, $applicationId, $now);
 
 		foreach($rows as $row) {
-			$result []= $this->rowToSession($row);
+			$session = $this->rowToSession($row);
+
+			if($session->isActive(new DateTimeImmutable("now", new DateTimeZone("UTC")))) {
+				$result []= $session;
+			}
 		}
 
 		return $result;
@@ -412,9 +603,12 @@ readonly class UserRepository {
 		$ended = $row->getString("endedAt");
 
 		return new UserSession($row->getString("id"), $row->getString("userId"),
-			new DateTimeImmutable($row->getString("createdAt")),
-			new DateTimeImmutable($row->getString("expiresAt")),
-			$ended === null ? null : new DateTimeImmutable($ended));
+			new DateTimeImmutable($row->getString("createdAt"), new DateTimeZone("UTC")),
+			new DateTimeImmutable($row->getString("expiresAt"), new DateTimeZone("UTC")),
+			$ended === null ? null : new DateTimeImmutable($ended),
+			$row->getString("lastActivityAt") === null ? null
+				: new DateTimeImmutable($row->getString("lastActivityAt"), new DateTimeZone("UTC")),
+			$row->getInt("idleTimeoutMinutes"), $row->getBool("managed") ?? false);
 	}
 
 	public function getLatestAuthCode(string $userId): ?string {
