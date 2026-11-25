@@ -4,7 +4,7 @@
 		<h1>Security</h1>
 		<p data-bind:text="scopeLabel">No applications</p>
 	</header>
-	<p class="notice" role="note">This screen is not connected yet. Its controls are unavailable.</p>
+	<p class="notice" role="note">Recent security events are live. The remaining security controls are coming soon.</p>
 	<div class="card-grid">
 		<section class="settings-panel stack">
 			<h2>Security score</h2>
@@ -18,27 +18,46 @@
 		</section>
 		<section class="settings-panel stack">
 			<h2>Recommended actions</h2>
-			<p>Review your password rules and trusted devices regularly. Configure each method below for the selected application scope.</p>
+			<p>Review authentication methods and trusted devices for the selected application.</p>
 			<a class="control" href="#audit">Review audit log</a>
 		</section>
 	</div>
-	<section class="settings-panel stack">
-		<h2>Recent security events</h2>
-		<div class="table-scroll">
+	<section class="settings-panel stack" id="security-events" aria-labelledby="security-events-title">
+		<header><h2 id="security-events-title">Recent security events</h2><p class="muted">Authentication activity for the selected application. Dates and times are shown in UTC.</p></header>
+		<form method="get" action="/admin/security/#security-events" class="toolbar security-event-filters" aria-label="Security event filters">
+			<input type="hidden" name="application" data-bind:value="applicationId" />
+			<label><span>From</span><input type="date" name="from" required data-bind:value="@" data-bind:max="today" /></label>
+			<label><span>To</span><input type="date" name="to" required data-bind:value="@" data-bind:max="today" /></label>
+			<label><span>Deployment</span><select name="deployment"><option value="" data-bind:selected="?allDeployments">All deployments</option><option data-list="security-deployments" data-bind:value="id" data-bind:text="title" data-bind:selected="?selected"></option></select></label>
+			<label><span>Event</span><select name="event" data-bind:value="@">
+				<option value="">All authentication events</option>
+				<option value="LOGIN_COMPLETED">Successful login</option>
+				<option value="PASSWORD_LOGIN_FAILED">Password rejected</option>
+				<option value="SECURITY_CODE_REJECTED">Security code rejected</option>
+				<option value="SECURITY_CODE_REQUESTED">Security code requested</option>
+				<option value="PASSWORD_CHANGED">Password changed</option>
+				<option value="LOGOUT_REQUESTED">Logout requested</option>
+			</select></label>
+			<div class="actions"><button type="submit" class="primary">Apply filters</button><a class="control" data-bind:href="resetEvents">Reset</a></div>
+		</form>
+		<p class="muted">Choose a date range of up to 366 days.</p>
+		<div class="table-scroll" hidden data-bind:hidden="?!hasEvents">
 			<table class="record-table">
-				<thead>
-					<tr>
-						<th scope="col">When</th>
-						<th scope="col">Application</th>
-						<th scope="col">Event</th>
-						<th scope="col">Result</th>
-					</tr>
-				</thead>
-				<tbody>
-
-				</tbody>
+				<caption class="visually-hidden">Recent authentication events, newest first</caption>
+				<thead><tr><th scope="col">When (UTC)</th><th scope="col">Deployment</th><th scope="col">Event</th><th scope="col">Result</th></tr></thead>
+				<tbody><tr data-list="security-events"><td data-bind:text="createdAt"></td><td data-bind:text="title"></td><td data-bind:text="eventLabel"></td><td><span class="status" data-bind:data-status="statusKind" data-bind:text="result"></span></td></tr></tbody>
 			</table>
 		</div>
+		<div class="security-events-empty" hidden data-bind:hidden="?!emptyEvents" role="status">
+			<span class="security-events-empty-icon" aria-hidden="true">◇</span>
+			<h3>No security events to show</h3>
+			<p>No authentication events match these dates and filters. New activity will appear here as users sign in, request codes or change passwords.</p>
+			<a class="control" data-bind:href="resetEvents">Show the last 30 days</a>
+		</div>
+		<footer class="toolbar" hidden data-bind:hidden="?!hasEventPagination" data-event-pagination>
+			<span>Page <span data-bind:text="eventPage"></span></span>
+			<nav class="actions" aria-label="Security event pages"><a class="control" hidden data-bind:hidden="?!hasPreviousEvents" data-bind:href="previousEvents">Previous</a><a class="control" hidden data-bind:hidden="?!hasNextEvents" data-bind:href="nextEvents">Next</a></nav>
+		</footer>
 	</section>
 	<section class="settings-panel stack" id="authentication">
 		<h2>Authentication methods</h2>
@@ -58,21 +77,6 @@
 				<button type="submit" class="primary" disabled>Save settings</button>
 			</div>
 		</form>
-		<details class="settings-disclosure">
-			<summary>Configure password rules</summary>
-			<div class="settings-content">
-				<form method="post" class="form-fields stack compact">
-
-					<label><span>Minimum password length</span><input type="number" name="passwordMin" min="8" max="128" required disabled /></label>
-					<label class="checkbox-field"><input type="checkbox" name="passwordUpper" value="yes" disabled /><span>Require an uppercase letter</span></label>
-					<label class="checkbox-field"><input type="checkbox" name="passwordNumber" value="yes" disabled /><span>Require a number</span></label>
-					<label class="checkbox-field"><input type="checkbox" name="passwordSymbol" value="yes" disabled /><span>Require a symbol</span></label>
-					<div class="actions">
-						<button type="submit" class="primary" disabled>Save settings</button>
-					</div>
-				</form>
-			</div>
-		</details>
 	</section>
 	<section class="settings-panel stack" id="sessions">
 		<h2>Session management</h2>

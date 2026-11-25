@@ -150,6 +150,13 @@ uses ten reporting queries, independent of the number of displayed users. There
 are no per-row user/deployment lookups. Migration 028 adds indexes for audit
 aggregation and user creation-date filtering.
 
+Reporting queries hydrate typed projections before returning to page logic.
+`activity()` returns an iterable `DashboardActivity` of `DashboardActivityEvent`
+objects, with the page number and navigation state. It exposes only the visible
+page; the extra result used to detect Next stays inside the repository. Events
+use `Action` and UTC `DateTimeImmutable` values. Totals, chart points and user
+summaries also have typed properties; plain arrays contain lists of those objects.
+
 Today and single-day custom ranges use 24 hourly chart buckets (00:00–23:00 UTC),
 with missing hours filled with zeroes. Their comparison uses matching hours from
 the previous day. Longer ranges use daily buckets.
@@ -414,6 +421,15 @@ administration logins do not create client sessions. The Users panel counts all
 active sessions for the selected application and lists up to 25 distinct users,
 with five visible rows in a scroll area and a count of any additional users.
 Email addresses are protected by sudo. Tracking begins with new client logins.
+
+The Security screen's **Recent security events** feed uses the same application-authorised
+read queries as dashboard authentication activity. It defaults to the last 30 UTC
+calendar days across all deployments, with inclusive From/To dates (up to 366 days),
+a deployment filter and an authentication-event filter. Results are newest first,
+with 25 events per page; pagination preserves the filters and applying filters
+starts again at page one. Empty results provide a reset to the last 30 days.
+This feed covers authentication events associated with existing users; it is not
+the full administrative audit log. Remaining security controls are unavailable.
 
 Login counts and latest failures come from audit records. The failures panel shows
 up to ten users whose latest failed password or security code was within 24 hours.

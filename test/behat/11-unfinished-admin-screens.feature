@@ -11,7 +11,6 @@ Feature: Administration without prototype behaviour
 
     Examples:
       | path                   |
-      | /admin/security/       |
       | /admin/emails/         |
       | /admin/customisation/  |
       | /admin/organisation/   |
@@ -27,3 +26,28 @@ Feature: Administration without prototype behaviour
     When I continue account setup
     Then I should be on "/integrations/help/"
 
+
+  Scenario: Security events are live while future security controls remain unavailable
+    When I go to "/admin/security/"
+    Then I should see "Recent security events"
+    And I should see "The remaining security controls are coming soon."
+    And I should see "Apply filters"
+    When I go to "/admin/security/?from=2020-01-01&to=2020-01-02"
+    Then I should see "No security events to show"
+    And I should see "Show the last 30 days"
+
+  Scenario: Security events can be filtered and paged
+    Given the selected application has recent security events
+    When I go to "/admin/security/"
+    Then the security event list should contain 25 events
+    And I should see "Security development"
+    When I follow "Next"
+    Then the security event list should contain 3 events
+    And I should see "Page 2"
+    When I follow "Previous"
+    Then the security event list should contain 25 events
+    When I select "Password rejected" from "Event"
+    And I press "Apply filters"
+    Then the security event list should contain 1 events
+    And I should see "Rejected"
+    And I should see "Page 1"

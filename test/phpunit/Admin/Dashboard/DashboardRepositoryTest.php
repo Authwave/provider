@@ -33,10 +33,10 @@ class DashboardRepositoryTest extends TestCase {
 		$days = $sut->series($this->actor(), "app", $period);
 
 		self::assertCount(3, $days);
-		self::assertSame(0, $days[0]->getInt("logins"));
-		self::assertSame(2, $days[1]->getInt("logins"));
-		self::assertSame(1, $days[1]->getInt("failures"));
-		self::assertSame(0, $days[2]->getInt("failures"));
+		self::assertSame(0, $days[0]->logins);
+		self::assertSame(2, $days[1]->logins);
+		self::assertSame(1, $days[1]->failures);
+		self::assertSame(0, $days[2]->failures);
 	}
 
 	public function testSeries_emptySingleDayHas24ZeroHours():void {
@@ -50,10 +50,10 @@ class DashboardRepositoryTest extends TestCase {
 		$series = $sut->series($this->actor(), "app", $period);
 
 		self::assertCount(24, $series);
-		self::assertSame("00:00", $series[0]->getString("bucket"));
-		self::assertSame("23:00", $series[23]->getString("bucket"));
-		self::assertSame(0, array_sum(array_map(fn($row) => $row->getInt("logins"), $series)));
-		self::assertSame(0, array_sum(array_map(fn($row) => $row->getInt("failures"), $series)));
+		self::assertSame("00:00", $series[0]->bucket);
+		self::assertSame("23:00", $series[23]->bucket);
+		self::assertSame(0, array_sum(array_map(fn($row) => $row->logins, $series)));
+		self::assertSame(0, array_sum(array_map(fn($row) => $row->failures, $series)));
 	}
 
 	#[DataProvider("invalidActivity")]

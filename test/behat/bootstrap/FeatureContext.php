@@ -11,6 +11,23 @@ use Behat\Mink\Exception\ExpectationException;
 require_once dirname(__DIR__) . "/database/DatabaseState.php";
 
 class FeatureContext extends MinkContext {
+	#[Given('the selected application has recent security events')]
+	public function securityEventFixtures():void {
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$database->exec("insert into ApplicationDeployment (id,applicationId,title,secret,providerHost,clientHost,clientLoginPath) values ('security-dev','customer','Security development','secret','security.test','https://client.test','/')");
+		$database->exec("insert into User (id,applicationDeploymentId,email) values ('security-user','security-dev','security@example.test')");
+		$insert = $database->prepare("insert into Audit (id,userId,action,createdAt) values (?, 'security-user', ?, ?)");
+		for($index = 0; $index < 27; $index++) {
+			$insert->execute(["security-$index", 'LOGIN_COMPLETED', gmdate('Y-m-d') . ' 00:00:00']);
+		}
+		$insert->execute(['security-failure', 'PASSWORD_LOGIN_FAILED', gmdate('Y-m-d') . ' 00:00:00']);
+	}
+
+	#[Then('the security event list should contain :count events')]
+	public function securityEventCount(int $count):void {
+		$this->assertSession()->elementsCount('css', '#security-events tbody tr', $count);
+	}
+
 	#[Given('the client responds to notifications with HTTP :status')]
 	public function clientNotificationResponse(int $status):void {
 		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));

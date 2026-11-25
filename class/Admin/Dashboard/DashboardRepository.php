@@ -2,9 +2,10 @@
 namespace Authwave\Admin\Dashboard;
 
 use Authwave\Model\User;
+use Authwave\Security\Action;
 use DateTimeImmutable;
+use DateTimeZone;
 use GT\Database\Query\QueryCollection;
-use GT\Database\Result\Row;
 use InvalidArgumentException;
 
 readonly class DashboardRepository {
@@ -15,9 +16,12 @@ readonly class DashboardRepository {
 	public function __construct(private QueryCollection $queries) {}
 
 	public function totals(User $actor, string $applicationId,
-		DateTimeImmutable $start, DateTimeImmutable $end, ?string $deploymentId = null):Row {
-		return $this->queries->fetch("totals",
+		DateTimeImmutable $start, DateTimeImmutable $end, ?string $deploymentId = null):DashboardTotals {
+		$row = $this->queries->fetch("totals",
 			$this->scope($actor, $applicationId, $start, $end, $deploymentId));
+
+		return new DashboardTotals($row->getInt("logins"), $row->getInt("failures"),
+			$row->getInt("codes"), $row->getInt("passwords"));
 	}
 
 	public function newUserCount(User $actor, string $applicationId,
@@ -26,7 +30,7 @@ readonly class DashboardRepository {
 			$this->scope($actor, $applicationId, $start, $end, $deploymentId));
 	}
 
-	/** @return list<Row> */
+	/** @return list<DashboardSeriesPoint> */
 	public function series(User $actor, string $applicationId, ReportingPeriod $period,
 		?string $deploymentId = null):array {
 		$hourly = $period->days === 1;
@@ -45,50 +49,93 @@ readonly class DashboardRepository {
 
 		for($time = $period->start; $time < $period->end; $time = $time->modify($interval)) {
 			$row = $indexed[$time->format($format)] ?? null;
-			$series []= new Row([
-				"bucket" => $time->format($hourly ? "H:00" : "Y-m-d"),
-				"logins" => (string)($row?->getInt("logins") ?? 0),
-				"failures" => (string)($row?->getInt("failures") ?? 0),
-			]);
+			$series []= new DashboardSeriesPoint(
+				$time->format($hourly ? "H:00" : "Y-m-d"),
+				$row?->getInt("logins") ?? 0,
+				$row?->getInt("failures") ?? 0,
+			);
 		}
 
 		return $series;
 	}
 
-	/** @return list<Row> One extra row indicates whether a next page exists. */
 	public function activity(User $actor, string $applicationId, ReportingPeriod $period,
-		string $action = "", int $page = 1, ?string $deploymentId = null):array {
+		string $action = "", int $page = 1, ?string $deploymentId = null):DashboardActivity {
 		if(($action !== "" && !in_array($action, self::ACTIONS, true))
 		|| $page < 1 || $page > intdiv(PHP_INT_MAX, self::PAGE_SIZE)) {
 			throw new InvalidArgumentException("Choose a valid activity filter and page.");
 		}
 
-		return iterator_to_array($this->queries->fetchAll("activity",
+		$rows = $this->queries->fetchAll("activity",
 			$this->scope($actor, $applicationId, $period->start, $period->end, $deploymentId) + [
 				"filter" => $action, "action" => $action,
 				"limit" => self::PAGE_SIZE + 1, "offset" => ($page - 1) * self::PAGE_SIZE,
-			]));
+			]);
+		$events = [];
+		$hasNext = false;
+
+		foreach($rows as $row) {
+			if(count($events) === self::PAGE_SIZE) {
+				$hasNext = true;
+				break;
+			}
+
+			$events []= new DashboardActivityEvent(
+				$row->getString("id"), constant(Action::class . "::" . $row->getString("action")),
+				new DateTimeImmutable($row->getString("createdAt"), new DateTimeZone("UTC")),
+				$row->getString("userId"), $row->getString("email"),
+				$row->getString("deploymentId"), $row->getString("title"),
+			);
+		}
+
+		return new DashboardActivity($events, $page, $hasNext);
 	}
 
-	/** @return list<Row> */
+	/** @return list<DashboardTopUser> */
 	public function topUsers(User $actor, string $applicationId, ReportingPeriod $period,
 		?string $deploymentId = null):array {
-		return iterator_to_array($this->queries->fetchAll("topUsers",
-			$this->scope($actor, $applicationId, $period->start, $period->end, $deploymentId)));
+		$rows = $this->queries->fetchAll("topUsers",
+			$this->scope($actor, $applicationId, $period->start, $period->end, $deploymentId));
+		$users = [];
+
+		foreach($rows as $row) {
+			$users []= new DashboardTopUser($row->getString("userId"), $row->getString("email"),
+				$row->getString("title"), $row->getInt("logins"));
+		}
+
+		return $users;
 	}
 
-	/** @return list<Row> */
+	/** @return list<DashboardNewUser> */
 	public function newUsers(User $actor, string $applicationId, ReportingPeriod $period,
 		?string $deploymentId = null):array {
-		return iterator_to_array($this->queries->fetchAll("newUsers",
-			$this->scope($actor, $applicationId, $period->start, $period->end, $deploymentId)));
+		$rows = $this->queries->fetchAll("newUsers",
+			$this->scope($actor, $applicationId, $period->start, $period->end, $deploymentId));
+		$users = [];
+
+		foreach($rows as $row) {
+			$users []= new DashboardNewUser($row->getString("userId"), $row->getString("email"),
+				new DateTimeImmutable($row->getString("createdAt"), new DateTimeZone("UTC")),
+				$row->getString("title"));
+		}
+
+		return $users;
 	}
 
-	/** @return list<Row> */
+	/** @return list<DashboardNewUser> */
 	public function awaitingFirstLogin(User $actor, string $applicationId,
 		ReportingPeriod $period, ?string $deploymentId = null):array {
-		return iterator_to_array($this->queries->fetchAll("awaitingFirstLogin",
-			$this->scope($actor, $applicationId, $period->start, $period->end, $deploymentId)));
+		$rows = $this->queries->fetchAll("awaitingFirstLogin",
+			$this->scope($actor, $applicationId, $period->start, $period->end, $deploymentId));
+		$users = [];
+
+		foreach($rows as $row) {
+			$users []= new DashboardNewUser($row->getString("userId"), $row->getString("email"),
+				new DateTimeImmutable($row->getString("createdAt"), new DateTimeZone("UTC")),
+				$row->getString("title"));
+		}
+
+		return $users;
 	}
 
 	/** @return array<string, string|DateTimeImmutable|null> */

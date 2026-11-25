@@ -3,6 +3,7 @@ namespace Authwave\Test\Integration\Admin\Dashboard;
 
 use Authwave\Admin\Dashboard\{DashboardRepository, ReportingPeriod};
 use Authwave\Model\{Application, ApplicationDeployment, User};
+use Authwave\Security\Action;
 use DateTimeImmutable;
 use GT\Database\Connection\Settings;
 use GT\Database\Database;
@@ -41,11 +42,11 @@ class DashboardRepositoryTest extends TestCase {
 
 		$totals = $sut->totals($this->actor(), "app", $period->start, $period->end);
 
-		self::assertSame(2, $totals->getInt("logins"));
-		self::assertSame(2, $totals->getInt("failures"));
-		self::assertSame(1, $totals->getInt("codes"));
-		self::assertSame(1, $totals->getInt("passwords"));
-		self::assertSame(0, $sut->totals($this->actor(), "other", $period->start, $period->end)->getInt("logins"));
+		self::assertSame(2, $totals->logins);
+		self::assertSame(2, $totals->failures);
+		self::assertSame(1, $totals->codes);
+		self::assertSame(1, $totals->passwords);
+		self::assertSame(0, $sut->totals($this->actor(), "other", $period->start, $period->end)->logins);
 	}
 
 	public function testSeries_groupsBothDeploymentsAndRetainsZeros():void {
@@ -54,9 +55,9 @@ class DashboardRepositoryTest extends TestCase {
 		$days = $sut->series($this->actor(), "app", $this->period());
 
 		self::assertCount(2, $days);
-		self::assertSame("2026-11-09", $days[0]->getString("bucket"));
-		self::assertSame(1, $days[0]->getInt("logins"));
-		self::assertSame(2, $days[1]->getInt("failures"));
+		self::assertSame("2026-11-09", $days[0]->bucket);
+		self::assertSame(1, $days[0]->logins);
+		self::assertSame(2, $days[1]->failures);
 	}
 
 	public function testSeries_groupsHoursAndExcludesOtherDaysAndApplications():void {
@@ -68,15 +69,15 @@ class DashboardRepositoryTest extends TestCase {
 		$series = $sut->series($this->actor(), "app", $period);
 
 		self::assertCount(24, $series);
-		self::assertSame(2, $series[0]->getInt("logins"));
-		self::assertSame(1, $series[1]->getInt("logins"));
-		self::assertSame(0, $series[2]->getInt("logins"));
-		self::assertSame(1, $series[12]->getInt("logins"));
-		self::assertSame(2, $series[12]->getInt("failures"));
-		self::assertSame(1, $series[23]->getInt("logins"));
-		self::assertSame(5, array_sum(array_map(fn($row) => $row->getInt("logins"), $series)));
+		self::assertSame(2, $series[0]->logins);
+		self::assertSame(1, $series[1]->logins);
+		self::assertSame(0, $series[2]->logins);
+		self::assertSame(1, $series[12]->logins);
+		self::assertSame(2, $series[12]->failures);
+		self::assertSame(1, $series[23]->logins);
+		self::assertSame(5, array_sum(array_map(fn($row) => $row->logins, $series)));
 		self::assertSame([], array_filter($sut->series($this->actor(), "other", $period),
-			fn($row) => $row->getInt("logins") > 0));
+			fn($row) => $row->logins > 0));
 	}
 
 	public function testNewUsers_countsRecordsWithKnownCreationDatesRatherThanAuditActors():void {
@@ -84,7 +85,7 @@ class DashboardRepositoryTest extends TestCase {
 		$period = $this->period();
 
 		self::assertSame(2, $sut->newUserCount($this->actor(), "app", $period->start, $period->end));
-		self::assertSame(["bob", "alice"], array_map(fn($row) => $row->getString("userId"),
+		self::assertSame(["bob", "alice"], array_map(fn($row) => $row->userId,
 			$sut->newUsers($this->actor(), "app", $period)));
 		self::assertSame([], $sut->newUsers($this->actor(), "other", $period));
 	}
@@ -95,7 +96,7 @@ class DashboardRepositoryTest extends TestCase {
 		$rows = $sut->awaitingFirstLogin($this->actor(), "app", $this->period());
 
 		self::assertCount(1, $rows);
-		self::assertSame("bob", $rows[0]->getString("userId"));
+		self::assertSame("bob", $rows[0]->userId);
 	}
 
 	public function testTopUsers_ranksSuccessfulLoginsWithinPeriod():void {
@@ -104,8 +105,8 @@ class DashboardRepositoryTest extends TestCase {
 		$rows = $sut->topUsers($this->actor(), "app", $this->period());
 
 		self::assertCount(1, $rows);
-		self::assertSame("alice", $rows[0]->getString("userId"));
-		self::assertSame(2, $rows[0]->getInt("logins"));
+		self::assertSame("alice", $rows[0]->userId);
+		self::assertSame(2, $rows[0]->logins);
 	}
 
 	public function testActivity_filtersPagesAndSortsDeterministicallyWithoutUnrelatedEvents():void {
@@ -119,29 +120,52 @@ class DashboardRepositoryTest extends TestCase {
 		$rows = $sut->activity($this->actor(), "app", $this->period());
 		$next = $sut->activity($this->actor(), "app", $this->period(), page: 2);
 
-		self::assertCount(26, $rows);
+		self::assertCount(25, $rows);
+		self::assertTrue($rows->hasNext);
+		self::assertFalse($rows->hasPrevious());
+		self::assertTrue($next->hasPrevious());
+		self::assertFalse($next->hasNext);
+		$rows = iterator_to_array($rows);
+		$next = iterator_to_array($next);
 		self::assertCount(11, $next);
-		self::assertNotSame($rows[24]->getString("id"), $next[0]->getString("id"));
-		self::assertSame("page-9", $rows[0]->getString("id"));
+		self::assertNotSame($rows[24]->id, $next[0]->id);
+		self::assertSame("page-9", $rows[0]->id);
+		self::assertSame(Action::LOGIN_COMPLETED, $rows[0]->action);
+		self::assertSame("2026-11-10T13:00:00+00:00", $rows[0]->createdAt->format(DATE_ATOM));
+		self::assertSame("Development", $rows[0]->deploymentTitle);
 		self::assertCount(1, $sut->activity($this->actor(), "app", $this->period(), "PASSWORD_LOGIN_FAILED"));
-		self::assertSame([], $sut->activity($this->actor(), "other", $this->period()));
+		self::assertCount(0, $sut->activity($this->actor(), "other", $this->period()));
+	}
+
+	public function testActivity_exactlyOneFullPageHasNoNextPage():void {
+		$database = $this->database();
+
+		for($index = 0; $index < DashboardRepository::PAGE_SIZE - 2; $index++) {
+			$database->executeSql("insert into Audit (id,userId,action,createdAt) values ('full-$index','alice','LOGIN_COMPLETED','2026-11-10 13:00:00')");
+		}
+
+		$sut = new DashboardRepository($database->queryCollection("dashboard"));
+		$activity = $sut->activity($this->actor(), "app", $this->period(), "LOGIN_COMPLETED");
+
+		self::assertCount(DashboardRepository::PAGE_SIZE, $activity);
+		self::assertFalse($activity->hasNext);
 	}
 
 	public function testTotals_emptyDataReturnsZero():void {
 		$sut = new DashboardRepository($this->database()->queryCollection("dashboard"));
 		$period = new ReportingPeriod("custom", "2026-01-01", "2026-01-02");
 
-		self::assertSame(0, $sut->totals($this->actor(), "app", $period->start, $period->end)->getInt("logins"));
+		self::assertSame(0, $sut->totals($this->actor(), "app", $period->start, $period->end)->logins);
 		self::assertSame(0, $sut->newUserCount($this->actor(), "app", $period->start, $period->end));
 	}
 	public function testTotals_deploymentFilterCannotIncludeOtherDeploymentsOrApplications():void {
 		$sut = new DashboardRepository($this->database()->queryCollection("dashboard"));
 		$period = $this->period();
 
-		self::assertSame(2, $sut->totals($this->actor(), "app", $period->start, $period->end, "dev")->getInt("logins"));
-		self::assertSame(0, $sut->totals($this->actor(), "app", $period->start, $period->end, "prod")->getInt("logins"));
-		self::assertSame(0, $sut->totals($this->actor(), "app", $period->start, $period->end, "private")->getInt("logins"));
-		self::assertSame(0, $sut->totals($this->actor(), "app", $period->start, $period->end, "missing")->getInt("logins"));
+		self::assertSame(2, $sut->totals($this->actor(), "app", $period->start, $period->end, "dev")->logins);
+		self::assertSame(0, $sut->totals($this->actor(), "app", $period->start, $period->end, "prod")->logins);
+		self::assertSame(0, $sut->totals($this->actor(), "app", $period->start, $period->end, "private")->logins);
+		self::assertSame(0, $sut->totals($this->actor(), "app", $period->start, $period->end, "missing")->logins);
 	}
 
 	public function testNewUserCount_deploymentFilterRestrictsUserRecords():void {
@@ -158,13 +182,13 @@ class DashboardRepositoryTest extends TestCase {
 		$series = $sut->series($this->actor(), "app", $this->period(), "prod");
 
 		self::assertCount(2, $series);
-		self::assertSame(0, array_sum(array_map(fn($row) => $row->getInt("logins"), $series)));
+		self::assertSame(0, array_sum(array_map(fn($row) => $row->logins, $series)));
 	}
 
 	public function testActivity_deploymentFilterRestrictsEvents():void {
 		$sut = new DashboardRepository($this->database()->queryCollection("dashboard"));
 
-		self::assertSame([], $sut->activity($this->actor(), "app", $this->period(), deploymentId: "prod"));
+		self::assertCount(0, $sut->activity($this->actor(), "app", $this->period(), deploymentId: "prod"));
 		self::assertCount(6, $sut->activity($this->actor(), "app", $this->period(), deploymentId: "dev"));
 	}
 
@@ -178,7 +202,7 @@ class DashboardRepositoryTest extends TestCase {
 	public function testNewUsers_deploymentFilterRestrictsRecords():void {
 		$sut = new DashboardRepository($this->database()->queryCollection("dashboard"));
 
-		self::assertSame(["bob"], array_map(fn($row) => $row->getString("userId"),
+		self::assertSame(["bob"], array_map(fn($row) => $row->userId,
 			$sut->newUsers($this->actor(), "app", $this->period(), "prod")));
 		self::assertSame([], $sut->newUsers($this->actor(), "app", $this->period(), "private"));
 	}
@@ -186,7 +210,7 @@ class DashboardRepositoryTest extends TestCase {
 	public function testAwaitingFirstLogin_deploymentFilterRestrictsRecords():void {
 		$sut = new DashboardRepository($this->database()->queryCollection("dashboard"));
 
-		self::assertSame(["bob"], array_map(fn($row) => $row->getString("userId"),
+		self::assertSame(["bob"], array_map(fn($row) => $row->userId,
 			$sut->awaitingFirstLogin($this->actor(), "app", $this->period(), "prod")));
 		self::assertSame([], $sut->awaitingFirstLogin($this->actor(), "app", $this->period(), "dev"));
 	}
