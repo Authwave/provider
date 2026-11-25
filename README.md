@@ -217,6 +217,9 @@ request auditing.
 Deployment domain verification
 ------------------------------
 
+For the Docker-based authoritative DNS server, reboot persistence, and the PHP
+domain provisioning workflow, see [container/nsd/README.md](container/nsd/README.md).
+
 Saved deployments classify `localhost` and IPv4 loopback addresses (`127.*`) as
 local, including hosts with ports. They need no DNS verification. Local and
 production deployments are labelled in their disclosure summaries.

@@ -82,11 +82,9 @@ body.dir--admin {
 			}
 		}
 
-		> li > details > summary {
-			list-style-position: outside;
-		}
-
 		.deployment-summary {
+			flex: 1;
+			min-inline-size: 0;
 			display: flex;
 			align-items: center;
 			gap: var(--theme-space-2);
@@ -104,10 +102,6 @@ body.dir--admin {
 		}
 
 
-		.new-deployment-icon {
-			display: none;
-		}
-
 		> [data-new="1"] > details {
 			display: inline-block;
 			max-inline-size: 100%;
@@ -118,19 +112,6 @@ body.dir--admin {
 
 			&[open] {
 				display: block;
-			}
-
-			> summary {
-				list-style: none;
-
-				&::-webkit-details-marker {
-					display: none;
-				}
-
-				.new-deployment-icon {
-					display: inline-flex;
-					--theme-icon-gap: 0;
-				}
 			}
 		}
 

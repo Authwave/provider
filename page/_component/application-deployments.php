@@ -93,6 +93,7 @@ function go(Binder $binder, Application $application, ApplicationRepository $app
 		$binder->bindKeyValue("isOpen", $isSubmitted || (!$submitted && $opened === $id), $item);
 		$binder->bindKeyValue("panelId", "deployment-" . ($isNew ? "new" : $id), $item);
 		$binder->bindKeyValue("deploymentFormId", "deployment-form-" . ($isNew ? "new" : $id), $item);
+		$binder->bindKeyValue("closedIcon", $isNew ? "plus" : "caret-right", $item);
 		$binder->bindKeyValue("summary", $isNew ? "Create a deployment" : $fields["title"], $item);
 		$binder->bindKeyValue("submitLabel", $isNew ? "Create deployment" : "Save deployment", $item);
 		$binder->bindKeyValue("apiKey", $isNew ? "" : $apiKeys[$id], $item);

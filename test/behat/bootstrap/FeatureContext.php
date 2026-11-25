@@ -1562,7 +1562,7 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 		$this->expect($this->getSession()->evaluateScript('(() => {
 			const details = document.querySelector(".deployment-list > [data-new=\\"1\\"] > details");
 			const summary = details.querySelector("summary");
-			const icon = summary.querySelector("[data-icon=plus]");
+			const icon = summary;
 			const rect = details.getBoundingClientRect();
 			const parent = details.parentElement.getBoundingClientRect();
 			return getComputedStyle(details).display === "inline-block"
@@ -1575,8 +1575,8 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 				&& getComputedStyle(summary).listStyleType === "none"
 				&& getComputedStyle(icon).display !== "none"
 				&& getComputedStyle(icon, "::before").maskImage.includes("plus.svg")
-				&& getComputedStyle(document.querySelector(".deployment-list > :not([data-new=\\"1\\"]) summary")).display === "list-item";
-		})()'), 'Create deployment should have a compact plus disclosure; saved deployments keep their markers.');
+				&& getComputedStyle(document.querySelector(".deployment-list > :not([data-new=\\"1\\"]) summary"), "::before").maskImage.includes("caret-right.svg");
+		})()'), 'Create deployment should have a compact plus disclosure; saved deployments use caret icons.');
 	}
 
 	#[When('I open deployment :summary')]
@@ -1595,6 +1595,11 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 		$open = $this->assertSession()->elementExists('css', 'application-deployments details[open]');
 		$this->expect($open->find('css', '.deployment-title')->getText() === $summary,
 			'Unexpected open deployment.');
+		$this->expect($this->getSession()->evaluateScript('(() => {
+			const summary = document.querySelector("application-deployments details[open] > summary");
+			return getComputedStyle(summary).listStyleType === "none"
+				&& getComputedStyle(summary, "::before").maskImage.includes("caret-down.svg");
+		})()'), 'Open deployments should show a down caret inside the summary.');
 	}
 
 	#[Then('application form actions should reserve an input label and gap above their buttons')]
