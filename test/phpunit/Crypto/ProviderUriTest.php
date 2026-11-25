@@ -7,6 +7,23 @@ use GT\Http\Uri;
 use PHPUnit\Framework\TestCase;
 
 class ProviderUriTest extends TestCase {
+	#[\PHPUnit\Framework\Attributes\DataProvider("deploymentIds")]
+	public function testGetDeploymentId_restoresStoredPrefix(string $offered, string $stored):void {
+		$sut = new ProviderUri(new Uri("https://login.example.test/?" . http_build_query([
+			"c" => "cipher", "i" => "iv", "d" => $offered,
+		])));
+		self::assertSame($stored, $sut->getDeploymentId());
+	}
+
+	public static function deploymentIds():array {
+		return [
+			["PRODUCTION_ABCDEF", "DEPLOYMENT_ABCDEF"],
+			["STAGING_ABCDEF", "DEPLOYMENT_ABCDEF"],
+			["DEPLOYMENT_ABCDEF", "DEPLOYMENT_ABCDEF"],
+			["deployment", "deployment"],
+		];
+	}
+
 	#[\PHPUnit\Framework\Attributes\DataProvider("returnDestinations")]
 	public function testGetReturnUri_returnDestination(?string $requested, ?string $expected):void {
 		$query = ["c" => "cipher", "i" => "iv", "d" => "deployment"];

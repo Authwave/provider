@@ -67,14 +67,14 @@ Feature: Application-specific settings and deployments
       | Client URL        | https://www.example.test  |
       | Client login path | /authenticate/            |
     And I save deployment "Development"
-    Then deployment "Production" should keep the same API key
+    Then deployment "Production" should keep the same API key secret
     And action "DEPLOYMENT_UPDATED" should be audited for the fixture administrator
     When I select "Production" from "Production deployment"
     And I press "Save application settings"
     Then production should use deployment "Production"
     When I reload the page
     Then production should use deployment "Production"
-    And deployment "Production" should keep the same API key
+    And deployment "Production" should keep the same API key secret
 
   Scenario: The browser rejects invalid deployment fields before submission
     When I complete the "Create a deployment" deployment form:
