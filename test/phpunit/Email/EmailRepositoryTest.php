@@ -65,6 +65,7 @@ class EmailRepositoryTest extends TestCase {
 		$db = $this->createMock(QueryCollection::class);
 		$db->expects(self::once())->method("insert")->with("schedule", self::callback(function(array $data):bool {
 			self::assertSame("Your Example App security code is 01234", $data["subject"]);
+			self::assertSame("Accounts team", $data["senderName"]);
 			self::assertStringContainsString(">01234</strong>", $data["htmlContent"]);
 			self::assertStringContainsString("font-size:40px", $data["htmlContent"]);
 			self::assertStringContainsString('src="https://login.example.test/asset/default-logo.svg"', $data["htmlContent"]);
@@ -91,7 +92,7 @@ class EmailRepositoryTest extends TestCase {
 			->onlyMethods(["sendScheduled"])->getMock();
 		$sut->expects(self::once())->method("sendScheduled")->willReturn([]);
 		$app = new \Authwave\Model\Application("app", "Example App", "sender@example.test");
-		$deployment = new \Authwave\Model\ApplicationDeployment("deployment", $app, "Example App", "secret", "client.example.test", "/", "login.example.test");
+		$deployment = new \Authwave\Model\ApplicationDeployment("deployment", $app, "Example App", "secret", "client.example.test", "/", "login.example.test", emailFromName: "Accounts team");
 		$user = new \Authwave\Model\User("user", $deployment, "recipient@example.test");
 		$sut->scheduleAuthCode($user, $deployment, $user->email, $app->name, "01234", $app->emailSendFrom);
 	}
@@ -149,7 +150,10 @@ class EmailRepositoryTest extends TestCase {
 		$rows->method("current")->willReturn($row);
 		$db = $this->createMock(QueryCollection::class);
 		$db->expects(self::atLeastOnce())->method("fetchAll")->with("getScheduled")->willReturn($rows);
-		if($error) {
+		if($error instanceof TransportException) {
+			$db->expects(self::once())->method("update")->with("markAsFailed", ["id" => "test-email"]);
+		}
+		elseif($error) {
 			$db->expects(self::never())->method("update");
 		}
 		else {

@@ -9,7 +9,8 @@ select
 	clientConnected,
 	userLoggedIn,
 	emailPrefix,
-	emailReplyTo
+	emailReplyTo,
+	emailFromName
 
 from
 	ApplicationDeployment

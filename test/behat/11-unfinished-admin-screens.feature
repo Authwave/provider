@@ -11,7 +11,6 @@ Feature: Administration without prototype behaviour
 
     Examples:
       | path                   |
-      | /admin/emails/         |
       | /admin/customisation/  |
       | /admin/organisation/   |
       | /admin/billing/        |
@@ -88,3 +87,11 @@ Feature: Administration without prototype behaviour
   Scenario: Security panels follow the section order
     When I go to "/admin/security/"
     Then the security panels should follow the section order and stack on mobile
+
+  Scenario: Email log is available alongside unfinished email settings
+    When I go to "/admin/emails/"
+    Then I should see "Email log"
+    And I should see "No emails to show"
+    When I set the "toEmail" filter in "email-log" to "nobody@example.test"
+    Then I should see "No emails to show"
+    And the "To email" field should contain "nobody@example.test"

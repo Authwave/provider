@@ -47,6 +47,33 @@ readonly class EmailTemplate {
 				throw new UnexpectedValueException("Unsupported email template extension: {$name}");
 		}
 
+		return $this->renderValues($html, $values, $subject);
+	}
+
+	/** @param array<string, scalar|null> $values
+	 * @return array{subject: string, text: string, html: string}
+	 */
+	public function renderHtml(string $html, array $values = [], ?string $subject = null):array {
+		if(!preg_match('/<title\b[^>]*>(.*?)<\/title>/is', $html, $matches)) {
+			throw new UnexpectedValueException("HTML email templates must include a title element.");
+		}
+		if($subject === null) {
+			$subject = html_entity_decode(strip_tags($matches[1]), ENT_QUOTES | ENT_HTML5, "UTF-8");
+		}
+		else {
+			$html = preg_replace_callback('/(<title\b[^>]*>).*?(<\/title>)/is',
+				fn(array $match):string => $match[1]
+					. htmlspecialchars($subject, ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8") . $match[2], $html, 1);
+		}
+
+		return $this->renderValues($html, $values, $subject);
+	}
+
+	/** @param array<string, scalar|null> $values
+	 * @return array{subject: string, text: string, html: string}
+	 */
+	private function renderValues(string $html, array $values, string $subject):array {
+
 		$plainValues = $htmlValues = [];
 		foreach ($values as $key => $value) {
 			if (is_scalar($value)) {
@@ -62,6 +89,7 @@ readonly class EmailTemplate {
 		$html = strtr($html, $htmlValues);
 		// Retain paragraph boundaries, but omit head/style content from text MIME.
 		$textHtml = preg_replace('/<br\s*\/?\s*>|<\/(?:p|h[1-6]|tr|div)>/i', "\$0\n", $html);
+		$textHtml = preg_replace('/<title\b[^>]*>.*?<\/title>/is', "", $textHtml);
 		$text = (new DefaultHtmlToTextConverter())->convert($textHtml, "UTF-8");
 		$text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, "UTF-8");
 		$text = preg_replace('/^[\t ]+|[\t ]+$/m', "", $text);

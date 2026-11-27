@@ -2,112 +2,148 @@
 	<admin-header />
 	<header class="stack compact">
 		<h1>Emails</h1>
-		<p data-bind:text="scopeLabel">No applications</p>
 	</header>
-	<p class="notice" role="note">This screen is not connected yet. Its controls are unavailable.</p>
-	<section class="settings-panel stack">
-		<h2>Senders</h2>
-		<form method="get" class="toolbar">
-			<label class="grow"><span>Sender</span><select name="sender" disabled><option value="new">Create a sender</option></select></label>
-			<button type="submit" disabled>Choose sender</button>
+	<section class="settings-panel stack email-log" id="email-log" data-flux="update" aria-labelledby="email-log-title">
+		<header class="stack compact">
+			<div class="toolbar"><h2 class="grow" id="email-log-title">Email log</h2><a class="toolbar-end" aria-label="Reset email filters" data-bind:href="resetEmails">Reset</a></div>
+			<p class="muted">Scheduled and sent emails for the selected application. Filter dates use the time the email was queued. Dates and times are UTC.</p>
+		</header>
+		<form method="get" action="/admin/emails/#email-log" data-flux="auto submit-queue" class="security-event-filters" aria-label="Email log filters">
+			<input type="hidden" name="application" data-bind:value="applicationId" />
+			<label><span>From date</span><input type="date" name="from" required data-bind:value="@" data-bind:max="today" /></label>
+			<label><span>To date</span><input type="date" name="to" required data-bind:value="@" data-bind:max="today" /></label>
+			<label><span>Deployment</span><select name="deployment"><option value="" data-bind:selected="?allDeployments">All deployments</option><option data-list="email-deployments" data-bind:value="id" data-bind:text="title" data-bind:selected="?selected"></option></select></label>
+			<label><span>To email</span><input type="search" name="toEmail" maxlength="256" placeholder="Search email addresses" data-bind:value="@" /></label>
+			<label><span>Subject</span><input type="search" name="subject" maxlength="256" placeholder="Search subjects" data-bind:value="@" /></label>
+			<label><span>Status</span><select name="status" data-bind:value="@"><option value="">All statuses</option><option value="pending">Pending</option><option value="sent">Sent</option><option value="error">Error</option></select></label>
+			<div class="actions"><button type="submit" class="primary" data-flux="autosave">Apply filters</button></div>
 		</form>
-		<form method="post" class="form-fields stack compact">
-
-			<label><span>From name</span><input type="text" name="senderName" required disabled /></label>
-			<label><span>From email</span><input type="email" name="senderEmail" required disabled /></label>
-			<label><span>Reply-to</span><input type="email" name="replyTo" required disabled /></label>
-			<label><span>Sending domain</span><input type="text" name="senderDomain" required disabled /></label>
-			<div class="actions">
-				<button type="submit" class="primary" disabled>Save settings</button>
-			</div>
-		</form>
-		<p>—</p>
-		<details class="settings-disclosure">
-			<summary>DNS records</summary>
-			<div class="settings-content">
-				<dl class="key-values">
-					<div>
-						<dt>SPF</dt>
-						<dd>—</dd>
-					</div>
-					<div>
-						<dt>DKIM</dt>
-						<dd>—</dd>
-					</div>
-					<div>
-						<dt>Verification TXT</dt>
-						<dd>—</dd>
-					</div>
-				</dl>
-			</div>
-		</details>
-		<div class="card-grid">
-			<form method="post" class="form-fields stack compact">
-
-				<div class="actions">
-					<button type="submit" class="primary" disabled>Check DNS</button>
-				</div>
-			</form>
-			<form method="post" class="form-fields stack compact">
-
-				<p>Preview sending a test to your signed-in email address.</p>
-				<div class="actions">
-					<button type="submit" class="primary" disabled>Queue test email</button>
-				</div>
-			</form>
+		<p class="muted">Choose a date range of up to 366 days. Use the application selector in the sidebar to change application.</p>
+		<div class="table-scroll security-log-scroll" tabindex="0" role="region" aria-label="Email log list" hidden data-bind:hidden="?!hasEmails">
+			<table class="record-table">
+				<caption class="visually-hidden">Application email log, newest queued first</caption>
+				<thead><tr><th scope="col">Queued (UTC)</th><th scope="col">Scheduled (UTC)</th><th scope="col">Sent (UTC)</th><th scope="col">Deployment</th><th scope="col">To email</th><th scope="col">Subject</th><th scope="col">Status</th></tr></thead>
+				<tbody><tr data-list="email-entries"><td data-label="Queued (UTC)" data-bind:text="createdAt"></td><td data-label="Scheduled (UTC)" data-bind:text="scheduledToSendAt"></td><td data-label="Sent (UTC)" data-bind:text="sentAt"></td><td data-label="Deployment" data-bind:text="title"></td><td data-label="To email"><span data-sudo="email" data-bind:id="recipientId" data-bind:text="toEmail"></span></td><td data-label="Subject" data-bind:text="subject"></td><td data-label="Status"><span class="status" data-bind:data-status="statusKind" data-bind:text="statusLabel"></span></td></tr></tbody>
+			</table>
 		</div>
+		<div class="security-events-empty" hidden data-bind:hidden="?!emptyEmails" role="status"><span class="security-events-empty-icon" aria-hidden="true">◇</span><h3>No emails to show</h3><p>No emails match these dates and filters. Newly queued emails will appear here.</p><a class="control" data-bind:href="resetEmails">Show the last 30 days</a></div>
+		<footer class="toolbar" hidden data-bind:hidden="?!hasPagination"><span>Page <span data-bind:text="emailPage"></span></span><nav class="actions" aria-label="Email log pages"><a class="control" hidden data-bind:hidden="?!hasPrevious" data-bind:href="previousEmails">Previous page</a><a class="control" hidden data-bind:hidden="?!hasNext" data-bind:href="nextEmails">Next page</a></nav></footer>
 	</section>
-	<section class="settings-panel stack">
-		<h2>Templates</h2>
-		<form method="get" class="toolbar">
-			<label class="grow"><span>Template</span><select name="template" disabled><option value="verify">Verify account</option><option value="welcome">Welcome</option><option value="security-code">Security code</option><option value="password-changed">Password changed</option></select></label>
-			<button type="submit" disabled>Edit template</button>
-		</form>
-		<p>All applications edits the organisation default. Selecting an application creates its own override.</p>
-		<form method="post" class="form-fields stack compact">
+	<div class="card-grid email-settings">
+		<div class="email-settings-column stack">
+			<section class="settings-panel stack" id="senders" data-flux="update">
+				<h2>Senders</h2>
+				<form method="get" action="/admin/emails/#senders" class="form-fields sender-picker" data-flux="auto submit-queue">
+					<input type="hidden" name="application" data-bind:value="applicationId" />
+					<div class="field-row">
+						<label><span>Sender</span><select name="sender" data-bind:disabled="?!hasSenders"><option value="" hidden data-bind:hidden="?hasSenders">No configured senders</option><option data-list="configured-senders" data-bind:value="id" data-bind:text="label" data-bind:selected="?selected"></option></select></label>
+						<div class="actions"><button type="submit" data-flux="autosave" data-bind:disabled="?!hasSenders">Choose sender</button></div>
+					</div>
+				</form>
+				<p role="status" hidden data-bind:hidden="?!senderMessage" data-bind:text="senderMessage"></p>
+				<p role="alert" hidden data-bind:hidden="?!senderError" data-bind:text="senderError"></p>
+				<form method="post" class="form-fields stack compact" data-bind:action="senderUrl" aria-label="Sender settings">
+					<label><span>From name</span><input type="text" name="senderName" data-bind:value="senderName" maxlength="256" required data-bind:disabled="?!hasSenders" /></label>
+					<fieldset class="form-fields stack compact" data-bind:disabled="?!hasSenders">
+						<legend>Deployment sender details</legend>
+						<div class="field-row">
+							<label for="sender-prefix"><span>Sender email prefix</span><div class="input-group"><input id="sender-prefix" name="emailPrefix" data-bind:value="senderPrefix" maxlength="64" pattern="^[A-Za-z0-9]+(?:[._+\-][A-Za-z0-9]+)*$" placeholder="security" autocomplete="off" spellcheck="false" aria-describedby="sender-prefix-help" required /><input disabled data-email-domain data-span="narrow" aria-label="Sender email domain" data-bind:value="senderDomain" /></div><small id="sender-prefix-help">This is the email address that login and MFA codes are sent from. The domain is configured on the deployment screen.</small></label>
+							<label><span>Support &amp; reply-to email address</span><input type="email" name="emailReplyTo" maxlength="254" data-bind:value="senderReplyTo" /><small>If users require support, or if they reply to login emails.</small></label>
+						</div>
+						<div class="actions"><button type="submit" name="do" value="save_sender" class="primary">Save sender settings</button></div>
+					</fieldset>
+				</form>
+				<p>—</p>
+				<details class="settings-disclosure">
+					<summary>DNS records</summary>
+					<div class="settings-content">
+						<dl class="key-values">
+							<div>
+								<dt>SPF</dt>
+								<dd>—</dd>
+							</div>
+							<div>
+								<dt>DKIM</dt>
+								<dd>—</dd>
+							</div>
+							<div>
+								<dt>Verification TXT</dt>
+								<dd>—</dd>
+							</div>
+						</dl>
+					</div>
+				</details>
+				<div class="card-grid">
+					<form method="post" class="form-fields stack compact">
 
-			<label><span>Subject</span><input type="text" name="templateSubject" required disabled /></label>
-			<label><span>HTML template</span><textarea name="templateContent" rows="8" required disabled></textarea></label>
-			<div class="actions">
-				<button type="submit" class="primary" disabled>Save settings</button>
-			</div>
-		</form>
-		<details class="settings-disclosure">
-			<summary>Preview template</summary>
-			<div class="settings-content">
-				<iframe class="email-preview" sandbox="" title="Email template preview"></iframe>
-			</div>
-		</details>
-	</section>
-	<section class="settings-panel stack">
-		<h2>Delivery</h2>
-		<form method="get" class="filter-grid">
-			<label><span>Recipient</span><input type="search" name="recipient" placeholder="Email address" disabled /></label>
-			<label><span>Template</span><select name="deliveryTemplate" disabled><option value="all">All templates</option><option value="verify">Verify account</option><option value="welcome">Welcome</option><option value="security-code">Security code</option></select></label>
-			<label><span>Status</span><select name="deliveryStatus" disabled><option value="all">All statuses</option><option value="opened">Opened</option><option value="delivered">Delivered</option><option value="bounced">Bounced</option></select></label>
-			<label><span>Date</span><input type="date" name="deliveryDate" disabled /></label>
-			<div class="actions">
-				<button type="submit" disabled>Filter deliveries</button>
-			</div>
-		</form>
-		<p>Use the application selector in the sidebar to filter by application.</p>
-		<ul class="record-list">
+						<div class="actions">
+							<button type="submit" class="primary" disabled>Check DNS</button>
+						</div>
+					</form>
+					<form method="post" class="form-fields stack compact">
 
-		</ul>
-		<p>No deliveries match these filters.</p>
-	</section>
-	<section class="settings-panel stack">
-		<h2>Custom SMTP</h2>
-		<form method="post" class="form-fields stack compact">
-
-			<label><span>SMTP host</span><input type="text" name="smtpHost" required disabled /></label>
-			<label><span>Port</span><input type="number" name="smtpPort" min="1" max="65535" required disabled /></label>
-			<label><span>Username</span><input type="text" name="smtpUsername"  disabled /></label>
-			<label><span>Password (leave empty to keep saved value)</span><input type="password" name="smtpPassword" autocomplete="new-password" disabled /></label>
-			<div class="actions">
-				<button type="submit" class="primary" disabled>Save settings</button>
-			</div>
-		</form>
-		<p>These credentials are deployment values and are never used to connect to an SMTP server.</p>
-	</section>
+						<p>Preview sending a test to your signed-in email address.</p>
+						<div class="actions">
+							<button type="submit" class="primary" disabled>Queue test email</button>
+						</div>
+					</form>
+				</div>
+			</section>
+			<section class="settings-panel stack" id="smtp" aria-labelledby="smtp-title">
+				<h2 id="smtp-title">Custom SMTP</h2>
+				<form method="get" action="/admin/emails/#smtp" class="toolbar" aria-label="SMTP scope">
+					<input type="hidden" name="application" data-bind:value="applicationId" />
+					<label class="grow"><span>SMTP configuration</span><select name="smtpDeployment"><option value="" data-bind:selected="?smtpApplication">Application default</option><option data-list="smtp-deployments" data-bind:value="id" data-bind:text="title" data-bind:selected="?selected"></option></select></label>
+					<button type="submit">Choose configuration</button>
+				</form>
+				<p>Application defaults apply to all deployments unless a deployment has its own custom SMTP details. Unchecking the option restores inherited settings: provider settings for the application, or application settings for a deployment.</p>
+				<p role="status" hidden data-bind:hidden="?!smtpMessage" data-bind:text="smtpMessage"></p>
+				<p role="alert" hidden data-bind:hidden="?!smtpError" data-bind:text="smtpError"></p>
+				<form method="post" class="form-fields stack compact" data-bind:action="smtpUrl" aria-label="Custom SMTP settings">
+					<label class="checkbox-field"><input type="checkbox" name="smtpEnabled" value="yes" data-bind:checked="?smtpEnabled" /><span>Use custom SMTP details</span></label>
+					<fieldset class="stack compact" data-enable-when="smtpEnabled" data-keep-visible disabled data-bind:disabled="?!smtpEnabled">
+						<legend>SMTP details</legend>
+						<label><span>SMTP host</span><input type="text" name="smtpHost" maxlength="253" required data-bind:value="smtpHost" /></label>
+						<label><span>Port</span><input type="number" name="smtpPort" min="1" max="65535" required data-bind:value="smtpPort" /></label>
+						<label><span>Username</span><input type="text" name="smtpUsername" maxlength="256" autocomplete="off" data-bind:value="smtpUsername" /></label>
+						<label><span>Password (leave empty to keep saved value)</span><input type="password" name="smtpPassword" maxlength="4096" autocomplete="new-password" /></label>
+					</fieldset>
+					<div class="actions"><button type="submit" name="do" value="save_smtp" class="primary">Save SMTP settings</button></div>
+				</form>
+			</section>
+		</div>
+		<section class="settings-panel stack" id="templates" data-flux="update" aria-labelledby="templates-title">
+			<h2 id="templates-title">Templates</h2>
+			<form method="get" action="/admin/emails/#templates" class="form-fields template-picker" data-flux="auto submit-queue" aria-label="Email template selection">
+				<input type="hidden" name="application" data-bind:value="applicationId" />
+				<div class="field-row">
+					<label><span>Template</span><select name="template"><option data-list="email-template-options" data-bind:value="value" data-bind:text="label" data-bind:selected="?selected"></option></select></label>
+					<div class="actions"><button type="submit" data-flux="autosave">Choose template</button></div>
+				</div>
+				<div class="field-row">
+					<label><span>Template configuration</span><select name="templateDeployment"><option value="" data-bind:selected="?templateApplication">Application default</option><option data-list="template-deployments" data-bind:value="id" data-bind:text="title" data-bind:selected="?selected"></option></select></label>
+				</div>
+			</form>
+			<p>Application defaults apply across deployments. Select a deployment to edit its override; otherwise the application template is inherited.</p>
+			<p role="status" hidden data-bind:hidden="?!templateMessage" data-bind:text="templateMessage"></p>
+			<p role="alert" hidden data-bind:hidden="?!templateError" data-bind:text="templateError"></p>
+			<form method="post" class="form-fields stack compact" data-bind:action="templateUrl" data-flux="submit-queue" aria-label="Email template editor">
+				<label><span>Subject</span><input type="text" name="templateSubject" maxlength="256" required data-bind:value="templateSubject" /></label>
+				<label><span>HTML template</span><textarea name="templateContent" rows="12" maxlength="1048576" required spellcheck="false" data-bind:text="templateContent"></textarea></label>
+				<p class="muted">Available placeholders: {{siteName}}, {{applicationName}}, {{code}}, {{email}}, {{loginUrl}}, {{authenticationInstructions}}, {{providerHost}}, {{logoPath}}, {{darkLogoPath}}, {{pageColour}}, {{panelColour}}, {{borderColour}}, {{bodyColour}}, {{titleColour}}, {{mutedColour}}, {{codeColour}}, {{codeBackgroundColour}}, {{codeBorderColour}}, {{darkPageColour}}, {{darkPanelColour}}, {{darkBorderColour}}, {{darkBodyColour}}, {{darkTitleColour}}, {{darkMutedColour}}, {{darkCodeColour}}, {{darkCodeBackgroundColour}}, {{darkCodeBorderColour}}, {{darkLogoBackgroundColour}}.</p>
+				<div class="actions">
+					<button type="submit" name="do" value="preview_template" formnovalidate data-flux="autosave">Update preview</button>
+					<span class="muted" data-bind:hidden="?templateCustom">Using default template</span>
+					<button type="submit" name="do" value="reset_template" class="template-reset" formnovalidate hidden data-bind:hidden="?!templateCustom">Reset to default</button>
+					<button type="submit" name="do" value="save_template" class="primary">Save settings</button>
+				</div>
+			</form>
+			<details class="settings-disclosure" data-template-preview data-bind:open="?templatePreviewOpen">
+				<summary>Preview template</summary>
+				<div class="settings-content">
+					<iframe class="email-preview" sandbox="" title="Email template preview" data-bind:srcdoc="templatePreview"></iframe>
+				</div>
+			</details>
+		</section>
+	</div>
 </main>

@@ -110,6 +110,50 @@ class FeatureContext extends MinkContext {
 			"The security form submission must finish navigating.");
 	}
 
+	#[Then('the SMTP details should be :state')]
+	public function smtpDetailsState(string $state):void {
+		$enabled = $state === "enabled";
+		$expected = $enabled ? "false" : "true";
+		$this->expect((bool)$this->getSession()->evaluateScript("(() => {
+			const group = document.querySelector('#smtp fieldset');
+			return group.disabled === $expected && !group.hidden;
+		})()"), "SMTP fields should be $state and visible.");
+		$this->expect($this->getSession()->getPage()->findField("smtpPassword")->getValue() === "",
+			"The saved SMTP password must never be returned to the browser.");
+	}
+
+	#[Given('the selected application has email deliveries')]
+	public function emailDeliveryFixtures():void {
+		$this->securityEventFixtures();
+		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
+		$insert = $database->prepare("insert into Email (id,deploymentId,toEmail,createdAt,scheduledToSendAt,sentAt,deliveryFailedAt) values (?, 'security-dev', 'recipient@example.test', ?, ?, ?, ?)");
+		$now = gmdate("Y-m-d H:i:s");
+		for($index = 0; $index < 27; $index++) {
+			$insert->execute(["email-$index", $now, $now, null, null]);
+		}
+		$insert->execute(["email-sent", $now, $now, $now, null]);
+		$insert->execute(["email-error", $now, $now, null, $now]);
+		$database->exec("update Email set subject = 'Login instructions'");
+		$database->exec("update Email set subject = 'Welcome to Authwave' where id = 'email-sent'");
+	}
+
+	#[Then('the email log should contain :count rows')]
+	public function emailLogRows(int $count):void {
+		if(getenv("BEHAT_JAVASCRIPT") === "1") {
+			$this->expect($this->getSession()->wait(5000,
+				"document.querySelectorAll('#email-log tbody tr').length === $count"),
+				"The email log must finish updating before its rows are checked.");
+		}
+		$this->assertSession()->elementsCount("css", "#email-log tbody tr", $count);
+		$this->expect((bool)$this->getSession()->evaluateScript('(() => {
+			const panel = document.querySelector("#email-log").getBoundingClientRect();
+			const main = document.querySelector("#main-content");
+			const style = getComputedStyle(main);
+			const width = main.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+			return Math.abs(panel.width - width) < 3;
+		})()'), "The email log should use the full content width.");
+	}
+
 	#[Given('the selected application has recent security events')]
 	public function securityEventFixtures():void {
 		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
@@ -166,7 +210,7 @@ class FeatureContext extends MinkContext {
 
 	#[When('I set the :field filter in :panel to :value')]
 	public function securityLogFilter(string $field, string $panel, string $value):void {
-		$this->expect(in_array($panel, ["audit", "security-events"], true), "Choose a security log panel.");
+		$this->expect(in_array($panel, ["audit", "security-events", "email-log"], true), "Choose a log panel.");
 
 		if(getenv("BEHAT_JAVASCRIPT") === "1") {
 			$this->getSession()->executeScript('window.securityFiltersUpdated = false; document.addEventListener("flux:after-render", () => window.securityFiltersUpdated = true, {once: true})');
@@ -1905,14 +1949,6 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 	public function fillDeployment(string $summary, \Behat\Gherkin\Node\TableNode $table):void {
 		$details = $this->deploymentDetails($summary);
 		$rows = $table->getRows();
-		$provided = array_column($rows, 0);
-		// Older scenarios omit the now-required email identity fields.
-		foreach(["Sender email prefix" => "security",
-			"Support & reply-to email address" => "support@example.test"] as $field => $value) {
-			if(!in_array($field, $provided, true) && $details->findField($field)->getValue() === "") {
-				$rows []= [$field, $value];
-			}
-		}
 		foreach($rows as [$field, $value]) {
 			$details->fillField($field, $value);
 			$this->getSession()->wait(5000, 'document.querySelector("application-deployments .flux-form-waiting, application-deployments .input-changed") === null');
@@ -2267,52 +2303,140 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 		})()"), "Production activity must show the deployment's own name using the shared green badge.");
 	}
 
-	#[Then('deployment :summary should show sender domain :domain')]
-	public function deploymentSenderDomain(string $summary, string $domain):void {
-		$field = $this->deploymentDetails($summary)->find("css", "[data-email-domain]");
-		$this->expect($field->getValue() === $domain, "The sender suffix must follow the Authwave host; got " . $field->getValue());
-		$this->expect($field->hasAttribute("disabled") && !$field->hasAttribute("name"),
-			"The fixed suffix must be disabled and excluded from form submission.");
+	#[Then('the email template subject should be :subject')]
+	public function emailTemplateSubject(string $subject):void {
+		$form = $this->assertSession()->elementExists("css", "#templates form[method=post]");
+		$this->expect($form->findField("templateSubject")->getValue() === $subject,
+			"The template editor must show the selected subject.");
 	}
 
-	#[Then('deployment :summary email settings should be :prefix and :replyTo')]
-	public function deploymentEmailSettings(string $summary, string $prefix, string $replyTo):void {
-		$details = $this->deploymentDetails($summary);
-		$this->expect($details->findField("Sender email prefix")->getValue() === $prefix,
-			"Sender prefix was not saved.");
-		$this->expect($details->findField("Support & reply-to email address")->getValue() === $replyTo,
-			"Reply-To address was not saved.");
+	#[When('I open the email template preview')]
+	public function openEmailTemplatePreview():void {
+		$details = $this->assertSession()->elementExists("css", "#templates details");
+		if(!$details->hasAttribute("open")) $details->find("css", "summary")->click();
 	}
 
-	#[Then('the deployment email group should fit narrow and wide screens')]
-	public function deploymentEmailGroupLayout():void {
-		foreach([390, 1440] as $width) {
-			$this->getSession()->resizeWindow($width, 1000);
-			file_put_contents("/tmp/authwave-email-" . $width . ".png", $this->getSession()->getScreenshot());
-			$this->expect($this->getSession()->evaluateScript('(() => {
-				const group = document.querySelector("application-deployments details[open] .input-group");
-				const bounds = group.getBoundingClientRect();
-				const replyTo = group.closest(".field-row").querySelector("input[name=emailReplyTo]").getBoundingClientRect();
-				const controls = [...group.querySelectorAll("input")].map(input => input.getBoundingClientRect());
-				return bounds.left >= 0 && bounds.right <= innerWidth
-					&& (innerWidth < 1000 || Math.abs(controls[0].top - replyTo.top) <= 2)
-					&& controls.every(control => control.width > 40)
-					&& Math.abs(controls[0].right - controls[1].left) <= 2;
-			})()'), "The email input group must fit and share an edge.");
+	#[When('I submit the template action :button')]
+	public function submitEmailTemplate(string $button):void {
+		if(getenv("BEHAT_JAVASCRIPT") === "1") {
+			$this->getSession()->executeScript('window.templateUpdated = false; document.addEventListener("flux:after-render", () => window.templateUpdated = true, {once: true})');
+		}
+		$this->assertSession()->elementExists("css", "#templates form[method=post]")->pressButton($button);
+		if(getenv("BEHAT_JAVASCRIPT") === "1") {
+			$this->expect($this->getSession()->wait(5000, "window.templateUpdated === true"),
+				"Template submission must complete before checking its result.");
 		}
 	}
 
-	#[When('I update the email preview for deployment :summary')]
-	public function previewDeploymentEmail(string $summary):void {
-		$this->deploymentDetails($summary)->find("css", "button[value=preview-deployment]")->press();
-		$this->getSession()->wait(5000, 'document.querySelector("application-deployments .flux-form-waiting") === null');
+	#[When('I choose email template :label')]
+	public function chooseEmailTemplate(string $label):void {
+		$this->chooseEmailTemplateControl("Template", $label);
 	}
 
-	#[Then('no deployment changes should have been saved')]
-	public function noDeploymentChangesSaved():void {
-		$database = new PDO("sqlite:" . getenv("BEHAT_DATABASE"));
-		$count = $database->query("select count(*) from Audit where action in ('DEPLOYMENT_CREATED', 'DEPLOYMENT_UPDATED')")->fetchColumn();
-		$this->expect((int)$count === 0, "Previewing must not create or update a deployment.");
+	#[When('I choose template configuration :label')]
+	public function chooseTemplateConfiguration(string $label):void {
+		$this->chooseEmailTemplateControl("Template configuration", $label);
+	}
+
+	private function chooseEmailTemplateControl(string $field, string $label):void {
+		$form = $this->assertSession()->elementExists("css", ".template-picker");
+		if(getenv("BEHAT_JAVASCRIPT") === "1") {
+			$this->getSession()->executeScript('window.templateUpdated = false; document.addEventListener("flux:after-render", () => window.templateUpdated = true, {once: true})');
+			$form->selectFieldOption($field, $label);
+			$this->expect($this->getSession()->wait(5000, "window.templateUpdated === true"),
+				"Template selection must update through Flux.");
+			$this->expect(!$this->getSession()->getPage()->findButton("Choose template")->isVisible(),
+				"Flux should hide the automatic template selection button.");
+		}
+		else {
+			$form->selectFieldOption($field, $label);
+			$form->pressButton("Choose template");
+		}
+	}
+
+	#[When('I edit the email template:')]
+	public function editEmailTemplate(\Behat\Gherkin\Node\TableNode $table):void {
+		foreach($table->getRows() as [$field, $value]) {
+			if(getenv("BEHAT_JAVASCRIPT") === "1") {
+				$this->getSession()->executeScript('window.templateUpdated = false; document.addEventListener("flux:after-render", () => window.templateUpdated = true, {once: true})');
+			}
+			$form = $this->assertSession()->elementExists("css", "#templates form[method=post]");
+			$form->fillField($field, $value);
+			$this->getSession()->getPage()->find("css", "#templates h2")->click();
+			if(getenv("BEHAT_JAVASCRIPT") === "1") {
+				$this->expect($this->getSession()->wait(5000, "window.templateUpdated === true"),
+					"Template edits must update the preview through Flux.");
+			}
+			else {
+				$form->pressButton("Update preview");
+			}
+		}
+	}
+
+	#[Then('the email template preview should contain :text')]
+	public function emailTemplatePreview(string $text):void {
+		$frame = $this->assertSession()->elementExists("css", "#templates iframe");
+		$srcdoc = $frame->getAttribute("srcdoc");
+		$this->expect(str_contains($srcdoc, $text), "The template preview must contain $text.");
+		$this->expect(!str_contains($srcdoc, "{{"), "The preview must replace its sample placeholders.");
+		$this->expect($frame->getAttribute("sandbox") === "", "Email previews must remain sandboxed.");
+	}
+
+	#[Then('the email template preview should stay open')]
+	public function emailTemplatePreviewOpen():void {
+		$this->expect($this->assertSession()->elementExists("css", "#templates details")->hasAttribute("open"),
+			"Live preview updates must preserve the disclosure state.");
+	}
+
+	#[When('I choose sender :label')]
+	public function chooseSender(string $label):void {
+		$form = $this->assertSession()->elementExists("css", ".sender-picker");
+		$control = $form->findField("Sender");
+		$option = $control->find("named", ["option", $label]);
+		if($control->getValue() === $option->getAttribute("value")) {
+			return;
+		}
+		if(getenv("BEHAT_JAVASCRIPT") === "1") {
+			$this->getSession()->executeScript('window.senderUpdated = false; document.addEventListener("flux:after-render", () => window.senderUpdated = true, {once: true})');
+			$control->selectOption($label);
+			$this->expect($this->getSession()->wait(5000, "window.senderUpdated === true"),
+				"Selecting a sender must update its fields through Flux.");
+			$this->expect(!$this->getSession()->getPage()->findButton("Choose sender")->isVisible(),
+				"Flux should hide the automatic sender selection button.");
+		}
+		else {
+			$control->selectOption($label);
+			$form->pressButton("Choose sender");
+		}
+	}
+
+	#[Then('the sender domain should be :domain')]
+	public function senderDomain(string $domain):void {
+		$field = $this->assertSession()->elementExists("css", "#senders [data-email-domain]");
+		$this->expect($field->getValue() === $domain, "The sender domain must come from its deployment.");
+		$this->expect($field->hasAttribute("disabled") && !$field->hasAttribute("name"),
+			"The sender domain must remain read-only.");
+	}
+
+	#[When('I save the sender without browser validation')]
+	public function saveSenderWithoutValidation():void {
+		$this->getSession()->executeScript('document.querySelector("#senders form[method=post]").noValidate = true');
+		$this->getSession()->getPage()->pressButton("Save sender settings");
+	}
+
+	#[Then('the sender email group should fit narrow and wide screens')]
+	public function senderEmailLayout():void {
+		foreach([390, 1440] as $width) {
+			$this->getSession()->resizeWindow($width, 1000);
+			$this->expect((bool)$this->getSession()->evaluateScript('(() => {
+				const group = document.querySelector("#senders .input-group");
+				const bounds = group.getBoundingClientRect();
+				const controls = [...group.querySelectorAll("input")].map(input => input.getBoundingClientRect());
+				return bounds.left >= 0 && bounds.right <= innerWidth
+					&& controls.every(control => control.width > 40)
+					&& Math.abs(controls[0].right - controls[1].left) <= 2;
+			})()'), "Sender inputs must fit the viewport and share an edge.");
+		}
 	}
 
 	#[Then('stored deployment :title should use host :host')]
@@ -2321,12 +2445,6 @@ JS), "The deployment badge must be above the main content and fit the viewport."
 		$query = $database->prepare("select providerHost from ApplicationDeployment where title = ?");
 		$query->execute([$title]);
 		$this->expect($query->fetchColumn() === $host, "The stored host must change only when saved.");
-	}
-
-	#[Then('deployment :summary should have Reply-To placeholder :placeholder')]
-	public function deploymentReplyToPlaceholder(string $summary, string $placeholder):void {
-		$this->expect($this->deploymentDetails($summary)->findField("Support & reply-to email address")->getAttribute("placeholder") === $placeholder,
-			"PHP must render the inherited Reply-To placeholder.");
 	}
 
 	#[When('I change the host to :host and immediately save deployment :summary')]

@@ -27,6 +27,28 @@ class SecurityScoreTest extends TestCase {
 		self::assertSame([0, 0, 0], array_column($sut->checks, "adjustment"));
 	}
 
+	#[DataProvider("productionHosts")]
+	public function testConstruct_awardsProductionClientCredit(string $host, bool $markedProduction,
+		int $expectedAdjustment):void {
+		$application = new Application("app", "App", null,
+			productionApplicationDeploymentId: $markedProduction ? "prod" : null);
+		$deployment = new ApplicationDeployment("prod", $application, "Production", "secret", $host, "/");
+		$sut = new SecurityScore(null, $deployment, [], "/admin/applications/app/");
+
+		$checks = array_filter($sut->checks,
+			fn($check) => $check->description === "A production client is created, using HTTPS.");
+		self::assertCount($expectedAdjustment === 1 ? 1 : 0, $checks);
+		self::assertSame($expectedAdjustment, array_sum(array_column($sut->checks, "adjustment")));
+	}
+
+	public static function productionHosts():iterable {
+		yield "explicit HTTPS" => ["https://login.example.com", true, 1];
+		yield "no scheme" => ["login.example.com", true, 1];
+		yield "explicit HTTP" => ["http://login.example.com", true, -1];
+		yield "uppercase HTTP" => ["HTTP://login.example.com", true, -1];
+		yield "not marked production" => ["login.example.com", false, 0];
+	}
+
 	public static function configurations():iterable {
 		$application = new Application("app", "App", null, productionApplicationDeploymentId: "prod");
 		$https = new ApplicationDeployment("prod", $application, "Production", "secret", "https://client.test", "/", domainVerified: true);
@@ -47,10 +69,10 @@ class SecurityScoreTest extends TestCase {
 		yield "unknown controls stay C" => [null, null, [], "C"];
 		yield "managed traffic alone earns no bonus" => [null, null, [$managed], "C"];
 		yield "policy raises one grade" => [$policy, null, [], "B"];
-		yield "verified production HTTPS raises one grade" => [null, $https, [], "B"];
-		yield "implicit HTTPS follows the application's URL behaviour" => [null, $implicitHttps, [], "B"];
+		yield "verified production HTTPS raises two grades" => [null, $https, [], "A"];
+		yield "implicit HTTPS follows the application's URL behaviour" => [null, $implicitHttps, [], "A"];
 		yield "both improvements reach A" => [$policy, $https, [$managed], "A"];
-		yield "unverified production stays neutral" => [null, $unverified, [], "C"];
+		yield "unverified production HTTPS earns credit" => [null, $unverified, [], "B"];
 		yield "production HTTP lowers one grade" => [null, $unverifiedHttp, [], "D"];
 		yield "verified HTTP production earns domain credit separately" => [null, $http, [], "C"];
 		yield "verified development earns no domain credit" => [null, $development, [], "C"];
@@ -60,6 +82,6 @@ class SecurityScoreTest extends TestCase {
 		yield "long idle lowers one grade" => [$longIdle, null, [], "D"];
 		yield "two weaknesses reach E" => [null, $unverifiedHttp, [$legacy], "E"];
 		yield "three weaknesses reach F" => [$longMaximum, $unverifiedHttp, [$legacy], "F"];
-		yield "findings offset improvements" => [$policy, $https, [$legacy], "B"];
+		yield "findings offset improvements" => [$policy, $https, [$legacy], "A"];
 	}
 }

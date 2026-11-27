@@ -2,6 +2,8 @@
 namespace Authwave\Email;
 
 use Authwave\Model\ApplicationDeployment;
+use Authwave\Admin\Dashboard\ReportingPeriod;
+use InvalidArgumentException;
 use Authwave\Model\EmailSettings;
 use Authwave\Security\Audit;
 use Authwave\Security\Action;
@@ -28,7 +30,43 @@ readonly class EmailRepository {
 		private Audit $audit,
 		private ?Mailer $mailer = null,
 		private bool $ignoreTransportErrors = false,
+		private ?EmailTemplateRepository $templates = null,
 	) {}
+
+	public function log(User $actor, string $applicationId, ReportingPeriod $period,
+		string $deploymentId = "", string $toEmail = "", string $status = "", int $page = 1,
+		string $subject = ""):EmailLog {
+		if(!in_array($status, ["", "pending", "sent", "error"], true)
+		|| $page < 1 || $page > intdiv(PHP_INT_MAX, 25)
+		|| strlen($toEmail) > 256 || strlen($subject) > 256) {
+			throw new InvalidArgumentException("Choose valid email filters and page.");
+		}
+
+		$rows = $this->database->fetchAll("log", [
+			"actorId" => $actor->id, "applicationId" => $applicationId,
+			"start" => $period->start, "end" => $period->end,
+			"deploymentFilter" => $deploymentId, "deploymentId" => $deploymentId,
+			"recipientFilter" => $toEmail, "toEmail" => $toEmail,
+			"subjectFilter" => $subject, "subject" => $subject,
+			"statusFilter" => $status, "status" => $status,
+			"limit" => 26, "offset" => ($page - 1) * 25,
+		]);
+		$entries = [];
+		$hasNext = false;
+		foreach($rows as $row) {
+			if(count($entries) === 25) {
+				$hasNext = true;
+				break;
+			}
+			$entry = [];
+			foreach(["id", "createdAt", "scheduledToSendAt", "sentAt", "title",
+				"toEmail", "subject", "status"] as $key) {
+				$entry[$key] = $row->getString($key) ?? "—";
+			}
+			$entries []= $entry;
+		}
+		return new EmailLog($entries, $page, $hasNext);
+	}
 
 	/** @param array<string, string> $kvp */
 	public function schedule(
@@ -60,7 +98,8 @@ readonly class EmailRepository {
 	):string {
 		$toAddress = (string)new EmailAddress($toAddress);
 		$fromAddress = (string)new EmailAddress($fromAddress);
-		$rendered = (new EmailTemplate())->render($templateName, $kvp);
+		$rendered = $this->templates?->render($deployment, $templateName, $kvp)
+			?? (new EmailTemplate())->render($templateName, $kvp);
 		$when ??= new DateTime();
 
 		$emailId = new Ulid();
@@ -70,7 +109,7 @@ readonly class EmailRepository {
 			"scheduledToSendAt" => $when,
 			"subject" => $rendered["subject"],
 			"toEmail" => $toAddress,
-			"senderName" => $fromName,
+			"senderName" => $deployment->getSenderName($fromName),
 			"senderAddress" => $fromAddress,
 			"textContent" => $rendered["text"],
 			"htmlContent" => $rendered["html"],
@@ -94,14 +133,16 @@ readonly class EmailRepository {
 		$deployment = $recipient->deployment;
 		$url = (string)$deployment->getClientReturnUri();
 
-		return $this->queue($actor, $deployment, $recipient->email, "loginInstructions.md", [
+		return $this->queue($actor, $deployment, $recipient->email, "loginInstructions.html", [
+			"siteName" => $deployment->application->name,
 			"applicationName" => $deployment->application->name,
 			"email" => $recipient->email,
 			"loginUrl" => $url,
 			"authenticationInstructions" => $recipient->hash === null
 				? "Choose the email security code option. We will send a code to your inbox."
 				: "Use the password arranged with your administrator, or choose an email security code.",
-		], $deployment->getSenderAddress() ?? self::DEFAULT_EMAIL_FROM_ADDRESS,
+		] + (new EmailBranding())->placeholders($deployment),
+			$deployment->getSenderAddress() ?? self::DEFAULT_EMAIL_FROM_ADDRESS,
 			$deployment->application->name);
 	}
 
@@ -144,19 +185,26 @@ readonly class EmailRepository {
 				);
 			}
 
-			$sentMessageId = $this->send(
-				$row->getString("senderName"),
-				$row->getString("senderAddress"),
-				$row->getString("toEmail"),
-				$row->getString("subject"),
-				$row->getString("textContent"),
-				$row->getString("htmlContent"),
-				$emailSettings,
-				$row->getString("clientHost") ?? "",
-				$row->getString("emailReplyTo"),
-			);
+			try {
+				$sentMessageId = $this->send(
+					$row->getString("senderName"),
+					$row->getString("senderAddress"),
+					$row->getString("toEmail"),
+					$row->getString("subject"),
+					$row->getString("textContent"),
+					$row->getString("htmlContent"),
+					$emailSettings,
+					$row->getString("clientHost") ?? "",
+					$row->getString("emailReplyTo"),
+				);
+			}
+			catch(TransportExceptionInterface $exception) {
+				$this->database->update("markAsFailed", ["id" => $row->getString("id")]);
+				throw $exception;
+			}
 
 			if($sentMessageId === null) {
+				$this->database->update("markAsFailed", ["id" => $row->getString("id")]);
 				continue;
 			}
 
@@ -187,9 +235,9 @@ readonly class EmailRepository {
 	):?string {
 		$transport = Transport::fromDsn(implode("", [
 			"smtp://",
-			$emailSettings->username,
+			rawurlencode($emailSettings->username ?? ""),
 			":",
-			$emailSettings->password,
+			rawurlencode($emailSettings->password ?? ""),
 			"@",
 			$emailSettings->host,
 			":",

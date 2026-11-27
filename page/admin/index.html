@@ -87,7 +87,7 @@
 			</table></div>
 		</details>
 	</section>
-	<section id="activity" class="activity-panel" aria-labelledby="activity-title">
+	<section id="activity" class="activity-panel dashboard-panel" aria-labelledby="activity-title">
 		<header class="panel-heading"><h2 id="activity-title">Activity</h2></header>
 		<form method="get" data-flux="auto submit-queue" class="toolbar panel-body activity-controls" aria-label="Activity filters">
 			<input type="hidden" name="application" data-bind:value="applicationId" />
@@ -125,37 +125,43 @@
 		</footer>
 	</section>
 	<div class="card-grid">
-		<section id="admin-top-usage" class="settings-panel stack" aria-labelledby="top-usage-title">
-			<h2 id="top-usage-title">Top usage</h2>
-			<p class="muted">Up to five users by successful logins in this period.</p>
-			<table class="summary-table"><thead><tr><th scope="col">User</th><th scope="col">Logins</th></tr></thead>
-				<tbody><tr data-list="top-users">
-					<td><span data-sudo="email" data-bind:id="emailId" data-bind:text="email"></span><small><span data-bind:text="title"></span> · <a data-bind:href="userUri">Details</a></small></td>
-					<td data-bind:text="logins"></td>
-				</tr></tbody>
-			</table>
-			<p hidden data-bind:hidden="?!empty-top-users">No successful logins in this period.</p>
-			<footer><a class="card-link" data-bind:href="usersUri">See all users <span data-icon="arrow-right" aria-hidden="true"></span></a></footer>
+		<section id="admin-top-usage" class="dashboard-panel" aria-labelledby="top-usage-title">
+			<header class="panel-heading"><h2 id="top-usage-title">Top usage</h2></header>
+			<div class="panel-body stack">
+				<p class="muted">Up to five users by successful logins in this period.</p>
+				<table class="summary-table"><thead><tr><th scope="col">User</th><th scope="col">Logins</th></tr></thead>
+					<tbody><tr data-list="top-users">
+						<td><span data-sudo="email" data-bind:id="emailId" data-bind:text="email"></span><small><span data-bind:text="title"></span> · <a data-bind:href="userUri">Details</a></small></td>
+						<td data-bind:text="logins"></td>
+					</tr></tbody>
+				</table>
+				<p hidden data-bind:hidden="?!empty-top-users">No successful logins in this period.</p>
+			</div>
+			<footer class="panel-body"><a class="card-link" data-bind:href="usersUri">See all users <span data-icon="arrow-right" aria-hidden="true"></span></a></footer>
 		</section>
-		<section id="admin-new-users" class="settings-panel stack" aria-labelledby="new-users-title">
-			<h2 id="new-users-title">New users</h2>
-			<p class="muted">Created in this period, newest first.</p>
-			<ul class="record-list"><li data-list="new-users">
-				<span data-sudo="email" data-bind:id="emailId" data-bind:text="email"></span> <a class="control icon-button" data-icon="edit" data-bind:href="userUri"><span>View user</span></a>
-				<small data-bind:text="title"></small><time data-bind:text="createdAt"></time>
-			</li></ul>
-			<p hidden data-bind:hidden="?!empty-new-users">No users were created in this period.</p>
-			<footer><a class="card-link" data-bind:href="newUsersUri">See all users <span data-icon="arrow-right" aria-hidden="true"></span></a></footer>
+		<section id="admin-new-users" class="dashboard-panel" aria-labelledby="new-users-title">
+			<header class="panel-heading"><h2 id="new-users-title">New users</h2></header>
+			<div class="panel-body stack">
+				<p class="muted">Created in this period, newest first.</p>
+				<ul class="record-list"><li data-list="new-users">
+					<span data-sudo="email" data-bind:id="emailId" data-bind:text="email"></span> <a class="control icon-button" data-icon="edit" data-bind:href="userUri"><span>View user</span></a>
+					<small data-bind:text="title"></small><time data-bind:text="createdAt"></time>
+				</li></ul>
+				<p hidden data-bind:hidden="?!empty-new-users">No users were created in this period.</p>
+			</div>
+			<footer class="panel-body"><a class="card-link" data-bind:href="newUsersUri">See all users <span data-icon="arrow-right" aria-hidden="true"></span></a></footer>
 		</section>
-		<section id="admin-abandoned-users" class="settings-panel stack" aria-labelledby="abandoned-users-title">
-			<h2 id="abandoned-users-title">Awaiting first login</h2>
-			<p class="muted">Created in this period with no recorded successful login. This includes manually added users.</p>
-			<ul class="record-list"><li data-list="awaiting-users">
-				<span data-sudo="email" data-bind:id="emailId" data-bind:text="email"></span> <a class="control icon-button" data-icon="edit" data-bind:href="userUri"><span>View user</span></a>
-				<small data-bind:text="title"></small><time data-bind:text="createdAt"></time>
-			</li></ul>
-			<p hidden data-bind:hidden="?!empty-awaiting-users">No users are awaiting their first login in this period.</p>
-			<footer><a class="card-link" data-bind:href="usersUri">See all users <span data-icon="arrow-right" aria-hidden="true"></span></a></footer>
+		<section id="admin-abandoned-users" class="dashboard-panel" aria-labelledby="abandoned-users-title">
+			<header class="panel-heading"><h2 id="abandoned-users-title">Awaiting first login</h2></header>
+			<div class="panel-body stack">
+				<p class="muted">Created in this period with no recorded successful login. This includes manually added users.</p>
+				<ul class="record-list"><li data-list="awaiting-users">
+					<span data-sudo="email" data-bind:id="emailId" data-bind:text="email"></span> <a class="control icon-button" data-icon="edit" data-bind:href="userUri"><span>View user</span></a>
+					<small data-bind:text="title"></small><time data-bind:text="createdAt"></time>
+				</li></ul>
+				<p hidden data-bind:hidden="?!empty-awaiting-users">No users are awaiting their first login in this period.</p>
+			</div>
+			<footer class="panel-body"><a class="card-link" data-bind:href="usersUri">See all users <span data-icon="arrow-right" aria-hidden="true"></span></a></footer>
 		</section>
 	</div>
 	<p class="muted">Events without an identifiable, retained user are excluded. New-user totals omit accounts with an unknown creation date.</p>

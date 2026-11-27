@@ -10,7 +10,7 @@ select
 	senderAddress,
 	textContent,
 	htmlContent,
-	Application.emailSettings,
+	coalesce(ApplicationDeployment.emailSettings, Application.emailSettings) as emailSettings,
 	ApplicationDeployment.clientHost,
 	ApplicationDeployment.emailReplyTo
 

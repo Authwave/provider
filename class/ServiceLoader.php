@@ -12,7 +12,7 @@ use Authwave\Admin\Application\ApplicationSettingsAction;
 use GT\Routing\Path\DynamicPath;
 use Authwave\Admin\Onboarding\AdminArea;
 use Authwave\Admin\Onboarding\Onboarding;
-use Authwave\Email\EmailRepository;
+use Authwave\Email\{EmailRepository, EmailTemplateRepository};
 use Authwave\Model\EmailSettings;
 use Authwave\Session\FlashSession;
 use Authwave\Session\LoginSession;
@@ -172,6 +172,11 @@ class ServiceLoader extends DefaultServiceLoader {
 		);
 	}
 
+	public function loadEmailTemplateRepository():EmailTemplateRepository {
+		return new EmailTemplateRepository($this->container->get(Database::class),
+			$this->container->get(ApplicationRepository::class), $this->container->get(Audit::class));
+	}
+
 	public function loadEmailRepo():EmailRepository {
 		$defaultEmailSettings = new EmailSettings(
 			$this->config->getString("email.host"),
@@ -186,6 +191,7 @@ class ServiceLoader extends DefaultServiceLoader {
 			$defaultEmailSettings,
 			$this->container->get(Audit::class),
 			ignoreTransportErrors: !$this->config->getBool("app.production"),
+			templates: $this->container->get(EmailTemplateRepository::class),
 		);
 	}
 }

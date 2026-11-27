@@ -2,7 +2,7 @@ function updateConditionalFields(form) {
 	for(const group of form.querySelectorAll("[data-enable-when]")) {
 		const control = form.elements.namedItem(group.dataset.enableWhen);
 		group.disabled = !control?.checked;
-		group.hidden = group.disabled;
+		group.hidden = group.disabled && !group.hasAttribute("data-keep-visible");
 	}
 }
 

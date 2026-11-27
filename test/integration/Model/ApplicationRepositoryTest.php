@@ -24,7 +24,7 @@ class ApplicationRepositoryTest extends TestCase {
 		$pdo = new PDO("sqlite::memory:");
 		$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 		$pdo->exec("create table Application (id text primary key, name text, emailSendFrom text, emailSettings text, productionApplicationDeploymentId text)");
-		$pdo->exec("create table ApplicationDeployment (id text, applicationId text, title text, secret text, providerHost text, clientHost text, clientLoginPath text, domainVerified integer not null default 0, clientConnected integer not null default 0, userLoggedIn integer not null default 0, emailPrefix text, emailReplyTo text)");
+		$pdo->exec("create table ApplicationDeployment (id text, applicationId text, title text, secret text, providerHost text, clientHost text, clientLoginPath text, domainVerified integer not null default 0, clientConnected integer not null default 0, userLoggedIn integer not null default 0, emailPrefix text, emailFromName text, emailReplyTo text)");
 		$pdo->exec("insert into Application values ('app', 'Application', 'test@example.test', null, 'deployment')");
 		$pdo->exec(file_get_contents("$root/query/_migration/014-application-theme.sql"));
 		foreach(["light" => $lightColours, "dark" => $darkColours] as $scheme => $colours) {
@@ -813,6 +813,62 @@ class ApplicationRepositoryTest extends TestCase {
 		self::assertTrue($loaded->userLoggedIn);
 		self::assertSame($created->secret, $loaded->secret);
 		self::assertSame("account", $this->store->deployments($this->actor, "mine")[0]->emailPrefix);
+	}
+
+	public function testSenderUpdatesAreScopedAndDeploymentEditsPreserveThem():void {
+		$created = $this->store->saveDeployment($this->actor, "mine", null,
+			new DeploymentData("Production", "login.example.test", "https://example.test", "/login/"));
+		$this->database->executeSql("update ApplicationDeployment set domainVerified=1, clientConnected=1, userLoggedIn=1 where id=?", [$created->id]);
+		$this->store->saveSender($this->actor, "mine", $created->id, " account ", " help@example.test ", " Accounts team ");
+		$loaded = $this->store->getDeploymentById($created->id);
+		self::assertSame("account@login.example.test", $loaded->getSenderAddress());
+		self::assertSame("Accounts team", $loaded->getSenderName());
+		self::assertSame("help@example.test", $loaded->emailReplyTo);
+		self::assertTrue($loaded->domainVerified);
+		self::assertTrue($loaded->clientConnected);
+		self::assertTrue($loaded->userLoggedIn);
+		self::assertSame($created->secret, $loaded->secret);
+		$saved = $this->store->saveDeployment($this->actor, "mine", $created->id,
+			new DeploymentData("Renamed", "account.example.test", "https://example.test", "/login/"),
+			preserveSender: true);
+		self::assertSame("account@account.example.test", $saved->getSenderAddress());
+		self::assertSame("help@example.test", $saved->emailReplyTo);
+		self::assertSame("Accounts team", $saved->getSenderName());
+		self::assertSame("Accounts team", $this->store->getDeploymentById($created->id)->getSenderName());
+		$this->store->saveSender($this->actor, "mine", $created->id, "security", "");
+		self::assertNull($this->store->getDeploymentById($created->id)->emailReplyTo);
+		$row = $this->database->executeSql("select detail from Audit where action='SENDER_SETTINGS_UPDATED' limit 1")->fetch();
+		$detail = json_decode($row->getString("detail"), true);
+		self::assertSame($created->id, $detail["deploymentId"]);
+		self::assertSame("account", $detail["to"]["emailPrefix"]);
+		$this->expectException(\InvalidArgumentException::class);
+		$this->store->saveSender($this->actor, "mine", "foreign-deployment", "forged", "attacker@example.test");
+	}
+
+	public function testInvalidSenderDoesNotOverwriteSavedSettings():void {
+		$created = $this->store->saveDeployment($this->actor, "mine", null,
+			new DeploymentData("Production", "login.example.test", "https://example.test", "/login/"));
+		try {
+			$this->store->saveSender($this->actor, "mine", $created->id, "forged@example.test", "help@example.test");
+			self::fail("A full email address must not be accepted as a sender prefix.");
+		}
+		catch(\InvalidArgumentException) {
+			self::assertSame("security", $this->store->getDeploymentById($created->id)->emailPrefix);
+		}
+	}
+
+	public function testSenderRejectsInvalidFromNameWithoutChangingSavedSettings():void {
+		$created = $this->store->saveDeployment($this->actor, "mine", null,
+			new DeploymentData("Production", "login.example.test", "https://example.test", "/login/"));
+		foreach(["", " ", "Injected\r\nBcc: another@example.test", str_repeat("x", 257)] as $name) {
+			try {
+				$this->store->saveSender($this->actor, "mine", $created->id, "account", "", $name);
+				self::fail("Invalid From names must not be accepted.");
+			}
+			catch(\InvalidArgumentException) {
+				self::assertNull($this->store->getDeploymentById($created->id)->emailFromName);
+			}
+		}
 	}
 
 }

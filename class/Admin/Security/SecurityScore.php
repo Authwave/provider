@@ -44,10 +44,10 @@ readonly class SecurityScore {
 				? "The production deployment's domain is verified."
 				: "Verify the production deployment's domain to raise the grade.",
 				$production->domainVerified ? 1 : 0, $settingsUrl);
-			$https = strtolower($production->getClientReturnUri()->getScheme()) === "https";
+			$https = strtolower($production->getClientReturnUri()->getScheme()) !== "http";
 			$checks []= new SecurityCheck($https
-				? "The production client URL uses HTTPS."
-				: "The production client URL does not use HTTPS.", $https ? 0 : -1, $settingsUrl);
+				? "A production client is created, using HTTPS."
+				: "The production client URL does not use HTTPS.", $https ? 1 : -1, $settingsUrl);
 		}
 
 		$legacyCount = count(array_filter($sessions,

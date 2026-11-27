@@ -16,7 +16,8 @@ select
 	ApplicationDeployment.clientConnected,
 	ApplicationDeployment.userLoggedIn,
 	ApplicationDeployment.emailPrefix,
-	ApplicationDeployment.emailReplyTo
+	ApplicationDeployment.emailReplyTo,
+	ApplicationDeployment.emailFromName
 
 from
 	Application

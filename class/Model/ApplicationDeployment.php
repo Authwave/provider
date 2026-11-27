@@ -23,6 +23,7 @@ readonly class ApplicationDeployment {
 		public bool $userLoggedIn = false,
 		public ?string $emailPrefix = null,
 		public ?string $emailReplyTo = null,
+		public ?string $emailFromName = null,
 	) {
 		$this->applicationId = $application->id;
 	}
@@ -49,6 +50,11 @@ readonly class ApplicationDeployment {
 		$separator = strpos($this->id, "_");
 		$suffix = $separator === false ? "_" . $this->id : substr($this->id, $separator);
 		return $prefix . $suffix . "_" . $this->secret;
+	}
+
+	public function getSenderName(?string $fallback = null):string {
+		// Older serialised sessions may not contain the sender name field.
+		return get_object_vars($this)["emailFromName"] ?? $fallback ?? $this->application->name;
 	}
 
 	public function getSenderAddress():?string {

@@ -5,7 +5,7 @@ create table Application (
 create table ApplicationDeployment (
 	id text primary key, applicationId text not null, title text not null,
 	secret text not null, providerHost text not null, clientHost text not null,
-	clientLoginPath text not null, domainVerified integer not null default 0, clientConnected integer not null default 0, userLoggedIn integer not null default 0, emailPrefix text, emailReplyTo text
+	clientLoginPath text not null, domainVerified integer not null default 0, clientConnected integer not null default 0, userLoggedIn integer not null default 0, emailPrefix text, emailFromName text, emailReplyTo text, emailSettings text
 );
 create table ApplicationTheme (applicationId text, colourScheme text, colours text);
 create table User (
@@ -17,7 +17,7 @@ create table Email (
 	id text primary key, deploymentId text not null,
 	sentAt text, sentMessageId text, createdAt text default CURRENT_TIMESTAMP,
 	scheduledToSendAt text, subject text, toEmail text, senderName text,
-	senderAddress text, textContent text, htmlContent text,
+	senderAddress text, textContent text, htmlContent text, deliveryFailedAt text,
 	foreign key (deploymentId) references ApplicationDeployment(id) on delete restrict
 );
 create table UserAdmin (userId text, applicationId text, primary key (userId, applicationId));
@@ -42,4 +42,12 @@ create table ApplicationSessionPolicy (
     applicationId text primary key, maximumLifetimeMinutes integer not null,
     idleTimeoutMinutes integer not null,
     foreign key (applicationId) references Application(id) on delete cascade
+);
+
+create table EmailTemplate (
+	applicationId text not null, scopeId text not null, deploymentId text,
+	name text not null, subject text not null, htmlContent text not null,
+	primary key (applicationId, scopeId, name),
+	foreign key (applicationId) references Application(id) on delete cascade,
+	foreign key (deploymentId) references ApplicationDeployment(id) on delete cascade
 );

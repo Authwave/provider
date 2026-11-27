@@ -131,7 +131,55 @@ readonly class ApplicationRepository {
 			$row->getBool("clientConnected"),
 			$row->getBool("userLoggedIn"),
 			$row->getString("emailPrefix"), $row->getString("emailReplyTo"),
+			$row->getString("emailFromName"),
 		);
+	}
+
+	public function emailSettings(User $actor, string $applicationId,
+		string $deploymentId = ""):?EmailSettings {
+		$application = $this->get($actor, $applicationId);
+		if($deploymentId === "") {
+			return $application->emailSettings;
+		}
+		$this->deployment($actor, $applicationId, $deploymentId);
+		$row = $this->database->queryCollection("application_deployment")->fetch("getEmailSettings", [
+			"deploymentId" => $deploymentId, "applicationId" => $applicationId,
+		]);
+		$settings = json_decode($row?->getString("emailSettings") ?? "null", true);
+		return $settings === null ? null : new EmailSettings(
+			$settings["host"] ?? null, $settings["port"] ?? null,
+			$settings["username"] ?? null, $settings["password"] ?? null, $settings["replyTo"] ?? null);
+	}
+
+	public function saveEmailSettings(User $actor, string $applicationId,
+		string $deploymentId, ?EmailSettings $settings):void {
+		$this->transaction(function()use($actor, $applicationId, $deploymentId, $settings):void {
+			$previous = $this->emailSettings($actor, $applicationId, $deploymentId);
+			if($settings !== null) {
+				$host = trim($settings->host ?? "");
+				if($host === "" || strlen($host) > 253
+				|| !preg_match('/^[a-zA-Z0-9._:-]+$/D', $host)
+				|| ($settings->port ?? 0) < 1 || $settings->port > 65535
+				|| strlen($settings->username ?? "") > 256 || strlen($settings->password ?? "") > 4096) {
+					throw new InvalidArgumentException("Enter a valid SMTP host and port (1–65535).");
+				}
+				$settings = new EmailSettings($host, $settings->port, $settings->username,
+					$settings->password === "" ? ($previous->password ?? "") : $settings->password,
+					$previous?->replyTo);
+			}
+			$fields = ["applicationId" => $applicationId,
+				"emailSettings" => $settings === null ? null : json_encode($settings, JSON_THROW_ON_ERROR)];
+			$collection = "application";
+			if($deploymentId !== "") {
+				$collection = "application_deployment";
+				$fields["deploymentId"] = $deploymentId;
+			}
+			$this->database->queryCollection($collection)->update("saveEmailSettings", $fields);
+			$this->audit->create(Action::EMAIL_SETTINGS_UPDATED, [
+				"applicationId" => $applicationId, "deploymentId" => $deploymentId ?: null,
+				"customSmtp" => $settings !== null,
+			], $actor);
+		});
 	}
 
 	public function getSessionPolicyByApplicationId(string $applicationId):?ApplicationSessionPolicy {
@@ -250,7 +298,8 @@ readonly class ApplicationRepository {
 				$row->getString("title"), $row->getString("secret"), $row->getString("clientHost"),
 				$row->getString("clientLoginPath"), $row->getString("providerHost"),
 				$row->getBool("domainVerified"), $row->getBool("clientConnected"),
-				$row->getBool("userLoggedIn"), $row->getString("emailPrefix"), $row->getString("emailReplyTo"));
+				$row->getBool("userLoggedIn"), $row->getString("emailPrefix"), $row->getString("emailReplyTo"),
+				$row->getString("emailFromName"));
 		}
 
 		return $result;
@@ -280,14 +329,19 @@ readonly class ApplicationRepository {
 	}
 
 	public function saveDeployment(User $actor, string $applicationId, ?string $identifier,
-		DeploymentData $data):ApplicationDeployment {
+		DeploymentData $data, bool $preserveSender = false):ApplicationDeployment {
 		[$deployment, $before] = $this->transaction(function()use(
-			$actor, $applicationId, $identifier, $data,
+			$actor, $applicationId, $identifier, $data, $preserveSender,
 		):array {
 			$application = $this->get($actor, $applicationId);
 			$identifier = $identifier === "" ? null : $identifier;
 			$before = $identifier !== null
 				? $this->deployment($actor, $applicationId, $identifier) : null;
+			if($preserveSender && $before) {
+				$data = new DeploymentData($data->title, $data->providerHost,
+					$data->clientHost, $data->clientLoginPath,
+					$before->emailPrefix ?? "", $before->emailReplyTo ?? "");
+			}
 			$oldHostname = $this->domains->hostname($before->providerHost ?? "");
 			$newHostname = $this->domains->hostname($data->providerHost);
 			$verified = $oldHostname === $newHostname && ($before->domainVerified ?? false);
@@ -298,7 +352,7 @@ readonly class ApplicationRepository {
 				$application, $data->title, $before->secret ?? base64_encode(random_bytes(24)),
 				$data->clientHost, $data->clientLoginPath, $data->providerHost, $verified,
 				$sameConnection && $before->clientConnected, $sameConnection && $before->userLoggedIn,
-				$data->emailPrefix, $data->emailReplyTo);
+				$data->emailPrefix, $data->emailReplyTo, $before?->emailFromName);
 			$query = $this->database->queryCollection("admin_deployment");
 
 			if($before) {
@@ -331,6 +385,37 @@ readonly class ApplicationRepository {
 			$this->removeDnsZone($before->providerHost);
 		}
 		return $deployment;
+	}
+
+	public function saveSender(User $actor, string $applicationId, string $deploymentId,
+		string $prefix, string $replyTo, ?string $fromName = null):void {
+		$this->transaction(function()use(
+			$actor, $applicationId, $deploymentId, $prefix, $replyTo, $fromName,
+		):void {
+			$before = $this->deployment($actor, $applicationId, $deploymentId);
+			if(trim($prefix) === "") {
+				throw new InvalidArgumentException("Enter a sender email prefix.");
+			}
+			$fromName = $fromName === null ? $before->emailFromName : trim($fromName);
+			if($fromName !== null && ($fromName === "" || strlen($fromName) > 256
+			|| preg_match('/\A[^\p{C}]+\z/u', $fromName) !== 1)) {
+				throw new InvalidArgumentException(
+					"Enter a From name of up to 256 characters without control characters.");
+			}
+			$data = new DeploymentData($before->title, $before->providerHost,
+				$before->clientHost, $before->clientLoginPath, $prefix, $replyTo);
+			$this->database->queryCollection("admin_deployment")->update("saveSender", [
+				"applicationId" => $applicationId, "deploymentId" => $deploymentId,
+				"emailPrefix" => $data->emailPrefix, "emailReplyTo" => $data->emailReplyTo,
+				"emailFromName" => $fromName,
+			]);
+			$this->audit->recordChange(Action::SENDER_SETTINGS_UPDATED,
+				before: (object)["emailPrefix" => $before->emailPrefix,
+					"emailReplyTo" => $before->emailReplyTo, "emailFromName" => $before->emailFromName],
+				after: (object)["emailPrefix" => $data->emailPrefix, "emailReplyTo" => $data->emailReplyTo,
+					"emailFromName" => $fromName],
+				actor: $actor, context: ["applicationId" => $applicationId, "deploymentId" => $deploymentId]);
+		});
 	}
 
 	public function deleteDeployment(User $actor, string $applicationId, string $identifier):void {

@@ -19,7 +19,8 @@ Feature: Security letter grade
   Scenario: The grade includes all sessions even when the list filters them out
     Given the application has verified production HTTPS and an older development session
     When I go to "/admin/security/?sessionDeployment=score-prod"
-    Then the security grade should be "B"
+    Then the security grade should be "A"
+    And I should see "A production client is created, using HTTPS."
     And I should see "1 active older-client session cannot be revoked remotely."
     When the older development session expires
     And I go to "/admin/security/?sessionDeployment=score-prod"

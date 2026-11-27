@@ -342,12 +342,14 @@ body.dir--admin {
 		color: var(--theme-color-danger);
 	}
 
-	.activity-panel {
+	.dashboard-panel {
+		@extend %o-settings-panel;
+		display: flex;
+		flex-direction: column;
 		position: relative;
-		border: var(--theme-surface-border);
-		border-radius: var(--theme-surface-radius);
-		background: var(--theme-color-surface);
-		min-inline-size: 0;
+		padding: 0;
+
+		> footer { margin-block-start: auto; }
 	}
 
 	.panel-heading {

@@ -147,7 +147,8 @@ body.dir--admin {
 		}
 	}
 
-	.domain-verification-controls > .verification-link {
+	.domain-verification-controls > .verification-link,
+	#templates .actions > .template-reset {
 		@extend %o-link;
 		--theme-button-background-hover: transparent;
 		--theme-button-background-active: transparent;
@@ -608,6 +609,43 @@ body.dir--admin {
 }
 
 body.dir--admin {
+	.email-settings {
+		container: email-settings / inline-size;
+		--theme-grid-columns: 2;
+		--theme-grid-min: 32rem;
+		align-items: start;
+
+		> .email-settings-column {
+			display: contents;
+			--theme-stack-gap: var(--theme-grid-gap, var(--theme-space-6));
+
+			> .settings-panel { max-inline-size: none; }
+		}
+
+		#smtp { order: 1; }
+
+		@container email-settings (min-width: 65rem) {
+			> .email-settings-column { display: flex; }
+		}
+	}
+
+	.sender-picker, .template-picker {
+		container: sender-picker / inline-size;
+
+		> .field-row {
+			align-items: end;
+			--theme-actions-padding-block-start: 0;
+
+			@container sender-picker (min-width: 36rem) {
+				> label { flex: 0 1 50%; }
+			}
+		}
+	}
+
+	.settings-panel.email-log {
+		max-inline-size: none;
+	}
+
 	.security-log-scroll {
 		--theme-table-scroll-max-block-size: 28rem;
 	}

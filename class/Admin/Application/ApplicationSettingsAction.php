@@ -68,8 +68,7 @@ readonly class ApplicationSettingsAction {
 				$this->text($input, "id"), new DeploymentData(
 					(string)$fields["title"], (string)$fields["providerHost"],
 					(string)$fields["clientHost"], (string)$fields["clientLoginPath"],
-					(string)($fields["emailPrefix"] ?? ""), (string)($fields["emailReplyTo"] ?? ""),
-				));
+				), preserveSender: true);
 		}
 		catch(ValidationException) {
 			$messages = [];

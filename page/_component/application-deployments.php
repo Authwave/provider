@@ -108,14 +108,6 @@ function go(Binder $binder, Application $application, ApplicationRepository $app
 			}
 		}
 
-		$binder->bindKeyValue("senderInputId", "sender-prefix-" . ($isNew ? "new" : $id), $item);
-		$binder->bindKeyValue("senderHelpId", "sender-help-" . ($isNew ? "new" : $id), $item);
-		$binder->bindKeyValue("senderDomain", "@" . ($domains->hostname($fields["providerHost"]) ?: "authwave-host"), $item);
-		$clientUrl = $fields["clientHost"];
-		$clientHostname = parse_url(str_contains($clientUrl, "://") ? $clientUrl : "https://$clientUrl", PHP_URL_HOST);
-		$clientHostname = strtolower(rtrim($clientHostname ?: "", "."));
-		$clientHostname = preg_replace('/^www\./', '', $clientHostname);
-		$binder->bindKeyValue("replyToPlaceholder", "e.g. support@" . ($clientHostname ?: "your-domain.com"), $item);
 
 		return $fields;
 	}, templateName: "deployment-panels");
